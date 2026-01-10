@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -28,7 +29,7 @@ const usuarioSchema = new mongoose.Schema({
 
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-// --- Rutas ---
+// --- Rutas de API ---
 app.post("/register", async (req, res) => {
   const { telefono, rol } = req.body;
   if (!telefono || !rol) return res.status(400).json({ error: "Datos incompletos" });
@@ -61,8 +62,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// --- Servir frontend ---
+const frontendPath = path.join(__dirname); // si login.html, chofer, admin, pasajeros están en la misma carpeta que server.js
+app.use(express.static(frontendPath));
+
 app.get("/", (req, res) => {
-  res.send("Backend Smart funcionando");
+  res.sendFile(path.join(frontendPath, "login.html")); // página de inicio central
 });
 
 // --- Iniciar servidor ---
