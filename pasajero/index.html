@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Smart Traslados – Pasajero</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#000000">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#f2f2f2;
+}
+header{
+  background:#000;
+  color:#fff;
+  padding:15px;
+  text-align:center;
+}
+.screen{
+  padding:20px;
+}
+button{
+  padding:12px;
+  width:100%;
+  margin-top:10px;
+  border:none;
+  border-radius:6px;
+  background:#00c853;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+.card{
+  background:#fff;
+  border-radius:10px;
+  padding:15px;
+  margin-top:15px;
+  box-shadow:0 2px 5px rgba(0,0,0,.2);
+}
+#map{
+  width:100%;
+  height:300px;
+  border-radius:10px;
+  margin-top:10px;
+}
+.logout{
+  background:#ff5252;
+  color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>Pasajero</h2>
+  <div id="userInfo"></div>
+</header>
+
+<div class="screen">
+
+  <div class="card">
+    <h3>Solicitar viaje</h3>
+    <div id="map">Cargando mapa…</div>
+    <button onclick="pedirViaje()">Pedir viaje</button>
+  </div>
+
+  <div class="card">
+    <h3>Estado</h3>
+    <div id="estado">Esperando acción…</div>
+  </div>
+
+  <button class="logout" onclick="cerrarSesion()">Cerrar sesión</button>
+
+</div>
+
+<script>
+/* ===== PROTECCIÓN DE SESIÓN ===== */
+const sesion = JSON.parse(localStorage.getItem("sesion"));
+if(!sesion || sesion.rol !== "pasajero"){
+  location.href = "../login.html";
+}
+
+/* ===== INFO USUARIO ===== */
+document.getElementById("userInfo").innerText =
+  "Tel: " + sesion.telefono;
+
+/* ===== MAPA ===== */
+let map, marker, userLat, userLng;
+
+function initMap(){
+  if(!navigator.geolocation){
+    document.getElementById("map").innerText =
+      "Geolocalización no disponible";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+
+      map = new google.maps.Map(document.getElementById("map"),{
+        center:{lat:userLat,lng:userLng},
+        zoom:15
+      });
+
+      marker = new google.maps.Marker({
+        position:{lat:userLat,lng:userLng},
+        map,
+        title:"Tu ubicación"
+      });
+    },
+    ()=>{
+      document.getElementById("map").innerText =
+        "No se pudo obtener tu ubicación";
+    }
+  );
+}
+
+/* ===== VIAJE ===== */
+function pedirViaje(){
+  if(!userLat || !userLng){
+    alert("Ubicación no disponible");
+    return;
+  }
+
+  document.getElementById("estado").innerText =
+    "Viaje solicitado. Buscando chofer…";
+
+  localStorage.setItem("viajeActivo", JSON.stringify({
+    pasajero: sesion.telefono,
+    origen: { lat: userLat, lng: userLng },
+    estado: "buscando"
+  }));
+}
+
+/* ===== LOGOUT ===== */
+function cerrarSesion(){
+  localStorage.removeItem("sesion");
+  localStorage.removeItem("viajeActivo");
+  location.href = "../login.html";
+}
+</script>
+
+<script
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCeXV1ZmTBpGBIE6MwG8HvIAXziKUPK1d8&callback=initMap"
+async defer>
+</script>
+
+</body>
+</html>

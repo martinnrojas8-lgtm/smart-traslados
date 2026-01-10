@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Smart Traslados - Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#000;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.box{
+  background:#111;
+  padding:20px;
+  border-radius:10px;
+  width:300px;
+}
+input, select, button{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border:none;
+  border-radius:5px;
+}
+button{
+  background:#00c853;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+.hidden{display:none}
+.switch{
+  margin-top:10px;
+  text-align:center;
+  cursor:pointer;
+  color:#00c853;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box" id="loginBox">
+  <h2>Ingresar</h2>
+  <input id="loginTelefono" placeholder="Teléfono">
+  <button onclick="login()">Entrar</button>
+  <div class="switch" onclick="mostrarRegistro()">Registrarme</div>
+  <div class="switch" onclick="loginAdmin()">Soy Admin</div>
+</div>
+
+<div class="box hidden" id="registroBox">
+  <h2>Registro</h2>
+  <input id="regTelefono" placeholder="Teléfono">
+  <select id="regRol">
+    <option value="pasajero">Pasajero</option>
+    <option value="chofer">Chofer</option>
+  </select>
+  <button onclick="registrar()">Crear cuenta</button>
+  <div class="switch" onclick="mostrarLogin()">Volver</div>
+</div>
+
+<script>
+const API = "https://martinnrojas8-lgtm-meup.onrender.com"; // TU backend en Render
+
+const loginBox = document.getElementById("loginBox");
+const registroBox = document.getElementById("registroBox");
+
+function mostrarRegistro(){
+  loginBox.classList.add("hidden");
+  registroBox.classList.remove("hidden");
+}
+
+function mostrarLogin(){
+  registroBox.classList.add("hidden");
+  loginBox.classList.remove("hidden");
+}
+
+function registrar(){
+  const telefono = regTelefono.value.trim();
+  const rol = regRol.value;
+  if(!telefono){ alert("Ingresá un teléfono"); return; }
+
+  fetch(API+"/register",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ telefono, rol })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error) alert(d.error);
+    else{
+      alert("Registro exitoso");
+      mostrarLogin();
+    }
+  })
+  .catch(()=>alert("Error de servidor"));
+}
+
+function login(){
+  const telefono = loginTelefono.value.trim();
+  if(!telefono){ alert("Ingresá tu teléfono"); return; }
+
+  fetch(API+"/login",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ telefono })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){ alert(d.error); return; }
+
+    localStorage.setItem("sesion", JSON.stringify({
+      telefono: d.telefono,
+      rol: d.rol
+    }));
+
+    if(d.rol === "chofer"){
+      location.href = "chofer/index.html";
+    } else if(d.rol === "pasajero"){
+      location.href = "pasajero/index.html";
+    } else if(d.rol === "admin"){
+      location.href = "admin/login-admin.html";
+    }
+  })
+  .catch(()=>alert("Error de servidor"));
+}
+
+function loginAdmin(){
+  location.href = "admin/login-admin.html";
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('Service Worker registrado:', reg))
+      .catch(err => console.log('Error al registrar Service Worker:', err));
+  });
+}
+</script>
+
+</body>
+</html>
