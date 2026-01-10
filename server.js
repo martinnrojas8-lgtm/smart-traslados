@@ -15,7 +15,7 @@ const mongoPass = "ZafcReO11kyEXap";
 const mongoCluster = "cluster0.mongodb.net";
 const dbName = "smartApp";
 
-const mongoURI = `mongodb+srv://${mongoUser}:${mongoPass}@${mongoCluster}/${dbName}?retryWrites=true&w=majority`;
+const mongoURI = process.env.MONGO_URI;
 
 mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB conectado"))
@@ -74,4 +74,5 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log("Servidor corriendo en puerto", PORT);
 });
+
 
