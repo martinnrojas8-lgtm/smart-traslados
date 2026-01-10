@@ -8,23 +8,17 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// --- Conexión a Mongo Atlas ---
-const mongoURI = process.env.MONGO_URI;
+// --- Conexión a Mongo Atlas (CLÁSICA, sin SRV) ---
+const mongoUser = "martinnrojas8_db_user";
+const mongoPass = "ZafcReO11kyEXap";
+const mongoHost = "cluster0-shard-00-00.mongodb.net:27017,cluster0-shard-00-01.mongodb.net:27017,cluster0-shard-00-02.mongodb.net:27017";
+const dbName = "smartApp";
 
-if (!mongoURI) {
-  console.error("MONGO_URI no definido en Environment Variables");
-  process.exit(1);
-}
+const mongoURI = `mongodb://${mongoUser}:${mongoPass}@${mongoHost}/${dbName}?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true&w=majority`;
 
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB conectado"))
-.catch(err => {
-  console.error("Error de conexión MongoDB:", err);
-  process.exit(1);
-});
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB conectado"))
+  .catch(err => console.error("Error de conexión MongoDB:", err));
 
 // --- Modelo de usuario ---
 const usuarioSchema = new mongoose.Schema({
@@ -67,6 +61,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// --- Rutas para cada módulo ---
+app.get("/admin", (req, res) => res.send("Admin Module funcionando"));
+app.get("/chofer", (req, res) => res.send("Chofer Module funcionando"));
+app.get("/pasajero", (req, res) => res.send("Pasajero Module funcionando"));
+
+// --- Ruta principal ---
 app.get("/", (req, res) => {
   res.send("Backend Smart funcionando");
 });
