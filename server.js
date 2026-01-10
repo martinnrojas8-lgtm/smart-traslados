@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// --- Conexión a Mongo Atlas usando variable de entorno ---
+// --- Conexión a Mongo Atlas usando Environment Variable ---
 const mongoURI = process.env.MONGO_URI;
 
 mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
