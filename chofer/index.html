@@ -1,37 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Smart Traslados – Chofer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/file_000000008fd0720eb71af76359ccb359.png">
+
+<style>
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
+  header{ background:#111; padding:15px; text-align:center; border-bottom:2px solid #00c853; }
+  .screen{ padding:15px; }
+  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
+  h3{ margin-top:0; color:#00c853; font-size:16px; }
+  #map{ width:100%; height:350px; border-radius:10px; margin-bottom:10px; background:#222; }
+  button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
+  .logout{ background:#333; color:#aaa; font-size:12px; margin-top:20px; }
+  .info-viaje{ background:#222; padding:10px; border-radius:8px; margin-top:10px; border-left:4px solid #00c853; }
+  .price-tag{ font-size:22px; color:#00c853; font-weight:bold; display:block; margin-top:5px; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h2 style="margin:0; font-size:18px;">Smart Chofer</h2>
+  <div id="userInfo" style="font-size:12px; color:#aaa;">Cargando...</div>
+</header>
+
+<div class="screen">
+  <div class="card">
+    <h3>Mi Ubicación Actual</h3>
+    <div id="map">Cargando mapa...</div>
+  </div>
+
+  <div id="panelSolicitud" class="card">
+    <h3 id="estadoChofer">Estado: Disponible</h3>
+    <div id="detalleViaje">Esperando pedidos de pasajeros...</div>
+    
+    <div id="datosViaje" class="hidden">
+        <div class="info-viaje">
+            <strong>Ruta:</strong> <span id="rutaTexto">...</span><br>
+            <strong>Cobrar:</strong> <span id="precioTexto" class="price-tag">$0.00</span>
+        </div>
+        <button id="btnAceptar" onclick="aceptarViaje()">ACEPTAR VIAJE</button>
+    </div>
+  </div>
+
+  <button class="logout" onclick="cerrarSesion()">CERRAR SESIÓN</button>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
+
+<script>
+let map, directionsRenderer, directionsService, userMarker;
+const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+
+if(!sesion || sesion.rol !== "chofer") { location.href = "/"; }
+document.getElementById("userInfo").innerText = "Chofer: " + sesion.telefono;
+
 function initMap() {
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer({
-        polylineOptions: { strokeColor: "#00c853", strokeWeight: 5 },
-        suppressMarkers: false // Esto permite que Google ponga sus propios marcadores de A y B
+        polylineOptions: { strokeColor: "#00c853", strokeWeight: 5 }
     });
 
     if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
             const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             
-            // MAPA CON MÁS DETALLE
             map = new google.maps.Map(document.getElementById("map"), {
                 center: myPos,
-                zoom: 17, // Aumentamos el zoom para ver mejor las calles
-                disableDefaultUI: false, // Dejamos los controles de zoom por si acaso
-                mapId: "DEMO_MAP_ID" // Esto ayuda a que cargue mejor el estilo
+                zoom: 17,
+                disableDefaultUI: false,
+                styles: [
+                    { "elementType": "geometry", "stylers": [{ "color": "#212121" }] },
+                    { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
+                    { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#303030" }] }
+                ]
             });
-            
+
             directionsRenderer.setMap(map);
 
-            // Marcador del Chofer (Un punto azul o un auto)
             userMarker = new google.maps.Marker({
                 position: myPos,
                 map: map,
-                title: "Tu ubicación",
-                icon: {
-                    url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png" // Punto azul clásico de GPS
-                }
+                icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
             });
             
-            buscarViajes();
+            // Simular búsqueda de viajes (esto luego vendrá de la base de datos)
+            console.log("Sistema de escucha activado...");
         }, () => {
-            alert("Por favor, activa el GPS para que el mapa cargue correctamente.");
+            alert("Por favor activa el GPS.");
         });
     }
 }
+
+function cerrarSesion() {
+    localStorage.removeItem("sesion");
+    location.href = "/";
+}
+
+window.onload = initMap;
+</script>
+</body>
+</html>
