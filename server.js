@@ -1,77 +1,38 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
+
+// --- MIDDLEWARES ---
+app.use(cors());
+app.use(express.json()); // Permite que tu app entienda JSON
+
+// --- CONEXIÓN A MONGODB ---
+// Render usará la variable MONGO_URI que configures en su panel
+const mongoURI = process.env.MONGO_URI;
+
+mongoose.connect(mongoURI)
+    .then(() => console.log('✅ Conexión exitosa a MongoDB Atlas'))
+    .catch(err => {
+        console.error('❌ Error de conexión a MongoDB:', err.message);
+        process.exit(1); // Detiene el servidor si no hay conexión
+    });
+
+// --- RUTAS (Ejemplos básicos, ajusta según tus módulos) ---
+app.get('/', (req, res) => {
+    res.send('Servidor de Smart-Traslados funcionando correctamente 🚀');
+});
+
+// Aquí irían tus rutas de módulos, por ejemplo:
+// app.use('/api/usuarios', require('./routes/usuarios'));
+// app.use('/api/traslados', require('./routes/traslados'));
+
+// --- CONFIGURACIÓN DEL PUERTO ---
+// Render asigna un puerto dinámico, por eso usamos process.env.PORT
 const PORT = process.env.PORT || 10000;
 
-app.use(cors());
-app.use(express.json());
-
-// --- Conexión a Mongo Atlas (CLÁSICA, sin SRV) ---
-const mongoUser = "martinnrojas8_db_user";
-const mongoPass = "ZafcReO11kyEXap";
-const mongoHost = "cluster0-shard-00-00.mongodb.net:27017,cluster0-shard-00-01.mongodb.net:27017,cluster0-shard-00-02.mongodb.net:27017";
-const dbName = "smartApp";
-
-const mongoURI = `mongodb://${mongoUser}:${mongoPass}@${mongoHost}/${dbName}?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true&w=majority`;
-
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB conectado"))
-  .catch(err => console.error("Error de conexión MongoDB:", err));
-
-// --- Modelo de usuario ---
-const usuarioSchema = new mongoose.Schema({
-  telefono: { type: String, required: true, unique: true },
-  rol: { type: String, required: true }
-});
-
-const Usuario = mongoose.model("Usuario", usuarioSchema);
-
-// --- Rutas ---
-app.post("/register", async (req, res) => {
-  const { telefono, rol } = req.body;
-  if (!telefono || !rol) return res.status(400).json({ error: "Datos incompletos" });
-
-  try {
-    const existe = await Usuario.findOne({ telefono });
-    if (existe) return res.status(400).json({ error: "Usuario ya existe" });
-
-    const nuevoUsuario = new Usuario({ telefono, rol });
-    await nuevoUsuario.save();
-    res.json(nuevoUsuario);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error de servidor" });
-  }
-});
-
-app.post("/login", async (req, res) => {
-  const { telefono } = req.body;
-  if (!telefono) return res.status(400).json({ error: "Ingresá tu teléfono" });
-
-  try {
-    const usuario = await Usuario.findOne({ telefono });
-    if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
-
-    res.json(usuario);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error de servidor" });
-  }
-});
-
-// --- Rutas para cada módulo ---
-app.get("/admin", (req, res) => res.send("Admin Module funcionando"));
-app.get("/chofer", (req, res) => res.send("Chofer Module funcionando"));
-app.get("/pasajero", (req, res) => res.send("Pasajero Module funcionando"));
-
-// --- Ruta principal ---
-app.get("/", (req, res) => {
-  res.send("Backend Smart funcionando");
-});
-
-// --- Iniciar servidor ---
 app.listen(PORT, () => {
-  console.log("Servidor corriendo en puerto", PORT);
+    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
