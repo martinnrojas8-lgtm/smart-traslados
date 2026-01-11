@@ -1,57 +1,5 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Traslados</title>
-<style>
-  body{margin:0;font-family:Arial;background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;}
-  .box{background:#111;padding:20px;border-radius:10px;width:280px;}
-  input,select,button{width:100%;padding:12px;margin-top:10px;border-radius:5px;border:none;box-sizing:border-box;}
-  button{background:#00c853;font-weight:bold;cursor:pointer;}
-  .hidden{display:none}
-  .switch{margin-top:15px;text-align:center;color:#00c853;cursor:pointer;font-size:14px;}
-</style>
-</head>
-<body>
-
-<div class="box" id="loginBox">
-  <h2>Ingresar</h2>
-  <input id="loginTelefono" placeholder="Tu teléfono">
-  <button onclick="login()">ENTRAR</button>
-  <div class="switch" onclick="mostrarRegistro()">Registrate aquí</div>
-</div>
-
-<div class="box hidden" id="registroBox">
-  <h2>Registro</h2>
-  <input id="regTelefono" placeholder="Tu teléfono">
-  <select id="regRol">
-    <option value="pasajero">Soy Pasajero</option>
-    <option value="chofer">Soy Chofer</option>
-  </select>
-  <button onclick="registrar()">CREAR CUENTA</button>
-  <div class="switch" onclick="mostrarLogin()">Volver</div>
-</div>
-
-<script>
-const loginBox = document.getElementById("loginBox");
-const registroBox = document.getElementById("registroBox");
-
-function mostrarRegistro(){ loginBox.classList.add("hidden"); registroBox.classList.remove("hidden"); }
-function mostrarLogin(){ registroBox.classList.add("hidden"); loginBox.classList.remove("hidden"); }
-
-function registrar(){
-  const telefono = document.getElementById("regTelefono").value;
-  const rol = document.getElementById("regRol").value;
-  fetch("/register",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({telefono, rol})
-  }).then(()=> { alert("Registrado con éxito"); mostrarLogin(); });
-}
-
 function login(){
-  const telefono = document.getElementById("loginTelefono").value;
+  const telefono = document.getElementById("loginTelefono").value.trim();
   fetch("/login",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -61,12 +9,14 @@ function login(){
   .then(d=>{
     if(d.error) return alert("Usuario no encontrado");
     
-    // Redirección a tus carpetas de GitHub
+    // GUARDAR Y VERIFICAR
+    localStorage.setItem("sesion", JSON.stringify(d));
+    
+    // Esta alerta nos dirá la verdad:
+    alert("Guardado en sesión: " + JSON.stringify(d));
+    
     if(d.rol === "chofer") location.href = "/chofer/index.html";
     else if(d.rol === "pasajero") location.href = "/pasajero/index.html";
-    else if(d.rol === "admin") location.href = "/admin/login-admin.html";
+    else alert("Rol no reconocido: " + d.rol);
   });
 }
-</script>
-</body>
-</html>
