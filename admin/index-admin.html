@@ -1,14 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Smart Admin - Panel de Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
+  header{ background:#111; padding:15px; border-bottom:2px solid #00c853; display:flex; justify-content:space-between; align-items:center; }
+  .container{ padding:20px; }
+  .card-chofer{ background:#111; border:1px solid #333; border-radius:10px; padding:15px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; }
+  .info h4{ margin:0 0 5px 0; color:#00c853; }
+  .info p{ margin:2px 0; font-size:13px; color:#ccc; }
+  .badge{ padding:3px 8px; border-radius:4px; font-size:11px; font-weight:bold; }
+  .status-active{ background:#00c853; color:#000; }
+  .status-inactive{ background:#ff5252; color:#fff; }
+  
+  .acciones{ display:flex; gap:10px; }
+  button{ padding:8px 12px; border:none; border-radius:5px; font-weight:bold; cursor:pointer; }
+  .btn-activar{ background:#ffb300; color:#000; }
+  .btn-ver{ background:#333; color:#fff; }
+  .btn-salir{ background:transparent; color:#ff5252; border:1px solid #ff5252; }
+</style>
+</head>
+<body>
+
+<header>
+  <h2 style="margin:0; font-size:18px;">Smart Admin 🚀</h2>
+  <button class="btn-salir" onclick="cerrarSesionAdmin()">CERRAR SESIÓN</button>
+</header>
+
+<div class="container">
+  <h3>Gestión de Choferes</h3>
+  <div id="listaChoferes">
+      <p style="color:#666;">Cargando base de datos...</p>
+  </div>
+</div>
+
 <script>
-/* ===== PROTECCIÓN DE SEGURIDAD ADMIN ===== */
+/* ===== SEGURIDAD ===== */
 if(localStorage.getItem("adminAuth") !== "true"){
     location.href = "/admin/login-admin.html";
 }
 
 function cerrarSesionAdmin(){
     localStorage.removeItem("adminAuth");
-    location.href = "/";
+    location.href = "/admin/login-admin.html";
 }
 
-// ... (Resto de tu código de funciones mostrar, cargarTodo, etc.) ...
-// Solo agrega un botón de salir o cambia el de cerrar sesión para que use cerrarSesionAdmin()
+/* ===== LÓGICA DE GESTIÓN ===== */
+
+// Simulamos una base de datos de choferes (En producción vendrá del servidor)
+let choferesBD = JSON.parse(localStorage.getItem("choferesBD") || "[]");
+
+// Si la base está vacía, podemos cargar el chofer actual para probar la vinculación
+if(choferesBD.length === 0) {
+    const sesionActual = JSON.parse(localStorage.getItem("sesion") || "{}");
+    if(sesionActual.telefono) choferesBD.push(sesionActual);
+}
+
+function cargarChoferes(){
+    const lista = document.getElementById("listaChoferes");
+    lista.innerHTML = "";
+
+    if(choferesBD.length === 0){
+        lista.innerHTML = "<p>No hay choferes registrados aún.</p>";
+        return;
+    }
+
+    choferesBD.forEach((chofer, index) => {
+        const ahora = Date.now();
+        const estaActivo = (chofer.activoHasta > ahora) || (chofer.viajesGratis > 0);
+        const statusClass = estaActivo ? "status-active" : "status-inactive";
+        const statusText = estaActivo ? "ACTIVO" : "INACTIVO (Sin pago)";
+
+        const card = document.createElement("div");
+        card.className = "card-chofer";
+        card.innerHTML = `
+            <div class="info">
+                <h4>${chofer.nombre || 'Sin nombre'}</h4>
+                <p>Tel: ${chofer.telefono}</p>
+                <p>Regalo: <b>${chofer.viajesGratis || 0} viajes</b></p>
+                <span class="badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="acciones">
+                <button class="btn-activar" onclick="activar24hs(${index})">ACTIVAR 24HS</button>
+                <button class="btn-ver" onclick="verDocumentos(${index})">DOCS</button>
+            </div>
+        `;
+        lista.appendChild(card);
+    });
+}
+
+function activar24hs(index){
+    const confirmacion = confirm(`¿Confirmas el pago de $10.000 para ${choferesBD[index].nombre}?`);
+    if(confirmacion){
+        const ahora = Date.now();
+        const unDiaMs = 24 * 60 * 60 * 1000;
+        
+        // Sumamos 24hs desde ahora
+        choferesBD[index].activoHasta = ahora + unDiaMs;
+        
+        // Guardamos cambios
+        localStorage.setItem("choferesBD", JSON.stringify(choferesBD));
+        
+        // Sincronización con la sesión del chofer (para la demo local)
+        localStorage.setItem("sesion", JSON.stringify(choferesBD[index]));
+        
+        alert("¡Cuenta activada por 24 horas!");
+        cargarChoferes();
+    }
+}
+
+function verDocumentos(index){
+    const c = choferesBD[index];
+    alert(`Documentación de ${c.nombre}:\n\nVehículo: ${c.autoModelo || 'N/A'}\nPatente: ${c.autoPatente || 'N/A'}\n\nEn la versión final, aquí verás las fotos enviadas.`);
+}
+
+// Iniciar
+cargarChoferes();
 </script>
+</body>
+</html>
