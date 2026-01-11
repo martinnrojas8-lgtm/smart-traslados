@@ -2,98 +2,116 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Smart Traslados – Login</title>
+<title>Smart Traslados - Ingreso</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" href="/file_000000008fd0720eb71af76359ccb359.png">
-<link rel="apple-touch-icon" href="/file_000000008fd0720eb71af76359ccb359.png">
 <meta name="theme-color" content="#00c853">
 
 <style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-  .card{ background:#111; padding:20px; border-radius:12px; width:90%; max-width:320px; box-shadow:0 4px 15px rgba(0,255,0,0.1); text-align:center; }
-  input, select, button{ width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; box-sizing:border-box; }
-  input{ background:#222; color:#fff; }
-  button{ background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
-  .btn-reg{ background:#333; color:#aaa; font-size:12px; margin-top:15px; }
-  .hidden{ display:none; }
+  body { margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; }
+  .logo { width: 120px; margin-bottom: 20px; }
+  .login-card { background:#111; padding:30px; border-radius:15px; border:1px solid #333; width:85%; max-width:350px; text-align:center; }
+  input, select { width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
+  button { width:100%; padding:15px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size:16px; }
+  .footer-link { margin-top:20px; font-size:13px; color:#888; cursor:pointer; text-decoration:underline; }
+  
+  /* Banner de Instalación */
+  #installBanner { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #00c853; color: #000; padding: 15px; text-align: center; font-weight: bold; z-index: 999; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div id="pantallaLogin" class="card">
-  <h2>Iniciar Sesión</h2>
-  <input type="tel" id="loginTelefono" placeholder="Tu número de teléfono">
-  <button onclick="login()">ENTRAR</button>
-  <button class="btn-reg" onclick="verRegistro()">No tengo cuenta, registrarme</button>
-</div>
+<img src="/file_000000008fd0720eb71af76359ccb359.png" class="logo" alt="Logo">
 
-<div id="pantallaRegistro" class="card hidden">
-  <h2>Registro</h2>
-  <input type="tel" id="regTelefono" placeholder="Número de teléfono">
-  <select id="regRol">
+<div class="login-card" id="cardLogin">
+  <h2 style="margin-top:0;">Bienvenido</h2>
+  <p style="font-size:14px; color:#aaa;">Ingresá tu número para comenzar</p>
+  
+  <input type="tel" id="telefono" placeholder="Número de teléfono">
+  <select id="rol">
     <option value="pasajero">Soy Pasajero</option>
     <option value="chofer">Soy Chofer</option>
   </select>
-  <button onclick="registrar()">CREAR CUENTA</button>
-  <button class="btn-reg" onclick="verLogin()">Ya tengo cuenta, volver</button>
+  
+  <button onclick="entrar()">INGRESAR</button>
+  <div class="footer-link" onclick="cambiarModo()">¿No tenés cuenta? Registrate</div>
+</div>
+
+<div id="installBanner" onclick="instalarApp()">
+  🚀 DESCARGAR SMART TRASLADOS APP
 </div>
 
 <script>
-function verRegistro(){
-  document.getElementById("pantallaLogin").classList.add("hidden");
-  document.getElementById("pantallaRegistro").classList.remove("hidden");
+let modoRegistro = false;
+let deferredPrompt;
+
+// 1. REGISTRO DE SERVICE WORKER PARA PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
 }
 
-function verLogin(){
-  document.getElementById("pantallaRegistro").classList.add("hidden");
-  document.getElementById("pantallaLogin").classList.remove("hidden");
-}
+// 2. DETECTAR SI LA APP SE PUEDE INSTALAR
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBanner').style.display = 'block';
+});
 
-function login(){
-  const telefono = document.getElementById("loginTelefono").value.trim();
-  if(!telefono) return alert("Ingresa tu número");
-
-  fetch("/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({telefono})
-  })
-  .then(r => r.json())
-  .then(d => {
-    if(d.error) return alert("Usuario no encontrado. Regístrate primero.");
-    
-    localStorage.setItem("sesion", JSON.stringify(d));
-    
-    if(d.rol === "chofer") {
-        window.location.href = "/chofer/index.html";
-    } else if(d.rol === "pasajero") {
-        window.location.href = "/pasajero/index.html";
+function instalarApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                document.getElementById('installBanner').style.display = 'none';
+            }
+        });
     }
-  })
-  .catch(err => alert("Error de conexión"));
 }
 
-function registrar(){
-  const telefono = document.getElementById("regTelefono").value.trim();
-  const rol = document.getElementById("regRol").value;
-  if(!telefono) return alert("Ingresa un número");
-
-  fetch("/register", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({telefono, rol})
-  })
-  .then(r => r.json())
-  .then(d => {
-    if(d.mensaje === "Ok") {
-        alert("¡Registro exitoso! Ahora inicia sesión.");
-        verLogin();
+// 3. LÓGICA DE LOGIN / REGISTRO
+function cambiarModo() {
+    modoRegistro = !modoRegistro;
+    const btn = document.querySelector("button");
+    const link = document.querySelector(".footer-link");
+    const titulo = document.querySelector("h2");
+    
+    if(modoRegistro) {
+        titulo.innerText = "Crear Cuenta";
+        btn.innerText = "REGISTRARME";
+        link.innerText = "Ya tengo cuenta, ingresar";
     } else {
-        alert("Error al registrar");
+        titulo.innerText = "Bienvenido";
+        btn.innerText = "INGRESAR";
+        link.innerText = "¿No tenés cuenta? Registrate";
     }
-  });
+}
+
+function entrar() {
+    const tel = document.getElementById("telefono").value.trim();
+    const rol = document.getElementById("rol").value;
+    const ruta = modoRegistro ? "/register" : "/login";
+
+    if(!tel) return alert("Ingresá tu teléfono");
+
+    fetch(ruta, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ telefono: tel, rol: rol })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.error) {
+            alert(data.error);
+        } else {
+            // Guardamos los datos recibidos del servidor en la sesión local
+            localStorage.setItem("sesion", JSON.stringify(data));
+            
+            // Redirección según rol
+            if(data.rol === "pasajero") window.location.href = "/pasajero/index.html";
+            if(data.rol === "chofer") window.location.href = "/chofer/index.html";
+        }
+    })
+    .catch(err => alert("Error de conexión"));
 }
 </script>
 
