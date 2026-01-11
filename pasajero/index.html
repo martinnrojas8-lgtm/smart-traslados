@@ -9,14 +9,15 @@
 
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
-  header{ background:#111; padding:15px; text-align:center; border-bottom:2px solid #00c853; }
+  header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
   .screen{ padding:15px; }
   .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
   input{ width:100%; padding:12px; margin:5px 0; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
-  .btn-stop{ background:#333; color:#fff; font-size:12px; width:auto; padding:8px 15px; margin-top:5px; }
   .price-box{ font-size:24px; color:#00c853; font-weight:bold; text-align:center; margin:15px 0; border: 1px dashed #00c853; padding: 10px; border-radius: 8px; }
   #map{ width:100%; height:250px; border-radius:10px; margin-bottom:10px; }
+  .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; cursor:pointer; background:#333; display:flex; align-items:center; justify-content:center; }
+  .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
   .stop-item{ display:flex; gap:5px; align-items:center; margin-top:5px; }
   .btn-del{ background:#ff5252; width:45px; flex-shrink:0; }
 </style>
@@ -24,142 +25,97 @@
 <body>
 
 <header>
-  <h2 style="margin:0; font-size:18px;">Smart Traslados</h2>
-  <div id="userInfo" style="font-size:12px; color:#aaa;">Cargando...</div>
+  <div style="width:40px"></div> <h2 style="margin:0; font-size:18px;">Smart Traslados</h2>
+  <div class="btn-perfil" onclick="location.href='perfil.html'">
+      <img id="fotoHeader" src="" style="display:none;">
+      <span id="iconoUser">👤</span>
+  </div>
 </header>
 
 <div class="screen">
   <div class="card">
     <div id="map"></div>
-    
-    <label>Origen:</label>
     <input type="text" id="origen" placeholder="Cargando ubicación...">
-    
-    <label>Destino:</label>
     <input type="text" id="destino" placeholder="¿A dónde vas?">
-    
     <div id="contenedorParadas"></div>
-    <button class="btn-stop" onclick="agregarParada()">+ Agregar Parada</button>
-
+    <button style="background:#333; color:#fff; font-size:12px;" onclick="agregarParada()">+ Agregar Parada</button>
     <div class="price-box" id="cuadroPrecio">Total: $0</div>
-    <div id="infoRuta" style="font-size:12px; text-align:center; color:#888;">0 km | 0 min</div>
-    
     <button id="btnPedir" onclick="pedirViaje()">SOLICITAR AHORA</button>
-    <button style="background:#444; color:#fff;" onclick="location.reload()">REINICIAR</button>
   </div>
 </div>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCeXV1ZmTBpGBIE6MwG8HvIAXziKUPK1d8&libraries=places"></script>
-
 <script>
-/* 1. CHEQUEO DE SEGURIDAD Y PERFIL */
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-if (!sesion.telefono) {
-    window.location.href = "/"; // Si no hay sesión, al login
-} else if (!sesion.nombre) {
-    window.location.href = "/pasajero/perfil.html"; // Si no tiene nombre, a completar perfil
-}
+// BLOQUEO DE SEGURIDAD
+if (!sesion.telefono) { location.href = "/"; } 
+else if (!sesion.nombre) { location.href = "/pasajero/perfil.html"; }
 
-/* 2. VARIABLES GLOBALES */
 let map, directionsService, directionsRenderer;
-let valorKM = 300; 
-let valorBase = 500;
+let valorKM = 300; let valorBase = 500;
 
-/* 3. INICIO DE LA APP */
 function initApp() {
-    document.getElementById("userInfo").innerText = "Pasajero: " + (sesion.nombre || sesion.telefono);
+    // Mostrar foto en el header si existe
+    if(sesion.foto) {
+        document.getElementById("fotoHeader").src = sesion.foto;
+        document.getElementById("fotoHeader").style.display = "block";
+        document.getElementById("iconoUser").style.display = "none";
+    }
 
-    const center = { lat: -34.6037, lng: -58.3816 };
     map = new google.maps.Map(document.getElementById("map"), {
-        center: center,
+        center: { lat: -34.6037, lng: -58.3816 },
         zoom: 15,
-        disableDefaultUI: true,
-        styles: [{backgroundColor: "#222"}]
+        disableDefaultUI: true
     });
-
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
 
-    const setupAutocomplete = (id) => {
-        const input = document.getElementById(id);
-        const auto = new google.maps.places.Autocomplete(input);
+    const setupAuto = (id) => {
+        const auto = new google.maps.places.Autocomplete(document.getElementById(id));
         auto.addListener("place_changed", calcularRuta);
     };
-
-    setupAutocomplete("origen");
-    setupAutocomplete("destino");
+    setupAuto("origen"); setupAuto("destino");
 
     if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(p => {
             const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
             map.setCenter(pos);
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({location: pos}, (results, status) => {
-                if(status === "OK" && results[0]) document.getElementById("origen").value = results[0].formatted_address;
+            new google.maps.Geocoder().geocode({location: pos}, (res, stat) => {
+                if(stat === "OK") document.getElementById("origen").value = res[0].formatted_address;
             });
         });
     }
 }
 
-/* 4. FUNCIONES DE LÓGICA */
 function agregarParada() {
     const id = "parada-" + Date.now();
     const div = document.createElement("div");
     div.className = "stop-item";
     div.id = id;
-    div.innerHTML = `
-        <input type="text" placeholder="Dirección de parada" class="input-parada">
-        <button class="btn-del" onclick="eliminarParada('${id}')">X</button>
-    `;
+    div.innerHTML = `<input type="text" placeholder="Parada" class="input-parada"><button class="btn-del" onclick="document.getElementById('${id}').remove(); calcularRuta();">X</button>`;
     document.getElementById("contenedorParadas").appendChild(div);
-    
-    const input = div.querySelector("input");
-    const auto = new google.maps.places.Autocomplete(input);
-    auto.addListener("place_changed", calcularRuta);
-}
-
-function eliminarParada(id) {
-    document.getElementById(id).remove();
-    calcularRuta();
+    new google.maps.places.Autocomplete(div.querySelector("input")).addListener("place_changed", calcularRuta);
 }
 
 function calcularRuta() {
     const origen = document.getElementById("origen").value;
     const destino = document.getElementById("destino").value;
     if(!origen || !destino) return;
-
     const waypoints = [];
-    document.querySelectorAll(".input-parada").forEach(inp => {
-        if(inp.value) waypoints.push({ location: inp.value, stopover: true });
-    });
+    document.querySelectorAll(".input-parada").forEach(inp => { if(inp.value) waypoints.push({location: inp.value, stopover: true}); });
 
-    directionsService.route({
-        origin: origen,
-        destination: destino,
-        waypoints: waypoints,
-        travelMode: google.maps.TravelMode.DRIVING
-    }, (response, status) => {
-        if (status === "OK") {
-            directionsRenderer.setDirections(response);
-            let totalDistancia = 0;
-            response.routes[0].legs.forEach(leg => { totalDistancia += leg.distance.value; });
-
-            const km = totalDistancia / 1000;
-            const precioFinal = valorBase + (km * valorKM);
-
-            document.getElementById("cuadroPrecio").innerText = "Total: $" + precioFinal.toFixed(2);
-            document.getElementById("infoRuta").innerText = km.toFixed(1) + " km | " + response.routes[0].legs[0].duration.text;
+    directionsService.route({ origin: origen, destination: destino, waypoints: waypoints, travelMode: 'DRIVING' }, (res, stat) => {
+        if (stat === "OK") {
+            directionsRenderer.setDirections(res);
+            let dist = 0; res.routes[0].legs.forEach(l => dist += l.distance.value);
+            const precio = valorBase + ((dist/1000) * valorKM);
+            document.getElementById("cuadroPrecio").innerText = "Total: $" + precio.toFixed(2);
         }
     });
 }
 
-function pedirViaje() {
-    alert("Enviando solicitud al chofer...");
-    // Próximo paso: conectar con server.js
-}
-
-// Arrancar
+function pedirViaje() { alert("Buscando choferes cercanos..."); }
 initApp();
 </script>
 </body>
