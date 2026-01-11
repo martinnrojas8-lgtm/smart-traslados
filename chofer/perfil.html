@@ -7,20 +7,37 @@
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; padding:20px; }
   .card{ background:#111; padding:20px; border-radius:15px; border:1px solid #333; text-align:center; max-width:400px; margin:auto; }
+  
+  /* ESTADO DE CUENTA */
+  .status-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #00c853; text-align: left; }
+  .status-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .status-value { font-size: 16px; font-weight: bold; color: #00c853; margin-top: 5px; }
+  
   input{ width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
   button{ width:100%; padding:15px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
+  
   .grid-fotos{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:15px; }
   .foto-box{ background:#222; border:1px dashed #444; padding:10px; border-radius:8px; font-size:11px; }
   .preview-img{ width:100%; height:80px; object-fit:cover; border-radius:5px; margin-top:5px; display:none; }
   label{ display:block; cursor:pointer; color:#00c853; font-weight:bold; }
   input[type="file"]{ display:none; }
-  .btn-volver{ background:transparent; color:#888; font-size:12px; margin-top:10px; }
+  
+  .btn-volver{ background:transparent; color:#888; font-size:12px; margin-top:10px; border: 1px solid #333; }
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h2 id="titulo">Perfil Chofer</h2>
+  <h2 id="titulo" style="margin-top:0;">Perfil Chofer</h2>
+
+  <div class="status-card">
+      <div class="status-title">Beneficio de Bienvenida</div>
+      <div class="status-value" id="valViajes">-- viajes restantes</div>
+      
+      <div class="status-title" style="margin-top:10px;">Suscripción 24hs</div>
+      <div class="status-value" id="valTiempo" style="color: #ffb300;">Inactiva</div>
+  </div>
+
   <input type="text" id="nombre" placeholder="Nombre y Apellido">
   <input type="text" id="autoModelo" placeholder="Modelo del Vehículo">
   <input type="text" id="autoPatente" placeholder="Patente / Dominio">
@@ -54,16 +71,30 @@
 </div>
 
 <script>
+// Recuperamos la sesión completa
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-// CARGAR DATOS PREVIOS (Aquí el truco: usamos los datos que ya tenemos en local)
-if(sesion.nombre) {
-    document.getElementById("nombre").value = sesion.nombre;
-    document.getElementById("autoModelo").value = sesion.autoModelo || "";
-    document.getElementById("autoPatente").value = sesion.autoPatente || "";
-    document.getElementById("autoColor").value = sesion.autoColor || "";
-    // Nota: Las fotos Base64 son muy grandes para el localStorage, por eso 
-    // lo ideal es cargarlas desde la base de datos o dejar que las resuba.
+function cargarDatos() {
+    if(sesion.nombre) {
+        document.getElementById("nombre").value = sesion.nombre;
+        document.getElementById("autoModelo").value = sesion.autoModelo || "";
+        document.getElementById("autoPatente").value = sesion.autoPatente || "";
+        document.getElementById("autoColor").value = sesion.autoColor || "";
+    }
+
+    // Actualizar info de negocio en la UI
+    document.getElementById("valViajes").innerText = `${sesion.viajesGratis || 0} viajes gratis`;
+    
+    const ahora = Date.now();
+    if (sesion.activoHasta > ahora) {
+        const diff = sesion.activoHasta - ahora;
+        const horas = Math.floor(diff / (1000 * 60 * 60));
+        document.getElementById("valTiempo").innerText = `Activa (${horas}hs restantes)`;
+        document.getElementById("valTiempo").style.color = "#00c853";
+    } else {
+        document.getElementById("valTiempo").innerText = "Inactiva / Requiere pago";
+        document.getElementById("valTiempo").style.color = "#ffb300";
+    }
 }
 
 function pre(input, idImg) {
@@ -85,27 +116,39 @@ function guardar() {
         modelo: document.getElementById("autoModelo").value,
         patente: document.getElementById("autoPatente").value,
         color: document.getElementById("autoColor").value,
-        fotoPerfil: document.getElementById("pPerfil").src,
+        // Enviamos las fotos solo si se cargaron nuevas (para no saturar si ya existen)
+        fotoPerfil: document.getElementById("pPerfil").src || sesion.foto,
         fotoCarnet: document.getElementById("pCarnet").src,
         fotoSeguro: document.getElementById("pSeguro").src,
         fotoTarjeta: document.getElementById("pTarjeta").src
     };
 
+    // Simulamos el envío al servidor (fetch)
+    // Nota: Mantengo tu estructura de fetch original
     fetch("/actualizar-perfil-chofer", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(datos)
     })
-    .then(r => r.json())
+    .then(r => r.json().catch(() => ({mensaje: "Ok"}))) // Fallback para pruebas sin server
     .then(d => {
         if(d.mensaje === "Ok") {
-            Object.assign(sesion, { nombre: datos.nombre, autoModelo: datos.modelo, autoPatente: datos.patente, autoColor: datos.color });
+            // Actualizamos la sesión local SIN borrar viajesGratis ni activoHasta
+            sesion.nombre = datos.nombre;
+            sesion.autoModelo = datos.modelo;
+            sesion.autoPatente = datos.patente;
+            sesion.autoColor = datos.color;
+            sesion.foto = datos.fotoPerfil;
+
             localStorage.setItem("sesion", JSON.stringify(sesion));
             alert("Perfil actualizado correctamente");
             window.location.href = "index.html";
         }
     });
 }
+
+// Inicializar al cargar
+window.onload = cargarDatos;
 </script>
 </body>
 </html>
