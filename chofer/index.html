@@ -53,13 +53,22 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
 
 <script>
-let map, directionsRenderer, directionsService, userMarker;
+/* 1. CHEQUEO DE SEGURIDAD Y PERFIL */
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-if(!sesion || sesion.rol !== "chofer") { location.href = "/"; }
-document.getElementById("userInfo").innerText = "Chofer: " + sesion.telefono;
+if (!sesion.telefono) {
+    window.location.href = "/"; // Si no hay sesión, al login
+} else if (!sesion.nombre) {
+    window.location.href = "/chofer/perfil.html"; // Si no tiene perfil, a completar perfil
+}
 
+/* 2. VARIABLES GLOBALES */
+let map, directionsRenderer, directionsService, userMarker;
+
+/* 3. INICIO DEL MAPA */
 function initMap() {
+    document.getElementById("userInfo").innerText = "Chofer: " + (sesion.nombre || sesion.telefono);
+    
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer({
         polylineOptions: { strokeColor: "#00c853", strokeWeight: 5 }
@@ -88,12 +97,15 @@ function initMap() {
                 icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
             });
             
-            // Simular búsqueda de viajes (esto luego vendrá de la base de datos)
             console.log("Sistema de escucha activado...");
         }, () => {
-            alert("Por favor activa el GPS.");
+            alert("Por favor activa el GPS para poder trabajar.");
         });
     }
+}
+
+function aceptarViaje() {
+    alert("Viaje aceptado. Iniciando navegación...");
 }
 
 function cerrarSesion() {
@@ -101,6 +113,7 @@ function cerrarSesion() {
     location.href = "/";
 }
 
+// Arrancar al cargar la ventana
 window.onload = initMap;
 </script>
 </body>
