@@ -5,8 +5,6 @@
 <title>Smart Traslados – Pasajero</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" href="/file_000000008fd0720eb71af76359ccb359.png">
-
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
   header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
@@ -15,7 +13,7 @@
   input{ width:100%; padding:12px; margin:5px 0; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
   .price-box{ font-size:24px; color:#00c853; font-weight:bold; text-align:center; margin:15px 0; border: 1px dashed #00c853; padding: 10px; border-radius: 8px; }
-  #map{ width:100%; height:250px; border-radius:10px; margin-bottom:10px; }
+  #map{ width:100%; height:300px; border-radius:10px; margin-bottom:10px; }
   .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; cursor:pointer; background:#333; display:flex; align-items:center; justify-content:center; }
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
   .stop-item{ display:flex; gap:5px; align-items:center; margin-top:5px; }
@@ -48,15 +46,14 @@
 <script>
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-// BLOQUEO DE SEGURIDAD
 if (!sesion.telefono) { location.href = "/"; } 
 else if (!sesion.nombre) { location.href = "/pasajero/perfil.html"; }
 
 let map, directionsService, directionsRenderer;
+let marcadoresChoferes = {}; // Guardamos los autitos aquí
 let valorKM = 300; let valorBase = 500;
 
 function initApp() {
-    // Mostrar foto en el header si existe
     if(sesion.foto) {
         document.getElementById("fotoHeader").src = sesion.foto;
         document.getElementById("fotoHeader").style.display = "block";
@@ -66,8 +63,10 @@ function initApp() {
     map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: -34.6037, lng: -58.3816 },
         zoom: 15,
-        disableDefaultUI: true
+        disableDefaultUI: true,
+        styles: [ { "featureType": "all", "elementType": "labels.text.fill", "stylers": [{"color": "#ffffff"}] } ] // Un toque de estilo oscuro
     });
+
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
 
@@ -86,6 +85,57 @@ function initApp() {
             });
         });
     }
+
+    // EMPEZAR A BUSCAR CHOFERES CADA 5 SEGUNDOS
+    setInterval(obtenerChoferesCercanos, 5000);
+    obtenerChoferesCercanos();
+}
+
+function obtenerChoferesCercanos() {
+    // Llamada a tu servidor MongoDB
+    fetch("/obtener-choferes-activos")
+    .then(r => r.json())
+    .then(choferes => {
+        actualizarMapaChoferes(choferes);
+    })
+    .catch(e => console.log("Error buscando choferes"));
+}
+
+function actualizarMapaChoferes(choferes) {
+    // 1. Quitar choferes que ya no están activos
+    const idsRecibidos = choferes.map(c => c.telefono);
+    for (let id in marcadoresChoferes) {
+        if (!idsRecibidos.includes(id)) {
+            marcadoresChoferes[id].setMap(null);
+            delete marcadoresChoferes[id];
+        }
+    }
+
+    // 2. Agregar o mover choferes
+    choferes.forEach(chofer => {
+        const pos = { lat: chofer.lat, lng: chofer.lng };
+        
+        if (marcadoresChoferes[chofer.telefono]) {
+            // Si ya existe, solo movemos el autito
+            marcadoresChoferes[chofer.telefono].setPosition(pos);
+        } else {
+            // Si es nuevo, creamos el marcador de autito
+            marcadoresChoferes[chofer.telefono] = new google.maps.Marker({
+                position: pos,
+                map: map,
+                title: chofer.nombre,
+                icon: {
+                    path: "M23.5,17h-11c-1.1,0-2-0.9-2-2V9c0-1.1,0.9-2,2-2h11c1.1,0,2,0.9,2,2v6C25.5,16.1,24.6,17,23.5,17z M12.5,8c-0.3,0-0.5,0.2-0.5,0.5v6c0,0.3,0.2,0.5,0.5,0.5h11c0.3,0,0.5-0.2,0.5-0.5v-6c0-0.3-0.2-0.5-0.5-0.5H12.5z", // Un SVG simple de auto
+                    fillColor: "#00c853",
+                    fillOpacity: 1,
+                    strokeWeight: 1,
+                    strokeColor: "#000",
+                    scale: 1.5,
+                    anchor: new google.maps.Point(15, 15)
+                }
+            });
+        }
+    });
 }
 
 function agregarParada() {
@@ -115,8 +165,13 @@ function calcularRuta() {
     });
 }
 
-function pedirViaje() { alert("Buscando choferes cercanos..."); }
-initApp();
+function pedirViaje() { 
+    const precio = document.getElementById("cuadroPrecio").innerText;
+    alert("Solicitando viaje por " + precio + ". Buscando choferes disponibles..."); 
+    // Aquí iría la lógica para enviar el pedido al servidor
+}
+
+window.onload = initApp;
 </script>
 </body>
 </html>
