@@ -2,143 +2,328 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Control Smart - Saladillo</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<link rel="apple-touch-icon" href="/IMG_20260103_204207.png">
-<link rel="icon" href="/IMG_20260103_204207.png">
-<link rel="manifest" href="/manifest-admin.json">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Traslados – Panel Propietario</title>
 
 <style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
-  header{ background:#111; padding:15px; border-bottom:2px solid #00c853; display:flex; justify-content:space-between; align-items:center; }
-  .container{ padding:15px; }
-  .grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-  @media(max-width:768px){ .grid{ grid-template-columns: 1fr; } }
-  
-  .card-admin{ background:#111; border:1px solid #333; border-radius:12px; padding:15px; margin-bottom:15px; }
-  .chofer-row{ display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #222; }
-  .chofer-row:last-child{ border:0; }
-  
-  h3{ color:#00c853; margin-top:0; font-size:14px; text-transform:uppercase; letter-spacing:1px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-  .nombre{ font-weight:bold; color:#fff; display:block; }
-  .tel{ font-size:12px; color:#888; }
-  
-  .badge{ padding:4px 8px; border-radius:5px; font-size:10px; font-weight:bold; }
-  .status-disponible{ background:rgba(0,200,83,0.2); color:#00c853; }
-  .status-ocupado{ background:rgba(255,82,82,0.2); color:#ff5252; }
-  
-  button{ padding:10px 14px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px; }
-  .btn-salir{ background:transparent; color:#ff5252; border:1px solid #ff5252; }
-  .btn-activar{ background:#ffb300; color:#000; }
-  
-  .monitor-viajes{ background:#111; border:1px solid #00c853; border-radius:12px; padding:15px; }
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#000;
+    color:#fff;
+}
+header{
+    background:#111;
+    padding:15px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+}
+.menu{
+    display:flex;
+    flex-wrap:wrap;
+    background:#1a1a1a;
+}
+.menu button{
+    flex:1;
+    padding:15px;
+    border:none;
+    background:#1a1a1a;
+    color:#fff;
+    cursor:pointer;
+    font-size:14px;
+}
+.menu button:hover{
+    background:#333;
+}
+.pantalla{
+    display:none;
+    padding:20px;
+}
+.activa{
+    display:block;
+}
+.card{
+    background:#111;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+}
+input, select{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    margin-bottom:12px;
+    border-radius:6px;
+    border:none;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th, td{
+    padding:10px;
+    border-bottom:1px solid #333;
+    text-align:left;
+    font-size:14px;
+}
+.estado-ok{ color:#4caf50; }
+.estado-off{ color:#f44336; }
+.btn{
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+.btn-ok{ background:#4caf50; }
+.btn-del{ background:#f44336; }
 </style>
 </head>
+
 <body>
 
-<header>
-  <div style="display:flex; align-items:center; gap:10px;">
-    <img src="/IMG_20260103_204207.png" width="35" style="border-radius:5px;">
-    <h2 style="margin:0; font-size:16px;">Control Smart</h2>
-  </div>
-  <button class="btn-salir" onclick="cerrarSesion()">SALIR</button>
-</header>
+<header>📊 Smart Traslados – Panel General</header>
 
-<div class="container">
-    <div class="grid">
-        <div class="card-admin">
-            <h3>Choferes en Saladillo</h3>
-            <div id="listaEnVivo">
-                <p style="color:#444;">Buscando señal...</p>
-            </div>
-        </div>
+<div class="menu">
+    <button onclick="mostrar('inicio')">Inicio</button>
+    <button onclick="mostrar('conductores')">Conductores</button>
+    <button onclick="mostrar('pasajeros')">Pasajeros</button>
+    <button onclick="mostrar('viajes')">Viajes</button>
+    <button onclick="mostrar('pagos')">Historial Cobros</button>
+    <button onclick="mostrar('tarifas')">Tarifas</button>
+    <button onclick="mostrar('mensajes')">Mensajes</button>
+    <button onclick="mostrar('config')">Configuración</button>
+</div>
 
-        <div class="monitor-viajes">
-            <h3>Pedidos Activos</h3>
-            <div id="listaPedidos">
-                <p style="color:#444;">Sin pedidos ahora.</p>
-            </div>
-        </div>
+<!-- INICIO -->
+<div id="inicio" class="pantalla activa">
+    <div class="card">
+        <h3>Resumen general</h3>
+        <p>Conductores activos: <b id="cActivos">0</b></p>
+        <p>Pasajeros registrados: <b id="pTotal">0</b></p>
+        <p>Viajes del día: <b id="vHoy">0</b></p>
+        <p>Ganancia estimada hoy: <b>$ <span id="gHoy">0</span></b></p>
+        <p>Monto fijo recaudado hoy: <b>$ <span id="montoHoy">0</span></b></p>
     </div>
+</div>
 
-    <div class="card-admin" style="margin-top:15px;">
-        <h3>Administración de Choferes</h3>
-        <div id="gestionCuentas">
-            </div>
+<!-- CONDUCTORES -->
+<div id="conductores" class="pantalla">
+    <div class="card">
+        <h3>Conductores</h3>
+        <table id="tablaConductores">
+            <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- PASAJEROS -->
+<div id="pasajeros" class="pantalla">
+    <div class="card">
+        <h3>Pasajeros</h3>
+        <table id="tablaPasajeros">
+            <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Viajes</th>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- VIAJES -->
+<div id="viajes" class="pantalla">
+    <div class="card">
+        <h3>Historial de viajes</h3>
+        <table id="tablaViajes">
+            <tr>
+                <th>Fecha</th>
+                <th>Chofer</th>
+                <th>Pasajero</th>
+                <th>Monto</th>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- PAGOS / HISTORIAL -->
+<div id="pagos" class="pantalla">
+    <div class="card">
+        <h3>Historial de cobros por choferes</h3>
+        <label>Filtrar por chofer:</label>
+        <select id="filtroChofer" onchange="cargarPagos()">
+            <option value="">Todos</option>
+        </select>
+        <label>Filtrar por fecha:</label>
+        <input type="date" id="filtroFecha" onchange="cargarPagos()">
+        <table id="tablaPagos">
+            <tr>
+                <th>Chofer</th>
+                <th>Monto total</th>
+                <th>Saldo bancario recibido</th>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- TARIFAS -->
+<div id="tarifas" class="pantalla">
+    <div class="card">
+        <h3>Tarifas</h3>
+        <label>Precio base por viaje</label>
+        <input type="number" id="precioBase" value="500">
+        <label>Precio por km</label>
+        <input type="number" id="precioKm" value="150">
+        <label>Monto fijo para conectarse</label>
+        <input type="number" id="montoFijo" value="10000">
+        <button class="btn btn-ok" onclick="guardarTarifas()">Guardar cambios</button>
+    </div>
+</div>
+
+<!-- MENSAJES -->
+<div id="mensajes" class="pantalla">
+    <div class="card">
+        <h3>Enviar mensaje</h3>
+        <select>
+            <option>Todos los conductores</option>
+            <option>Todos los pasajeros</option>
+        </select>
+        <input type="text" placeholder="Escribí el mensaje">
+        <button class="btn btn-ok">Enviar</button>
+    </div>
+</div>
+
+<!-- CONFIG -->
+<div id="config" class="pantalla">
+    <div class="card">
+        <h3>Configuración general</h3>
+        <label>Nombre de la app</label>
+        <input value="Smart Traslados">
+        <label>Teléfono soporte</label>
+        <input value="+54 9">
+        <label>Email soporte</label>
+        <input value="soporte@smart.com">
+        <label>Cuenta bancaria para recibir pagos (token/ID)</label>
+        <input id="cuentaBancaria" placeholder="Ingresá tu token o ID">
+        <button class="btn btn-ok" onclick="guardarCuentaBancaria()">Guardar cuenta bancaria</button>
+        <button class="btn btn-ok" onclick="mostrarCuenta()">Ver cuenta bancaria vinculada</button>
     </div>
 </div>
 
 <script>
-function cerrarSesion(){
-    localStorage.removeItem("adminAuth");
-    location.href = "/";
+function mostrar(id){
+    document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
+    document.getElementById(id).classList.add('activa');
 }
 
-function actualizarTodo() {
-    // 1. Obtener Choferes en línea
-    fetch("/obtener-choferes-activos")
-    .then(r => r.json())
-    .then(choferes => {
-        const divVivo = document.getElementById("listaEnVivo");
-        const divGestion = document.getElementById("gestionCuentas");
-        divVivo.innerHTML = "";
-        divGestion.innerHTML = "";
+let conductores = JSON.parse(localStorage.getItem('conductores')) || [];
+let pasajeros = JSON.parse(localStorage.getItem('pasajeros')) || [];
+let viajes = JSON.parse(localStorage.getItem('viajes')) || [];
+let tarifas = JSON.parse(localStorage.getItem('tarifas')) || {precioBase:500, precioKm:150, montoFijo:10000};
+let pagosBancarios = JSON.parse(localStorage.getItem('pagosBancarios')) || {};
+let cuentaBancaria = localStorage.getItem('cuentaBancaria') || '';
 
-        if(choferes.length === 0) {
-            divVivo.innerHTML = "<p style='color:#444;'>No hay choferes conectados.</p>";
-        }
+document.getElementById('precioBase').value = tarifas.precioBase;
+document.getElementById('precioKm').value = tarifas.precioKm;
+document.getElementById('montoFijo').value = tarifas.montoFijo;
+document.getElementById('cuentaBancaria').value = cuentaBancaria;
 
-        choferes.forEach(c => {
-            // Fila para el Monitor
-            const row = document.createElement("div");
-            row.className = "chofer-row";
-            row.innerHTML = `
-                <div><span class="nombre">${c.telefono}</span></div>
-                <span class="badge status-${c.estado}">${c.estado.toUpperCase()}</span>
-            `;
-            divVivo.appendChild(row);
+function guardarTarifas(){
+    tarifas.precioBase = parseInt(document.getElementById('precioBase').value) || 500;
+    tarifas.precioKm = parseInt(document.getElementById('precioKm').value) || 150;
+    tarifas.montoFijo = parseInt(document.getElementById('montoFijo').value) || 10000;
+    localStorage.setItem('tarifas', JSON.stringify(tarifas));
+    alert('Tarifas guardadas correctamente');
+}
 
-            // Fila para la Gestión
-            const cardG = document.createElement("div");
-            cardG.className = "chofer-row";
-            cardG.innerHTML = `
-                <div><span class="nombre">${c.telefono}</span><span class="tel">Saldo: ${c.viajesGratis || 0} viajes</span></div>
-                <button class="btn-activar" onclick="activarManual('${c.telefono}')">ACTIVAR 24HS</button>
-            `;
-            divGestion.appendChild(cardG);
-        });
-    });
+function guardarCuentaBancaria(){
+    cuentaBancaria = document.getElementById('cuentaBancaria').value.trim();
+    localStorage.setItem('cuentaBancaria', cuentaBancaria);
+    alert('Cuenta bancaria vinculada correctamente');
+}
 
-    // 2. Obtener pedidos
-    fetch("/verificar-pedidos")
-    .then(r => r.json())
-    .then(v => {
-        const divP = document.getElementById("listaPedidos");
-        if(v && v.activo) {
-            divP.innerHTML = `
-                <div style="background:#222; padding:12px; border-radius:10px; border-left:4px solid #00c853;">
-                    <p style="margin:0; font-size:13px;"><b>DE:</b> ${v.origen}</p>
-                    <p style="margin:5px 0; font-size:13px;"><b>A:</b> ${v.destino}</p>
-                    <p style="margin:0; color:#00c853; font-weight:bold;">PRECIO: ${v.precio}</p>
-                </div>`;
-        } else {
-            divP.innerHTML = "<p style='color:#444;'>Sin actividad.</p>";
-        }
+function mostrarCuenta(){
+    alert('Cuenta bancaria vinculada: ' + (cuentaBancaria || 'No hay cuenta vinculada'));
+}
+
+function cargarConductores(){
+    let tabla = document.getElementById('tablaConductores');
+    tabla.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Acción</th></tr>`;
+    let filtroChofer = document.getElementById('filtroChofer');
+    filtroChofer.innerHTML = `<option value="">Todos</option>`;
+    conductores.forEach(c=>{
+        tabla.innerHTML += `
+        <tr>
+            <td>${c.nombre}</td>
+            <td>${c.telefono}</td>
+            <td class="${c.activo?'estado-ok':'estado-off'}">${c.activo?'Activo':'Bloqueado'}</td>
+            <td><button class="btn btn-del" onclick="toggle('${c.telefono}')">Cambiar</button></td>
+        </tr>`;
+        filtroChofer.innerHTML += `<option value="${c.nombre}">${c.nombre}</option>`;
     });
 }
 
-function activarManual(tel) {
-    if(confirm("¿Confirmas activación de 24hs para " + tel + "?")) {
-        alert("Activación enviada.");
-    }
+function toggle(tel){
+    conductores = conductores.map(c=>{
+        if(c.telefono===tel) c.activo=!c.activo;
+        return c;
+    });
+    localStorage.setItem('conductores',JSON.stringify(conductores));
+    cargarConductores();
 }
 
-setInterval(actualizarTodo, 5000);
-actualizarTodo();
+function registrarPagoBancario(telefonoChofer, monto){
+    pagosBancarios[telefonoChofer] = (pagosBancarios[telefonoChofer] || 0) + monto;
+    localStorage.setItem('pagosBancarios', JSON.stringify(pagosBancarios));
+    conductores = conductores.map(c=>{
+        if(c.telefono===telefonoChofer) c.activo = true;
+        return c;
+    });
+    localStorage.setItem('conductores', JSON.stringify(conductores));
+    cargarTodo();
+}
+
+function cargarPagos(){
+    let tabla = document.getElementById('tablaPagos');
+    let filtroChofer = document.getElementById('filtroChofer').value;
+    let filtroFecha = document.getElementById('filtroFecha').value;
+    tabla.innerHTML = `<tr><th>Chofer</th><th>Monto total</th><th>Saldo bancario recibido</th></tr>`;
+    
+    let choferesFiltrados = filtroChofer ? conductores.filter(c=>c.nombre===filtroChofer) : conductores;
+
+    choferesFiltrados.forEach(c=>{
+        let totalViajes = viajes
+            .filter(v=>v.chofer===c.nombre)
+            .filter(v=>!filtroFecha || v.fecha.startsWith(filtroFecha))
+            .reduce((a,v)=>a+v.monto,0);
+        let saldoBanco = pagosBancarios[c.telefono] || 0;
+        tabla.innerHTML += `<tr><td>${c.nombre}</td><td>$${totalViajes}</td><td>$${saldoBanco}</td></tr>`;
+    });
+}
+
+function cargarTodo(){
+    document.getElementById('cActivos').innerText = conductores.filter(c=>c.activo).length;
+    document.getElementById('pTotal').innerText = pasajeros.length;
+    document.getElementById('vHoy').innerText = viajes.length;
+    document.getElementById('gHoy').innerText = viajes.reduce((a,v)=>a+v.monto*0.15,0);
+
+    let hoy = new Date().toISOString().slice(0,10);
+    let totalMontoHoy = viajes
+        .filter(v=>v.fecha.startsWith(hoy))
+        .reduce((a,v)=>a+tarifas.montoFijo,0);
+    document.getElementById('montoHoy').innerText = totalMontoHoy;
+
+    cargarConductores();
+    cargarPagos();
+}
+
+cargarTodo();
 </script>
+
 </body>
 </html>
