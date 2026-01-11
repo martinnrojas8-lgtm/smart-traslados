@@ -1,0 +1,15 @@
+{
+  "name": "Smart Traslados",
+  "short_name": "Smart",
+  "start_url": "/login.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00c853",
+  "icons": [
+    {
+      "src": "/file_000000008fd0720eb71af76359ccb359.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
