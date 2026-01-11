@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Completar Perfil - Smart Traslados</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+  .card{ background:#111; padding:25px; border-radius:15px; width:85%; max-width:350px; text-align:center; border:1px solid #333; }
+  input{ width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
+  button{ width:100%; padding:12px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
+  .foto-preview{ width:120px; height:120px; border-radius:50%; background:#333; margin: 0 auto 15px; overflow:hidden; border:2px solid #00c853; display:flex; align-items:center; justify-content:center; }
+  #imgPreview{ width:100%; height:100%; object-fit:cover; }
+  input[type="file"]{ display:none; }
+  .label-file{ background:#333; padding:8px; border-radius:5px; font-size:12px; cursor:pointer; display:inline-block; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Tu Perfil</h2>
+  <p style="font-size:14px; color:#aaa;">Casi listo, necesitamos tu nombre y una foto para continuar.</p>
+  
+  <div class="foto-preview">
+    <img id="imgPreview" src="" alt="">
+    <span id="placeholderTxt">Sin foto</span>
+  </div>
+  
+  <label class="label-file" for="fotoInput">ELEGIR FOTO</label>
+  <input type="file" id="fotoInput" accept="image/*" onchange="previewImage(event)">
+
+  <input type="text" id="nombreInput" placeholder="Nombre y Apellido">
+  
+  <button onclick="guardarPerfil()">GUARDAR Y CONTINUAR</button>
+</div>
+
+<script>
+const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+        const img = document.getElementById('imgPreview');
+        img.src = reader.result;
+        document.getElementById('placeholderTxt').style.display = 'none';
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+function guardarPerfil() {
+    const nombre = document.getElementById("nombreInput").value.trim();
+    const foto = document.getElementById("imgPreview").src;
+
+    if(!nombre) return alert("El nombre es obligatorio");
+    if(!foto || foto.includes("window.location")) return alert("La foto es obligatoria");
+
+    // Enviamos al servidor
+    fetch("/actualizar-perfil", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            telefono: sesion.telefono,
+            nombre: nombre,
+            foto: foto
+        })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if(d.mensaje === "Ok") {
+            // Actualizamos la sesión local
+            sesion.nombre = nombre;
+            sesion.foto = foto;
+            localStorage.setItem("sesion", JSON.stringify(sesion));
+            
+            alert("¡Perfil completado!");
+            window.location.href = "/pasajero/index.html";
+        }
+    })
+    .catch(err => alert("Error al guardar"));
+}
+</script>
+</body>
+</html>
