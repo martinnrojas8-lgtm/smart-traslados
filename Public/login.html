@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <title>Smart Traslados – Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/file_000000008fd0720eb71af76359ccb359.png">
+<link rel="apple-touch-icon" href="/file_000000008fd0720eb71af76359ccb359.png">
+<meta name="theme-color" content="#00c853">
+
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
   .card{ background:#111; padding:20px; border-radius:12px; width:90%; max-width:320px; box-shadow:0 4px 15px rgba(0,255,0,0.1); text-align:center; }
@@ -58,10 +64,8 @@ function login(){
   .then(d => {
     if(d.error) return alert("Usuario no encontrado. Regístrate primero.");
     
-    // Guardamos la sesión
     localStorage.setItem("sesion", JSON.stringify(d));
     
-    // Redirección
     if(d.rol === "chofer") {
         window.location.href = "/chofer/index.html";
     } else if(d.rol === "pasajero") {
