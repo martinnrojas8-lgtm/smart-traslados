@@ -10,26 +10,17 @@
   header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
   .screen{ padding:15px; }
   .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; position: relative; }
-  
-  #map{ width:100%; height:300px; border-radius:10px; background:#222; }
-  
+  #map{ width:100%; height:250px; border-radius:10px; background:#222; }
   .status-bar{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
   .badge{ padding: 4px 8px; border-radius: 4px; font-weight: bold; }
   .badge-free{ background: #00c853; color: #000; }
   .badge-time{ background: #ffb300; color: #000; }
-
   .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; cursor:pointer; background:#333; display:flex; align-items:center; justify-content:center; }
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
-  
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
-  
-  input.voucher-input { 
-    width:100%; padding:15px; margin-top:10px; border-radius:8px; border:2px solid #ffb300; 
-    background:#222; color:#fff; font-size:18px; text-align:center; box-sizing:border-box; text-transform: uppercase;
-  }
-
+  .btn-ocupado{ background: #ff5252; color: #fff; }
+  input.voucher-input { width:100%; padding:15px; margin-top:10px; border-radius:8px; border:2px solid #ffb300; background:#222; color:#fff; font-size:18px; text-align:center; box-sizing:border-box; text-transform: uppercase; }
   .hidden{ display:none; }
-  .price-tag{ font-size:22px; color:#00c853; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -51,109 +42,126 @@
 
   <div id="areaTrabajo" class="hidden">
     <div class="card">
-      <h3 style="margin-top:0; font-size:14px; color:#aaa;">Mi Ubicación Actual</h3>
       <div id="map"></div>
     </div>
-    <div id="panelSolicitud" class="card">
-      <h3 id="estadoChofer" style="margin:0; color:#00c853;">Estado: Disponible</h3>
-      <div id="detalleViaje" style="color:#888; font-size:13px;">Buscando pedidos...</div>
+    
+    <div class="card" id="controlEstado">
+        <h3 id="txtEstadoLabel" style="margin:0; color:#00c853; text-align:center;">ESTADO: DISPONIBLE</h3>
+        <p style="font-size:12px; color:#888; text-align:center; margin-bottom:10px;">Los pasajeros te ven como auto verde</p>
+        <button id="btnToggleEstado" onclick="toggleEstado()">PONERME COMO OCUPADO</button>
     </div>
   </div>
 
   <div id="pantallaPago" class="hidden" style="text-align:center;">
       <div class="card" style="border-color: #ffb300;">
           <h2 style="color:#ffb300; margin-top:0;">App Inactiva</h2>
-          <p>Para recibir viajes, ingresá tu código de activación.</p>
-          <div style="background:#222; padding:15px; border-radius:10px; margin:15px 0;">
-              <p style="font-size:13px; color:#aaa;">Adquirí tu código en la <b>Financiera Local</b> o pedilo por WhatsApp.</p>
-              <input type="text" id="inputVoucher" class="voucher-input" placeholder="CÓDIGO AQUÍ">
-              <button onclick="validarCodigo()" style="background:#ffb300; margin-top:15px;">ACTIVAR 24 HORAS</button>
-          </div>
-          <button style="background:#333;" onclick="window.open('https://wa.me/TUNUMERO', '_blank')">SOPORTE WHATSAPP</button>
+          <p>Ingresá tu código de activación para trabajar.</p>
+          <input type="text" id="inputVoucher" class="voucher-input" placeholder="CÓDIGO AQUÍ">
+          <button onclick="validarCodigo()" style="background:#ffb300; margin-top:15px;">ACTIVAR 24 HORAS</button>
       </div>
   </div>
-
-  <button style="background:#333; color:#aaa; font-size:11px; margin-top:30px;" onclick="localStorage.clear(); location.href='/'">CERRAR SESIÓN</button>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 
 <script>
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+let map, marker;
+let estadoActual = "disponible"; // disponible u ocupado
 
-// Setup inicial de beneficios
 if (sesion.telefono && sesion.viajesGratis === undefined) {
-    sesion.viajesGratis = 50; 
-    sesion.activoHasta = 0;
+    sesion.viajesGratis = 50; sesion.activoHasta = 0;
     localStorage.setItem("sesion", JSON.stringify(sesion));
 }
 
 function initApp() {
     if(!sesion.telefono) return location.href = "/";
-    if(sesion.foto) {
-        document.getElementById("fotoHeader").src = sesion.foto;
-        document.getElementById("fotoHeader").style.display = "block";
-        document.getElementById("iconoUser").style.display = "none";
-    }
     verificarAcceso();
 }
 
 function verificarAcceso() {
     const ahora = Date.now();
-    const tieneViajesGratis = sesion.viajesGratis > 0;
-    const tieneTiempoActivo = sesion.activoHasta > ahora;
+    const tieneAcceso = (sesion.viajesGratis > 0 || sesion.activoHasta > ahora);
 
-    if (tieneViajesGratis || tieneTiempoActivo) {
+    if (tieneAcceso) {
         document.getElementById("areaTrabajo").classList.remove("hidden");
         document.getElementById("contadoresUI").classList.remove("hidden");
         document.getElementById("pantallaPago").classList.add("hidden");
         actualizarContadores(ahora);
         initMap();
+        // INICIAR TRANSMISIÓN CADA 7 SEGUNDOS
+        setInterval(transmitirUbicacion, 7000);
     } else {
         document.getElementById("areaTrabajo").classList.add("hidden");
-        document.getElementById("contadoresUI").classList.add("hidden");
         document.getElementById("pantallaPago").classList.remove("hidden");
     }
+}
+
+function initMap() {
+    navigator.geolocation.getCurrentPosition(pos => {
+        const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true });
+        marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+    });
+}
+
+function transmitirUbicacion() {
+    navigator.geolocation.getCurrentPosition(pos => {
+        const datos = {
+            telefono: sesion.telefono,
+            nombre: sesion.nombre,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            estado: estadoActual, // Enviamos si está disponible u ocupado
+            foto: sesion.foto
+        };
+
+        // Enviamos al servidor para que el pasajero lo vea
+        fetch("/actualizar-ubicacion-chofer", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(datos)
+        }).catch(e => console.log("Error de transmisión"));
+        
+        // Movemos el marcador en nuestro propio mapa
+        if(marker) marker.setPosition({lat: datos.lat, lng: datos.lng});
+    });
+}
+
+function toggleEstado() {
+    const btn = document.getElementById("btnToggleEstado");
+    const label = document.getElementById("txtEstadoLabel");
+
+    if (estadoActual === "disponible") {
+        estadoActual = "ocupado";
+        label.innerText = "ESTADO: EN VIAJE / OCUPADO";
+        label.style.color = "#ff5252";
+        btn.innerText = "PONERME COMO DISPONIBLE";
+        btn.classList.add("btn-ocupado");
+    } else {
+        estadoActual = "disponible";
+        label.innerText = "ESTADO: DISPONIBLE";
+        label.style.color = "#00c853";
+        btn.innerText = "PONERME COMO OCUPADO";
+        btn.classList.remove("btn-ocupado");
+    }
+    transmitirUbicacion(); // Avisar el cambio de color inmediatamente
+}
+
+function validarCodigo() {
+    const cod = document.getElementById("inputVoucher").value.trim().toUpperCase();
+    if(cod === "SMART24") {
+        sesion.activoHasta = Date.now() + (24 * 60 * 60 * 1000);
+        localStorage.setItem("sesion", JSON.stringify(sesion));
+        location.reload();
+    } else { alert("Código incorrecto."); }
 }
 
 function actualizarContadores(ahora) {
     document.getElementById("txtViajesGratis").innerText = `🎁 ${sesion.viajesGratis} viajes`;
     if (sesion.activoHasta > ahora) {
-        const diff = sesion.activoHasta - ahora;
-        const horas = Math.floor(diff / (1000 * 60 * 60));
+        const horas = Math.floor((sesion.activoHasta - ahora) / (1000 * 60 * 60));
         document.getElementById("txtTiempoRestante").innerText = `⏳ Activo: ${horas}h rest.`;
-        document.getElementById("txtTiempoRestante").style.display = "inline";
-    } else {
-        document.getElementById("txtTiempoRestante").style.display = "none";
-    }
-}
-
-function validarCodigo() {
-    const cod = document.getElementById("inputVoucher").value.trim().toUpperCase();
-    // Ejemplo: el código maestro es SMART24
-    if(cod === "SMART24") {
-        const unDiaMs = 24 * 60 * 60 * 1000;
-        sesion.activoHasta = Date.now() + unDiaMs;
-        localStorage.setItem("sesion", JSON.stringify(sesion));
-        alert("¡Cuenta activada por 24 horas!");
-        location.reload();
-    } else {
-        alert("Código incorrecto.");
-    }
-}
-
-function initMap() {
-    if(navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            const map = new google.maps.Map(document.getElementById("map"), {
-                center: myPos, zoom: 17, disableDefaultUI: true
-            });
-            new google.maps.Marker({
-                position: myPos, map: map,
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
-            });
-        });
     }
 }
 
