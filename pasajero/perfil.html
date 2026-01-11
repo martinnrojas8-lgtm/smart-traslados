@@ -2,83 +2,105 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mi Perfil - Smart Traslados</title>
+<title>Smart Traslados – Mi Perfil</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-  .card{ background:#111; padding:25px; border-radius:15px; width:85%; max-width:350px; text-align:center; border:1px solid #333; }
-  input{ width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
-  button{ width:100%; padding:12px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
-  .foto-preview{ width:120px; height:120px; border-radius:50%; background:#333; margin: 0 auto 15px; overflow:hidden; border:2px solid #00c853; display:flex; align-items:center; justify-content:center; }
-  #imgPreview{ width:100%; height:100%; object-fit:cover; }
-  input[type="file"]{ display:none; }
-  .label-file{ background:#333; padding:8px; border-radius:5px; font-size:12px; cursor:pointer; display:inline-block; margin-top:10px; }
-  .btn-volver{ background:transparent; color:#888; margin-top:10px; font-size:12px; }
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; }
+  header{ width:100%; background:#111; padding:15px; text-align:center; border-bottom:2px solid #00c853; box-sizing:border-box; }
+  .container{ padding:20px; width:90%; max-width:400px; text-align:center; }
+  
+  .foto-perfil{ width:120px; height:120px; border-radius:50%; border:3px solid #00c853; margin:20px auto; overflow:hidden; background:#222; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; }
+  .foto-perfil img{ width:100%; height:100%; object-fit:cover; }
+  .foto-perfil span{ font-size:40px; }
+  
+  .card{ background:#111; border-radius:15px; padding:20px; border:1px solid #333; margin-top:10px; }
+  input{ width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #444; background:#222; color:#fff; box-sizing:border-box; text-align:center; }
+  
+  button{ padding:15px; width:100%; margin-top:15px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px; }
+  .btn-save{ background:#00c853; color:#000; }
+  .btn-chofer{ background:#ffb300; color:#000; margin-top:30px; border: 2px solid #ffb300; }
+  .btn-back{ background:none; color:#888; text-decoration:underline; font-size:12px; }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 id="titulo">Tu Perfil</h2>
-  <div class="foto-preview">
-    <img id="imgPreview" src="">
-    <span id="placeholderTxt">Sin foto</span>
-  </div>
-  
-  <label class="label-file" for="fotoInput">CAMBIAR FOTO</label>
-  <input type="file" id="fotoInput" accept="image/*" onchange="previewImage(event)">
+<header>
+  <h2 style="margin:0; font-size:18px;">Mi Perfil</h2>
+</header>
 
-  <input type="text" id="nombreInput" placeholder="Nombre y Apellido">
-  
-  <button onclick="guardarPerfil()">GUARDAR CAMBIOS</button>
-  <button class="btn-volver" onclick="window.location.href='index.html'">VOLVER AL MAPA</button>
+<div class="container">
+    <div class="foto-perfil" onclick="document.getElementById('fileInput').click()">
+        <img id="imgPerfil" src="" style="display:none;">
+        <span id="iconUser">👤</span>
+        <div style="position:absolute; bottom:0; background:rgba(0,200,83,0.7); width:100%; font-size:10px; padding:2px 0;">CAMBIAR</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="subirFoto(event)">
+
+    <div class="card">
+        <label style="font-size:12px; color:#888;">NOMBRE COMPLETO</label>
+        <input type="text" id="nombre" placeholder="¿Cómo te llamas?">
+        
+        <label style="font-size:12px; color:#888;">TELÉFONO</label>
+        <input type="text" id="telefono" disabled style="opacity:0.6;">
+
+        <button class="btn-save" onclick="guardarPerfil()">GUARDAR CAMBIOS</button>
+    </div>
+
+    <div class="card" style="border-color:#ffb300; background: rgba(255,179,0,0.05);">
+        <p style="margin:0; font-size:13px; color:#ffb300;">¿Tenés un vehículo y querés trabajar?</p>
+        <button class="btn-chofer" onclick="cambiarAModoChofer()">IR A PANEL DE CHOFER 🚖</button>
+    </div>
+
+    <button class="btn-back" onclick="location.href='index.html'">Volver al mapa</button>
 </div>
 
 <script>
-const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-// CARGAR DATOS SI YA EXISTEN
-if(sesion.nombre) {
-    document.getElementById("nombreInput").value = sesion.nombre;
-    document.getElementById("titulo").innerText = "Editar Perfil";
-}
-if(sesion.foto) {
-    document.getElementById("imgPreview").src = sesion.foto;
-    document.getElementById("placeholderTxt").style.display = 'none';
-}
-
-function previewImage(event) {
-    const reader = new FileReader();
-    reader.onload = function(){
-        const img = document.getElementById('imgPreview');
-        img.src = reader.result;
-        document.getElementById('placeholderTxt').style.display = 'none';
+// Cargar datos actuales
+window.onload = () => {
+    if(!sesion.telefono) return location.href = "/";
+    document.getElementById("nombre").value = sesion.nombre || "";
+    document.getElementById("telefono").value = sesion.telefono;
+    if(sesion.foto) {
+        document.getElementById("imgPerfil").src = sesion.foto;
+        document.getElementById("imgPerfil").style.display = "block";
+        document.getElementById("iconUser").style.display = "none";
     }
+};
+
+function subirFoto(event) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const base64 = reader.result;
+        document.getElementById("imgPerfil").src = base64;
+        document.getElementById("imgPerfil").style.display = "block";
+        document.getElementById("iconUser").style.display = "none";
+        sesion.foto = base64;
+    };
     reader.readAsDataURL(event.target.files[0]);
 }
 
 function guardarPerfil() {
-    const nombre = document.getElementById("nombreInput").value.trim();
-    const foto = document.getElementById("imgPreview").src;
+    sesion.nombre = document.getElementById("nombre").value.trim();
+    if(!sesion.nombre) return alert("Por favor, poné tu nombre");
+    
+    localStorage.setItem("sesion", JSON.stringify(sesion));
+    alert("¡Perfil actualizado!");
+    location.href = "index.html";
+}
 
-    if(!nombre || !foto) return alert("Nombre y foto son obligatorios");
-
-    fetch("/actualizar-perfil", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ telefono: sesion.telefono, nombre, foto })
-    })
-    .then(r => r.json())
-    .then(d => {
-        if(d.mensaje === "Ok") {
-            sesion.nombre = nombre;
-            sesion.foto = foto;
-            localStorage.setItem("sesion", JSON.stringify(sesion));
-            alert("Perfil actualizado");
-            window.location.href = "index.html";
-        }
-    });
+function cambiarAModoChofer() {
+    // Verificamos si tiene nombre antes de dejarlo ser chofer
+    if(!sesion.nombre) {
+        alert("Primero completá tu nombre para poder trabajar.");
+        return;
+    }
+    sesion.tipo = "chofer"; 
+    localStorage.setItem("sesion", JSON.stringify(sesion));
+    window.location.href = "/chofer/index.html";
 }
 </script>
+
 </body>
 </html>
