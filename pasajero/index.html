@@ -14,7 +14,7 @@
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
   .price-box{ font-size:24px; color:#00c853; font-weight:bold; text-align:center; margin:15px 0; border: 1px dashed #00c853; padding: 10px; border-radius: 8px; }
   #map{ width:100%; height:300px; border-radius:10px; margin-bottom:10px; }
-  .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; cursor:pointer; background:#333; display:flex; align-items:center; justify-content:center; }
+  .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; background:#333; display:flex; align-items:center; justify-content:center; }
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
   .stop-item{ display:flex; gap:5px; align-items:center; margin-top:5px; }
   .btn-del{ background:#ff5252; width:45px; flex-shrink:0; }
@@ -45,15 +45,12 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCeXV1ZmTBpGBIE6MwG8HvIAXziKUPK1d8&libraries=places"></script>
 <script>
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-
-if (!sesion.telefono) { location.href = "/"; } 
-else if (!sesion.nombre) { location.href = "/pasajero/perfil.html"; }
-
 let map, directionsService, directionsRenderer;
-let marcadoresChoferes = {}; // Guardamos los autitos aquí
+let marcadoresChoferes = {};
 let valorKM = 300; let valorBase = 500;
 
 function initApp() {
+    if (!sesion.telefono) return location.href = "/";
     if(sesion.foto) {
         document.getElementById("fotoHeader").src = sesion.foto;
         document.getElementById("fotoHeader").style.display = "block";
@@ -61,10 +58,7 @@ function initApp() {
     }
 
     map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: -34.6037, lng: -58.3816 },
-        zoom: 15,
-        disableDefaultUI: true,
-        styles: [ { "featureType": "all", "elementType": "labels.text.fill", "stylers": [{"color": "#ffffff"}] } ] // Un toque de estilo oscuro
+        center: { lat: -34.6037, lng: -58.3816 }, zoom: 15, disableDefaultUI: true
     });
 
     directionsService = new google.maps.DirectionsService();
@@ -86,66 +80,34 @@ function initApp() {
         });
     }
 
-    // EMPEZAR A BUSCAR CHOFERES CADA 5 SEGUNDOS
     setInterval(obtenerChoferesCercanos, 5000);
-    obtenerChoferesCercanos();
 }
 
 function obtenerChoferesCercanos() {
-    // Llamada a tu servidor MongoDB
     fetch("/obtener-choferes-activos")
     .then(r => r.json())
     .then(choferes => {
-        actualizarMapaChoferes(choferes);
-    })
-    .catch(e => console.log("Error buscando choferes"));
-}
-
-function actualizarMapaChoferes(choferes) {
-    // 1. Quitar choferes que ya no están activos
-    const idsRecibidos = choferes.map(c => c.telefono);
-    for (let id in marcadoresChoferes) {
-        if (!idsRecibidos.includes(id)) {
-            marcadoresChoferes[id].setMap(null);
-            delete marcadoresChoferes[id];
+        const idsRecibidos = choferes.map(c => c.telefono);
+        for (let id in marcadoresChoferes) {
+            if (!idsRecibidos.includes(id)) {
+                marcadoresChoferes[id].setMap(null);
+                delete marcadoresChoferes[id];
+            }
         }
-    }
-
-    // 2. Agregar o mover choferes
-    choferes.forEach(chofer => {
-        const pos = { lat: chofer.lat, lng: chofer.lng };
-        
-        if (marcadoresChoferes[chofer.telefono]) {
-            // Si ya existe, solo movemos el autito
-            marcadoresChoferes[chofer.telefono].setPosition(pos);
-        } else {
-            // Si es nuevo, creamos el marcador de autito
-            marcadoresChoferes[chofer.telefono] = new google.maps.Marker({
-                position: pos,
-                map: map,
-                title: chofer.nombre,
-                icon: {
-                    path: "M23.5,17h-11c-1.1,0-2-0.9-2-2V9c0-1.1,0.9-2,2-2h11c1.1,0,2,0.9,2,2v6C25.5,16.1,24.6,17,23.5,17z M12.5,8c-0.3,0-0.5,0.2-0.5,0.5v6c0,0.3,0.2,0.5,0.5,0.5h11c0.3,0,0.5-0.2,0.5-0.5v-6c0-0.3-0.2-0.5-0.5-0.5H12.5z", // Un SVG simple de auto
-                    fillColor: "#00c853",
-                    fillOpacity: 1,
-                    strokeWeight: 1,
-                    strokeColor: "#000",
-                    scale: 1.5,
-                    anchor: new google.maps.Point(15, 15)
-                }
-            });
-        }
-    });
-}
-
-function agregarParada() {
-    const id = "parada-" + Date.now();
-    const div = document.createElement("div");
-    div.className = "stop-item";
-    div.id = id;
-    div.innerHTML = `<input type="text" placeholder="Parada" class="input-parada"><button class="btn-del" onclick="document.getElementById('${id}').remove(); calcularRuta();">X</button>`;
-    document.getElementById("contenedorParadas").appendChild(div);
-    new google.maps.places.Autocomplete(div.querySelector("input")).addListener("place_changed", calcularRuta);
+        choferes.forEach(chofer => {
+            const pos = { lat: chofer.lat, lng: chofer.lng };
+            const color = (chofer.estado === "ocupado") ? "#ff5252" : "#00c853";
+            
+            if (marcadoresChoferes[chofer.telefono]) {
+                marcadoresChoferes[chofer.telefono].setPosition(pos);
+            } else {
+                marcadoresChoferes[chofer.telefono] = new google.maps.Marker({
+                    position: pos, map: map,
+                    icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, fillColor: color, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1 }
+                });
+            }
+        });
+    }).catch(e => console.log("Servidor no responde"));
 }
 
 function calcularRuta() {
@@ -165,10 +127,33 @@ function calcularRuta() {
     });
 }
 
-function pedirViaje() { 
+function pedirViaje() {
+    const origen = document.getElementById("origen").value;
+    const destino = document.getElementById("destino").value;
     const precio = document.getElementById("cuadroPrecio").innerText;
-    alert("Solicitando viaje por " + precio + ". Buscando choferes disponibles..."); 
-    // Aquí iría la lógica para enviar el pedido al servidor
+    if(!destino) return alert("Ingresá un destino");
+
+    const pedido = {
+        pasajeroTel: sesion.telefono,
+        pasajeroNombre: sesion.nombre || "Pasajero",
+        origen, destino, precio, timestamp: Date.now()
+    };
+
+    fetch("/solicitar-viaje", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(pedido)
+    }).then(() => alert("Buscando chofer..."))
+    .catch(() => alert("Error al conectar con servidor"));
+}
+
+function agregarParada() {
+    const id = "parada-" + Date.now();
+    const div = document.createElement("div");
+    div.className = "stop-item";
+    div.id = id;
+    div.innerHTML = `<input type="text" placeholder="Parada" class="input-parada"><button class="btn-del" onclick="document.getElementById('${id}').remove(); calcularRuta();">X</button>`;
+    document.getElementById("contenedorParadas").appendChild(div);
+    new google.maps.places.Autocomplete(div.querySelector("input")).addListener("place_changed", calcularRuta);
 }
 
 window.onload = initApp;
