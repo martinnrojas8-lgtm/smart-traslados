@@ -1,28 +1,23 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const path = require('path');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 
-// 1. CONFIGURACIÓN DE TAMAÑO (Para recibir las fotos pesadas del carnet/seguro)
+// 1. CONFIGURACIÓN DE TAMAÑO (Crucial para que las fotos no bloqueen el servidor)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
-// 2. SERVIR ARCHIVOS ESTÁTICOS (Carpeta public)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// 3. CONEXIÓN A MONGODB ATLAS (Respetando tu configuración de env)
-const mongoURI = process.env.MONGO_URI;
+// 2. CONEXIÓN A MONGODB (Usamos tu variable de entorno de Render)
+const mongoURI = process.env.MONGO_URI; 
 mongoose.connect(mongoURI)
-    .then(() => console.log('✅ Conexión exitosa a MongoDB Atlas'))
-    .catch(err => {
-        console.error('❌ Error de conexión:', err.message);
-    });
+    .then(() => console.log('✅ Conexión exitosa a MongoDB'))
+    .catch(err => console.error('❌ Error Mongo:', err));
 
-// --- ESQUEMA DE USUARIO (Para que Mongo sepa dónde guardar todo) ---
+// 3. ESQUEMA DE USUARIO AMPLIADO (Para guardar fotos y datos de auto)
 const usuarioSchema = new mongoose.Schema({
     telefono: String,
     rol: String,
@@ -31,16 +26,16 @@ const usuarioSchema = new mongoose.Schema({
     autoModelo: String,
     autoPatente: String,
     autoColor: String,
-    documentacion: Object,
+    documentacion: Object, // Aquí guardaremos las 4 fotos
     activo: { type: Boolean, default: true },
+    perfilCompleto: { type: Boolean, default: false },
     lat: Number,
     lng: Number,
-    estado: String,
-    perfilCompleto: { type: Boolean, default: false }
+    estado: String
 });
 const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-// --- RUTAS DE LÓGICA ---
+// --- RUTAS DE LA API ---
 
 app.post('/register', async (req, res) => {
     try {
@@ -51,7 +46,7 @@ app.post('/register', async (req, res) => {
             await user.save();
         }
         res.json({ mensaje: "Ok", usuario: user });
-    } catch (e) { res.status(500).json(e); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/login', async (req, res) => {
@@ -61,39 +56,23 @@ app.post('/login', async (req, res) => {
         if (!user) return res.status(404).json({ error: "No existe" });
         if (!user.activo) return res.status(403).json({ error: "Suspendido" });
         res.json(user);
-    } catch (e) { res.status(500).json(e); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// NUEVA: RUTA DE PERFIL PESADO
+// NUEVA RUTA: Recibe nombre, auto y las 4 fotos pesadas
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
-        const { 
-            telefono, nombre, modelo, patente, color, 
-            fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta 
-        } = req.body;
-
+        const { telefono, nombre, modelo, patente, color, fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta } = req.body;
         await Usuario.updateOne(
-            { telefono: telefono },
-            { 
-                $set: { 
-                    nombre: nombre,
-                    autoModelo: modelo,
-                    autoPatente: patente,
-                    autoColor: color,
-                    foto: fotoPerfil,
-                    documentacion: {
-                        carnet: fotoCarnet,
-                        seguro: fotoSeguro,
-                        tarjeta: fotoTarjeta
-                    },
-                    perfilCompleto: true
-                } 
-            }
+            { telefono },
+            { $set: { 
+                nombre, autoModelo: modelo, autoPatente: patente, autoColor: color, foto: fotoPerfil,
+                documentacion: { carnet: fotoCarnet, seguro: fotoSeguro, tarjeta: fotoTarjeta },
+                perfilCompleto: true
+            }}
         );
         res.json({ mensaje: "Ok" });
-    } catch (e) {
-        res.status(500).json({ error: "Error al guardar perfil" });
-    }
+    } catch (e) { res.status(500).json({ error: "Error al guardar perfil" }); }
 });
 
 app.post('/actualizar-ubicacion-chofer', async (req, res) => {
@@ -102,13 +81,16 @@ app.post('/actualizar-ubicacion-chofer', async (req, res) => {
     res.json({ mensaje: "Ok" });
 });
 
-// --- RUTA PRINCIPAL (Para evitar el Cannot GET /) ---
+// --- MANEJO DE ARCHIVOS (PARA EVITAR PANTALLA BLANCA) ---
+
+// Servir la carpeta public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Ruta raíz: Envía el login.html del taxi
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// --- PUERTO ---
+// Puerto de Render
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Smart Server en puerto ${PORT}`));
