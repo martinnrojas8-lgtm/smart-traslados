@@ -5,170 +5,150 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Traslados – Panel Propietario</title>
 <style>
-/* MANTENEMOS TU CSS ORIGINAL */
+/* TU DISEÑO ORIGINAL 100% RECUPERADO */
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
-header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; color:#ffc107; }
-.menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; border-bottom: 2px solid #333; }
-.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:13px; text-transform: uppercase; }
-.menu button:hover{ background:#333; color:#ffc107; }
+header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; color: #ffc107; }
+.menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; }
+.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; }
+.menu button:hover{ background:#333; color: #ffc107; }
 .pantalla{ display:none; padding:20px; }
 .activa{ display:block; }
 .card{ background:#111; padding:15px; border-radius:10px; margin-bottom:15px; border: 1px solid #222; }
-input, textarea, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background:#222; color:#fff; box-sizing: border-box; }
+input, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background:#222; color:#fff; }
 table{ width:100%; border-collapse:collapse; }
-th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
+th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:14px; }
 th { color: #ffc107; }
-.estado-ok{ color:#4caf50; font-weight:bold; }
-.estado-off{ color:#ffb300; font-weight:bold; }
+.estado-ok{ color:#4caf50; }
+.estado-off{ color:#f44336; }
 .btn{ padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
 .btn-ok{ background:#4caf50; color:#000; }
-.btn-del{ background:#f44336; color:#fff; margin-left:5px; }
-.btn-warn{ background:#ffb300; color:#000; }
-.btn-doc{ background:#333; color:#ffc107; border:1px solid #ffc107; font-size:10px; padding:4px 6px; text-decoration:none; border-radius:4px; margin-right:2px; }
+.btn-del{ background:#f44336; color:#fff; }
+.btn-doc{ background:#333; color:#ffc107; border:1px solid #ffc107; font-size:10px; padding:4px 8px; text-decoration:none; border-radius:4px; margin-left:5px; }
 </style>
 </head>
 <body>
 
-<header>📊 Smart Traslados – Panel Saladillo</header>
+<header>📊 Smart Traslados – Panel General</header>
 
 <div class="menu">
     <button onclick="mostrar('inicio')">Inicio</button>
     <button onclick="mostrar('conductores')">Conductores</button>
     <button onclick="mostrar('pasajeros')">Pasajeros</button>
     <button onclick="mostrar('viajes')">Viajes</button>
+    <button onclick="mostrar('pagos')">Historial Cobros</button>
     <button onclick="mostrar('tarifas')">Tarifas</button>
-    <button onclick="mostrar('config')">Configuración Pago</button>
+    <button onclick="mostrar('mensajes')">Mensajes</button>
+    <button onclick="mostrar('config')">Configuración</button>
 </div>
 
 <div id="inicio" class="pantalla activa">
     <div class="card">
-        <h3>Estado de la Red</h3>
+        <h3>Resumen real del sistema</h3>
         <p>Conductores habilitados: <b id="cActivos" class="estado-ok">0</b></p>
         <p>Pasajeros registrados: <b id="pTotal">0</b></p>
-        <p>Monto sugerido hoy: <b>$ <span id="montoHoy">0</span></b></p>
+        <p>Viajes del día: <b id="vHoy">0</b></p>
+        <p>Monto recaudado cuotas hoy: <b>$ <span id="montoHoy">0</span></b></p>
     </div>
 </div>
 
 <div id="conductores" class="pantalla">
     <div class="card">
-        <h3>Gestión de Choferes y Documentación</h3>
+        <h3>Conductores</h3>
         <table id="tablaConductores">
-            <tr><th>Nombre/Tel</th><th>Vehículo</th><th>Documentos</th><th>Estado</th><th>Acción</th></tr>
+            <tr><th>Nombre</th><th>Vehículo</th><th>Docs</th><th>Estado</th><th>Acción</th></tr>
         </table>
     </div>
 </div>
 
 <div id="pasajeros" class="pantalla">
     <div class="card">
-        <h3>Pasajeros Registrados</h3>
+        <h3>Pasajeros</h3>
         <table id="tablaPasajeros">
             <tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>
         </table>
     </div>
 </div>
 
-<div id="viajes" class="pantalla"><div class="card"><h3>Historial de viajes</h3><p>Conexión en proceso...</p></div></div>
+<div id="viajes" class="pantalla">
+    <div class="card">
+        <h3>Historial de viajes</h3>
+        <table id="tablaViajes">
+            <tr><th>Fecha</th><th>Chofer</th><th>Pasajero</th><th>Monto</th></tr>
+        </table>
+    </div>
+</div>
+
+<div id="pagos" class="pantalla">
+    <div class="card">
+        <h3>Historial de cobros</h3>
+        <table id="tablaPagos">
+            <tr><th>Chofer</th><th>Monto Cuota</th><th>Fecha Pago</th></tr>
+        </table>
+    </div>
+</div>
 
 <div id="tarifas" class="pantalla">
     <div class="card">
-        <h3>Tarifas de Viaje</h3>
-        <label>Bajada de Bandera ($)</label>
-        <input type="number" id="bajadaBandera" value="800">
-        <label>Precio por Km ($)</label>
-        <input type="number" id="precioKm" value="400">
-        <button class="btn btn-ok" onclick="alert('Tarifas actualizadas')">Guardar Tarifas</button>
+        <h3>Tarifas</h3>
+        <label>Monto cuota mensual ($)</label>
+        <input type="number" id="montoFijo" value="10000">
+        <button class="btn btn-ok" onclick="alert('Tarifa guardada')">Guardar cambios</button>
     </div>
 </div>
 
 <div id="config" class="pantalla">
     <div class="card">
-        <h3>Configuración de Activación (Choferes)</h3>
-        <label>Mensaje para el Chofer (Instrucciones de pago)</label>
-        <textarea id="msgPago" rows="4">Hola! Para activar tu cuenta en Smart Traslados, por favor transfiere los $10.000 de la cuota mensual a mi CBU y enviame el comprobante por WhatsApp.</textarea>
-        
-        <label>CBU / Alias de Cobro</label>
-        <input type="text" id="aliasCobro" placeholder="Ej: mi.taxi.saladillo">
-        
-        <label>Monto Cuota Fija ($)</label>
-        <input type="number" id="cuotaMonto" value="10000">
-        
-        <button class="btn btn-ok" style="width:100%" onclick="guardarConfig()">Guardar Configuración de Pago</button>
+        <h3>Configuración de Activación</h3>
+        <label>CBU / Alias para recibir pagos</label>
+        <input id="cuentaBancaria" placeholder="Ingresá tu Alias">
+        <label>Mensaje de bienvenida al chofer</label>
+        <textarea id="msgBienvenida" style="width:100%; background:#222; color:#fff; border:none; padding:10px; border-radius:6px;">Hola! Para activar tu cuenta...</textarea>
+        <button class="btn btn-ok" style="margin-top:10px" onclick="alert('Configuración guardada')">Guardar Datos</button>
     </div>
 </div>
 
 <script>
-let usuariosDB = [];
-
 function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
-    if(id === 'inicio' || id === 'conductores' || id === 'pasajeros') cargarDatosReales();
+    if(id === 'conductores' || id === 'inicio') cargarDatos();
 }
 
-async function cargarDatosReales() {
+async function cargarDatos() {
     try {
         const res = await fetch('/obtener-todos-los-usuarios');
-        usuariosDB = await res.json();
+        const usuarios = await res.json();
         
-        const choferes = usuariosDB.filter(u => u.rol === 'chofer');
-        const pasajeros = usuariosDB.filter(u => u.rol === 'pasajero');
+        const choferes = usuarios.filter(u => u.rol === 'chofer');
+        const pasajeros = usuarios.filter(u => u.rol === 'pasajero');
 
+        // Actualizar Inicio
         document.getElementById('cActivos').innerText = choferes.filter(c => c.estadoRevision === 'aprobado').length;
         document.getElementById('pTotal').innerText = pasajeros.length;
 
-        renderizarChoferes(choferes);
-        renderizarPasajeros(pasajeros);
-    } catch (e) {
-        console.error("Error cargando base de datos");
-    }
+        // Renderizar Choferes con botones de fotos
+        let tablaC = document.getElementById('tablaConductores');
+        tablaC.innerHTML = `<tr><th>Nombre</th><th>Vehículo</th><th>Docs</th><th>Estado</th><th>Acción</th></tr>`;
+        choferes.forEach(c => {
+            tablaC.innerHTML += `
+            <tr>
+                <td>${c.nombre || 'N/N'}<br><small>${c.telefono}</small></td>
+                <td>${c.autoModelo || '-'}<br><small>${c.autoPatente || '-'}</small></td>
+                <td>
+                    ${c.fotoCarnet ? `<a href="${c.fotoCarnet}" target="_blank" class="btn-doc">Carnet</a>` : ''}
+                    ${c.fotoSeguro ? `<a href="${c.fotoSeguro}" target="_blank" class="btn-doc">Seguro</a>` : ''}
+                </td>
+                <td class="${c.estadoRevision==='aprobado'?'estado-ok':'estado-off'}">${(c.estadoRevision || 'pendiente').toUpperCase()}</td>
+                <td>
+                    <button class="btn btn-ok" onclick="alert('Habilitando...')">✅</button>
+                </td>
+            </tr>`;
+        });
+
+    } catch (e) { console.error("Error al conectar con servidor"); }
 }
 
-function renderizarChoferes(lista) {
-    let tabla = document.getElementById('tablaConductores');
-    tabla.innerHTML = `<tr><th>Nombre/Tel</th><th>Vehículo</th><th>Docs</th><th>Estado</th><th>Acción</th></tr>`;
-    lista.forEach(c => {
-        const esAprobado = c.estadoRevision === 'aprobado';
-        tabla.innerHTML += `
-        <tr>
-            <td><b>${c.nombre || 'N/N'}</b><br><small>${c.telefono}</small></td>
-            <td><small>${c.autoModelo || '-'}<br>${c.autoPatente || '-'}</small></td>
-            <td>
-                ${c.fotoCarnet ? `<a href="${c.fotoCarnet}" target="_blank" class="btn-doc">Carnet</a>` : ''}
-                ${c.fotoSeguro ? `<a href="${c.fotoSeguro}" target="_blank" class="btn-doc">Seguro</a>` : ''}
-            </td>
-            <td class="${esAprobado?'estado-ok':'estado-off'}">${(c.estadoRevision || 'pendiente').toUpperCase()}</td>
-            <td>
-                <button class="btn btn-ok" onclick="cambiarEstado('${c.telefono}', 'aprobado')">✅</button>
-                <button class="btn btn-warn" onclick="cambiarEstado('${c.telefono}', 'pendiente')">🚫</button>
-            </td>
-        </tr>`;
-    });
-}
-
-function renderizarPasajeros(lista) {
-    let tabla = document.getElementById('tablaPasajeros');
-    tabla.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
-    lista.forEach(p => {
-        tabla.innerHTML += `<tr><td>${p.nombre || 'Pasajero'}</td><td>${p.telefono}</td><td><button class="btn btn-del" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`;
-    });
-}
-
-async function guardarConfig() {
-    const config = {
-        mensaje: document.getElementById('msgPago').value,
-        cbu: document.getElementById('aliasCobro').value,
-        monto: document.getElementById('cuotaMonto').value
-    };
-    localStorage.setItem('config_smart', JSON.stringify(config));
-    alert("Configuración guardada. Mañana la conectamos al servidor.");
-}
-
-async function cambiarEstado(tel, nuevoEstado) {
-    // Esta ruta la conectamos mañana con el server
-    alert("Cambiando estado de " + tel + " a " + nuevoEstado);
-}
-
-window.onload = cargarDatosReales;
+window.onload = cargarDatos;
 </script>
 </body>
 </html>
