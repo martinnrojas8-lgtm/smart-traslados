@@ -6,7 +6,7 @@ const app = express();
 
 app.use(cors());
 
-// Configuración para recibir fotos pesadas (Aumentado a 100mb por seguridad)
+// Configuración para recibir fotos pesadas de iPhone y Android
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
@@ -20,7 +20,7 @@ const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
     rol: String,
     nombre: String,
-    foto: String,
+    foto: String, // Foto de perfil/conductor
     autoModelo: String,
     autoPatente: String,
     autoColor: String,
@@ -57,8 +57,10 @@ app.post('/register', async (req, res) => {
         });
         
         await nuevoUsuario.save();
+        console.log(`Nuevo usuario registrado en DB: ${tel}`);
         res.json({ mensaje: "Ok" });
     } catch (e) { 
+        console.error("Error en registro:", e);
         res.status(500).json({ error: "Error en registro" }); 
     }
 });
@@ -68,57 +70,67 @@ app.post('/login', async (req, res) => {
     try {
         const tel = req.body.telefono.trim();
         const rolElegido = req.body.rol.toLowerCase().trim();
+        
         const usuario = await Usuario.findOne({ telefono: tel, rol: rolElegido });
         
         if (usuario) {
+            console.log(`Login exitoso: ${tel}`);
             res.json({ mensaje: "Ok", usuario: usuario });
         } else {
-            res.status(404).json({ mensaje: "Usuario no encontrado" });
+            res.status(404).json({ mensaje: "Usuario no encontrado con ese rol" });
         }
     } catch (e) { 
+        console.error("Error en login:", e);
         res.status(500).json({ error: "Error en servidor" }); 
     }
 });
 
-// ACTUALIZAR PERFIL (Corregido para coincidir con perfil.html)
+// ACTUALIZAR PERFIL (MODIFICADO PARA ASEGURAR EL GUARDADO)
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
-        console.log("Recibiendo actualización de perfil para:", d.telefono);
+        const tel = d.telefono ? d.telefono.toString().trim() : null;
 
-        // Mapeo exacto de los campos que enviamos desde el HTML
-        const actualizacion = {
-            nombre: d.nombre,
-            autoModelo: d.modelo,
-            autoPatente: d.patente,
-            autoColor: d.color,
-            foto: d.fotoPerfil,
+        if (!tel) {
+            return res.status(400).json({ error: "Teléfono no recibido" });
+        }
+
+        console.log("Actualizando perfil completo para:", tel);
+
+        // Mapeamos los datos del formulario a los campos de la base de datos
+        const datosAActualizar = { 
+            nombre: d.nombre, 
+            autoModelo: d.modelo, 
+            autoPatente: d.patente, 
+            autoColor: d.color, 
+            foto: d.fotoPerfil, 
             fotoCarnet: d.fotoCarnet,
-            fotoSeguro: d.fotoSeguro,
+            fotoSeguro: d.fotoSeguro, 
             fotoTarjeta: d.fotoTarjeta,
-            estadoRevision: "pendiente" // Cada vez que edita, vuelve a revisión
+            estadoRevision: "pendiente" // Vuelve a pendiente al actualizar datos
         };
 
+        // findOneAndUpdate con upsert actualiza si existe o crea si no
         const resultado = await Usuario.findOneAndUpdate(
-            { telefono: d.telefono.trim() }, 
-            actualizacion,
-            { new: true }
+            { telefono: tel }, 
+            { $set: datosAActualizar }, 
+            { new: true, upsert: true }
         );
 
         if (resultado) {
-            console.log("✅ Perfil actualizado correctamente");
+            console.log("✅ Perfil guardado correctamente en MongoDB");
             res.json({ mensaje: "Ok" });
         } else {
-            console.log("❌ No se encontró el usuario para actualizar");
-            res.status(404).json({ error: "Usuario no encontrado" });
+            res.status(500).json({ error: "No se pudo actualizar el documento" });
         }
 
     } catch (e) { 
-        console.error("❌ Error al guardar perfil:", e);
-        res.status(500).json({ error: "Error interno al guardar documentos" }); 
+        console.error("❌ Error en actualizar-perfil-chofer:", e.message);
+        res.status(500).json({ error: "Error en servidor: " + e.message }); 
     }
 });
 
+// OBTENER TODOS LOS USUARIOS
 app.get('/obtener-usuarios', async (req, res) => {
     try {
         const usuarios = await Usuario.find().sort({ fechaRegistro: -1 });
@@ -128,6 +140,7 @@ app.get('/obtener-usuarios', async (req, res) => {
     }
 });
 
+// --- RUTA RAIZ ---
 app.get('*', (req, res) => { 
     res.sendFile(path.join(__dirname, 'Public', 'login.html')); 
 });
