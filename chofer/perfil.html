@@ -1,154 +1,119 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Mi Perfil Chofer - Smart Traslados</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; padding:20px; }
-  .card{ background:#111; padding:20px; border-radius:15px; border:1px solid #333; text-align:center; max-width:400px; margin:auto; }
-  
-  /* ESTADO DE CUENTA PROFESIONAL */
-  .status-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #00c853; text-align: left; }
-  .status-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-  .status-value { font-size: 15px; font-weight: bold; color: #00c853; margin-top: 3px; }
-  
-  input{ width:100%; padding:14px; margin-top:10px; border-radius:8px; border:1px solid #333; background:#222; color:#fff; box-sizing:border-box; font-size: 16px; }
-  input:focus { border-color: #00c853; outline: none; }
-
-  button{ width:100%; padding:15px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size:16px; }
-  
-  .grid-fotos{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:15px; }
-  .foto-box{ background:#1a1a1a; border:1px dashed #444; padding:10px; border-radius:8px; font-size:11px; position: relative; }
-  .preview-img{ width:100%; height:85px; object-fit:cover; border-radius:5px; margin-top:5px; display:none; border: 1px solid #00c853; }
-  
-  label{ display:block; cursor:pointer; color:#00c853; font-weight:bold; margin-bottom: 5px; }
-  input[type="file"]{ display:none; }
-  
-  .btn-volver{ background:transparent; color:#888; font-size:12px; margin-top:10px; border: 1px solid #333; }
-  #loader { display:none; color: #00c853; margin-top: 10px; font-size: 14px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil del Chofer - Smart Taxi</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 500px; background: white; padding: 20px; border-radius: 10px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .foto-preview { width: 100%; height: 150px; background: #eee; border: 2px dashed #ccc; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+        button { width: 100%; padding: 15px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
+        button:disabled { background: #ccc; }
+    </style>
 </head>
 <body>
 
-<div class="card">
-  <h2 style="margin-top:0; color:#00c853;">Perfil Chofer</h2>
+<div class="container">
+    <h2>Completar Perfil</h2>
+    
+    <label>Nombre Completo</label>
+    <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
 
-  <div class="status-card">
-      <div class="status-title">Estado de Cuenta</div>
-      <div class="status-value" id="valEstado">Verificando...</div>
-  </div>
+    <label>Modelo del Auto</label>
+    <input type="text" id="modelo" placeholder="Ej: Toyota Corolla">
 
-  <input type="text" id="nombre" placeholder="Nombre y Apellido completo">
-  <input type="text" id="autoModelo" placeholder="Vehículo (Ej: Fiat Cronos)">
-  <input type="text" id="autoPatente" placeholder="Patente / Dominio">
-  <input type="text" id="autoColor" placeholder="Color del Vehículo">
+    <label>Patente</label>
+    <input type="text" id="patente" placeholder="Ej: AA123BB">
 
-  <div class="grid-fotos">
-    <div class="foto-box">
-      <label for="fPerfil">FOTO PERFIL</label>
-      <input type="file" id="fPerfil" accept="image/*" onchange="pre(this, 'pPerfil')">
-      <img id="pPerfil" class="preview-img">
-    </div>
-    <div class="foto-box">
-      <label for="fCarnet">CARNET</label>
-      <input type="file" id="fCarnet" accept="image/*" onchange="pre(this, 'pCarnet')">
-      <img id="pCarnet" class="preview-img">
-    </div>
-    <div class="foto-box">
-      <label for="fSeguro">SEGURO</label>
-      <input type="file" id="fSeguro" accept="image/*" onchange="pre(this, 'pSeguro')">
-      <img id="pSeguro" class="preview-img">
-    </div>
-    <div class="foto-box">
-      <label for="fTarjeta">CÉDULA</label>
-      <input type="file" id="fTarjeta" accept="image/*" onchange="pre(this, 'pTarjeta')">
-      <img id="pTarjeta" class="preview-img">
-    </div>
-  </div>
+    <label>Color del Auto</label>
+    <input type="text" id="color" placeholder="Ej: Blanco">
 
-  <div id="loader">Subiendo datos pesados... esperá.</div>
-  <button id="btnGuardar" onclick="guardar()">GUARDAR Y TRABAJAR</button>
-  <button class="btn-volver" onclick="window.location.href='index.html'">SOLO VOLVER</button>
+    <label>Foto de Perfil</label>
+    <input type="file" id="fotoPerfil" accept="image/*">
+
+    <label>Foto de Carnet de Conducir</label>
+    <input type="file" id="fotoCarnet" accept="image/*">
+
+    <label>Foto de Seguro</label>
+    <input type="file" id="fotoSeguro" accept="image/*">
+
+    <label>Foto de Tarjeta Verde/Azul</label>
+    <input type="file" id="fotoTarjeta" accept="image/*">
+
+    <button id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
 </div>
 
 <script>
-const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-
-window.onload = () => {
-    if(!sesion.telefono) return location.href = "/";
-    
-    // Rellenar campos si ya existen
-    document.getElementById("nombre").value = sesion.nombre || "";
-    document.getElementById("autoModelo").value = sesion.autoModelo || "";
-    document.getElementById("autoPatente").value = sesion.autoPatente || "";
-    document.getElementById("autoColor").value = sesion.autoColor || "";
-    
-    // Estado de cuenta simplificado
-    document.getElementById("valEstado").innerText = "Activo - Bajo Revisión Admin";
-};
-
-function pre(input, idImg) {
-    if (input.files && input.files[0]) {
+    // Función mágica para convertir imagen a texto (Base64)
+    const toBase64 = file => new Promise((resolve, reject) => {
+        if (!file) resolve(null);
         const reader = new FileReader();
-        reader.onload = e => { 
-            const img = document.getElementById(idImg);
-            img.src = e.target.result;
-            img.style.display = 'block';
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    async function guardarPerfil() {
+        const btn = document.getElementById('btnGuardar');
+        const tel = localStorage.getItem('userTelefono'); // Sacamos el tel del login previo
+
+        if (!tel) {
+            alert("Error: No se encontró el teléfono del usuario. Reingresa a la app.");
+            return;
         }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
 
-async function guardar() {
-    const btn = document.getElementById("btnGuardar");
-    const loader = document.getElementById("loader");
+        btn.innerText = "PROCESANDO FOTOS...";
+        btn.disabled = true;
 
-    // Datos obligatorios
-    const payload = {
-        telefono: sesion.telefono,
-        nombre: document.getElementById("nombre").value.trim(),
-        modelo: document.getElementById("autoModelo").value.trim(),
-        patente: document.getElementById("autoPatente").value.trim(),
-        color: document.getElementById("autoColor").value.trim(),
-        fotoPerfil: document.getElementById("pPerfil").src,
-        fotoCarnet: document.getElementById("pCarnet").src,
-        fotoSeguro: document.getElementById("pSeguro").src,
-        fotoTarjeta: document.getElementById("pTarjeta").src
-    };
+        try {
+            // Capturamos los archivos
+            const fPerfil = document.getElementById('fotoPerfil').files[0];
+            const fCarnet = document.getElementById('fotoCarnet').files[0];
+            const fSeguro = document.getElementById('fotoSeguro').files[0];
+            const fTarjeta = document.getElementById('fotoTarjeta').files[0];
 
-    if(!payload.nombre || !payload.modelo || !payload.patente || !payload.fotoPerfil) {
-        return alert("¡Faltan datos o fotos! No podemos habilitarte sin la documentación.");
-    }
+            // Los convertimos a texto para enviarlos
+            const datos = {
+                telefono: tel,
+                nombre: document.getElementById('nombre').value,
+                modelo: document.getElementById('modelo').value,
+                patente: document.getElementById('patente').value,
+                color: document.getElementById('color').value,
+                fotoPerfil: await toBase64(fPerfil),
+                fotoCarnet: await toBase64(fCarnet),
+                fotoSeguro: await toBase64(fSeguro),
+                fotoTarjeta: await toBase64(fTarjeta)
+            };
 
-    btn.disabled = true;
-    loader.style.display = "block";
+            const response = await fetch('/actualizar-perfil-chofer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
 
-    try {
-        const res = await fetch("/actualizar-perfil-chofer", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(payload)
-        });
+            const result = await response.json();
 
-        if(res.ok) {
-            // Actualizar local
-            sesion.nombre = payload.nombre;
-            sesion.autoModelo = payload.modelo;
-            sesion.autoPatente = payload.patente;
-            sesion.autoColor = payload.color;
-            localStorage.setItem("sesion", JSON.stringify(sesion));
-            
-            alert("Perfil guardado. En revisión por la administración.");
-            window.location.href = "index.html";
+            if (result.mensaje === "Ok") {
+                alert("✅ ¡Perfil enviado correctamente! Espera la aprobación del administrador.");
+                window.location.href = 'index.html'; // O la página principal del chofer
+            } else {
+                alert("❌ Error al guardar el perfil.");
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("❌ Error de conexión o fotos muy pesadas.");
+        } finally {
+            btn.innerText = "GUARDAR Y ENVIAR";
+            btn.disabled = false;
         }
-    } catch (e) {
-        alert("Error al conectar. ¿Internet?");
-    } finally {
-        btn.disabled = false;
-        loader.style.display = "none";
     }
-}
 </script>
+
 </body>
 </html>
