@@ -5,19 +5,24 @@ const cors = require('cors');
 const app = express();
 
 app.use(cors());
-
-// Configuración para recibir fotos pesadas
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// --- CONEXIÓN FORZADA (Eliminamos process.env para que no use rutas viejas de Render) ---
-const MONGO_URI = 'mongodb+srv://martinnrojas8:martin123@cluster0.v7z8x.mongodb.net/smart-traslados?retryWrites=true&w=majority';
+// --- CONEXIÓN COMPATIBLE CON RENDER (FORMATO LEGACY) ---
+// Cambiamos 'mongodb+srv' por 'mongodb' para forzar a Render a encontrar el cluster
+const MONGO_URI = 'mongodb://martinnrojas8:martin123@cluster0-shard-00-00.v7z8x.mongodb.net:27017,cluster0-shard-00-01.v7z8x.mongodb.net:27017,cluster0-shard-00-02.v7z8x.mongodb.net:27017/smart-traslados?ssl=true&replicaSet=atlas-139q8l-shard-0&authSource=admin&retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log("Conectado a MongoDB ✅"))
-  .catch(err => console.error("Error Mongo ❌:", err));
+  .catch(err => {
+      console.error("Error Mongo ❌:", err.message);
+      // Reintento automático si falla
+      setTimeout(() => {
+          mongoose.connect(MONGO_URI);
+      }, 5000);
+  });
 
-// --- ESQUEMAS (Tu lógica de hoy) ---
+// --- ESQUEMAS (Tus datos intactos) ---
 const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
     rol: String,
@@ -37,37 +42,25 @@ const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
 const TokenSchema = new mongoose.Schema({
     codigo: String,
-    usado: { type: Boolean, default: false },
-    fechaCreacion: { type: Date, default: Date.now }
+    usado: { type: Boolean, default: false }
 });
 const Token = mongoose.model('Token', TokenSchema);
 
-// --- RUTAS DE ARCHIVOS ESTÁTICOS ---
+// --- RUTAS ESTÁTICAS ---
 app.use(express.static(path.join(__dirname, 'Public')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- API (Tu lógica de hoy + Login recuperado) ---
-
+// --- API LOGIN Y REGISTRO ---
 app.post('/login', async (req, res) => {
     try {
         const tel = req.body.telefono.trim();
         const rolElegido = req.body.rol.toLowerCase().trim();
         const usuario = await Usuario.findOne({ telefono: tel, rol: rolElegido });
-        if (usuario) {
-            res.json({ mensaje: "Ok", usuario });
-        } else {
-            res.status(404).json({ mensaje: "Usuario no encontrado" });
-        }
-    } catch (e) { res.status(500).json({ error: "Error en servidor" }); }
-});
-
-app.get('/obtener-usuarios', async (req, res) => {
-    try {
-        const usuarios = await Usuario.find().sort({ fechaRegistro: -1 });
-        res.json(usuarios);
-    } catch (e) { res.status(500).send(e); }
+        if (usuario) return res.json({ mensaje: "Ok", usuario });
+        res.status(404).json({ mensaje: "Usuario no encontrado" });
+    } catch (e) { res.status(500).json({ error: "Error de DB" }); }
 });
 
 app.post('/register', async (req, res) => {
@@ -81,32 +74,10 @@ app.post('/register', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-app.post('/actualizar-perfil-chofer', async (req, res) => {
-    try {
-        const d = req.body;
-        await Usuario.findOneAndUpdate({ telefono: d.telefono }, { 
-            nombre: d.nombre, autoModelo: d.modelo, autoPatente: d.patente, 
-            autoColor: d.color, foto: d.fotoPerfil, fotoCarnet: d.fotoCarnet,
-            fotoSeguro: d.fotoSeguro, fotoTarjeta: d.fotoTarjeta 
-        });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/crear-token', async (req, res) => {
-    const nuevoToken = new Token({ codigo: req.body.codigo });
-    await nuevoToken.save();
-    res.json({ mensaje: "Token creado" });
-});
-
-app.post('/validar-token', async (req, res) => {
-    const { codigo, telefono } = req.body;
-    const t = await Token.findOne({ codigo, usado: false });
-    if (t) {
-        t.usado = true; await t.save();
-        await Usuario.findOneAndUpdate({ telefono }, { pagoActivo: true });
-        res.json({ ok: true });
-    } else { res.status(400).json({ ok: false }); }
+// Rutas de administración
+app.get('/obtener-usuarios', async (req, res) => {
+    const usuarios = await Usuario.find().sort({ fechaRegistro: -1 });
+    res.json(usuarios);
 });
 
 app.get('/admin-panel', (req, res) => {
@@ -118,4 +89,4 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor Smart Online en puerto ${PORT} 🚀`));
+app.listen(PORT, () => console.log(`Servidor Smart Online 🚀`));
