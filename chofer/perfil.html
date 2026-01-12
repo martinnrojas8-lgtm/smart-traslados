@@ -5,22 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil del Chofer - Smart Taxi</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-        .container { max-width: 500px; background: white; padding: 20px; border-radius: 10px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
-        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .preview-img { width: 100%; height: 100px; object-fit: cover; border-radius: 5px; margin-top: 5px; display: none; border: 1px solid #ddd; }
-        button { width: 100%; padding: 15px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .requerido { color: red; }
+        body { font-family: Arial, sans-serif; background: #000; color: #fff; padding: 20px; }
+        .container { max-width: 500px; background: #111; padding: 20px; border-radius: 10px; margin: auto; border: 1px solid #333; }
+        h2 { text-align: center; color: #00c853; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #ccc; }
+        input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #333; border-radius: 5px; box-sizing: border-box; background: #222; color: #fff; }
+        input[type="file"] { margin-top: 10px; font-size: 12px; }
+        .preview-img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-top: 10px; display: none; border: 1px solid #00c853; }
+        button { width: 100%; padding: 15px; background: #00c853; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; color: #000; }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .requerido { color: #00c853; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Completar Perfil Chofer</h2>
-    <p style="font-size: 12px; color: #666; text-align: center;">Todos los campos son obligatorios para la habilitación.</p>
+    <p style="font-size: 12px; color: #888; text-align: center;">Todos los documentos son obligatorios.</p>
     
     <label>Nombre Completo <span class="requerido">*</span></label>
     <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
@@ -34,45 +35,66 @@
     <label>Color del Auto <span class="requerido">*</span></label>
     <input type="text" id="color" placeholder="Ej: Blanco">
 
-    <label>Foto del Conductor <span class="requerido">*</span></label>
-    <input type="file" id="fotoPerfil" accept="image/*" onchange="preview(this, 'pPerfil')">
+    <label>Foto de Perfil <span class="requerido">*</span></label>
+    <input type="file" id="fotoPerfil" accept="image/*" onchange="procesarFoto(this, 'pPerfil')">
     <img id="pPerfil" class="preview-img">
 
-    <label>Foto de Tarjeta del Vehículo <span class="requerido">*</span></label>
-    <input type="file" id="fotoTarjeta" accept="image/*" onchange="preview(this, 'pTarjeta')">
-    <img id="pTarjeta" class="preview-img">
+    <label>Foto de Carnet de Conducir <span class="requerido">*</span></label>
+    <input type="file" id="fotoCarnet" accept="image/*" onchange="procesarFoto(this, 'pCarnet')">
+    <img id="pCarnet" class="preview-img">
 
     <label>Foto de Seguro <span class="requerido">*</span></label>
-    <input type="file" id="fotoSeguro" accept="image/*" onchange="preview(this, 'pSeguro')">
+    <input type="file" id="fotoSeguro" accept="image/*" onchange="procesarFoto(this, 'pSeguro')">
     <img id="pSeguro" class="preview-img">
 
-    <label>Foto de Carnet de Conducir <span class="requerido">*</span></label>
-    <input type="file" id="fotoCarnet" accept="image/*" onchange="preview(this, 'pCarnet')">
-    <img id="pCarnet" class="preview-img">
+    <label>Foto de Tarjeta Vehículo <span class="requerido">*</span></label>
+    <input type="file" id="fotoTarjeta" accept="image/*" onchange="procesarFoto(this, 'pTarjeta')">
+    <img id="pTarjeta" class="preview-img">
 
     <button id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
 </div>
 
 <script>
-    function preview(input, id) {
+    // Objeto para guardar las imágenes ya comprimidas en Base64
+    const imagenesComprimidas = {
+        pPerfil: null,
+        pCarnet: null,
+        pSeguro: null,
+        pTarjeta: null
+    };
+
+    // Función mágica para comprimir la imagen antes de subirla
+    function procesarFoto(input, idPreview) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = e => {
-                const img = document.getElementById(id);
+            reader.onload = function(e) {
+                const img = new Image();
                 img.src = e.target.result;
-                img.style.display = 'block';
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Redimensionamos a un máximo de 800px para que no pese nada
+                    const maxW = 800;
+                    const scale = maxW / img.width;
+                    canvas.width = maxW;
+                    canvas.height = img.height * scale;
+                    
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Comprimimos al 70% de calidad
+                    const base64 = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // Guardamos y mostramos preview
+                    imagenesComprimidas[idPreview] = base64;
+                    const preview = document.getElementById(idPreview);
+                    preview.src = base64;
+                    preview.style.display = 'block';
+                }
             }
             reader.readAsDataURL(input.files[0]);
         }
     }
-
-    const toBase64 = file => new Promise((resolve, reject) => {
-        if (!file) resolve(null);
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
 
     async function guardarPerfil() {
         const tel = localStorage.getItem('userTelefono');
@@ -82,15 +104,11 @@
         const modelo = document.getElementById('modelo').value.trim();
         const patente = document.getElementById('patente').value.trim();
         const color = document.getElementById('color').value.trim();
-        
-        const fPerfil = document.getElementById('fotoPerfil').files[0];
-        const fTarjeta = document.getElementById('fotoTarjeta').files[0];
-        const fSeguro = document.getElementById('fotoSeguro').files[0];
-        const fCarnet = document.getElementById('fotoCarnet').files[0];
 
-        // Validación de todos los campos nuevos y viejos
-        if (!nombre || !modelo || !patente || !color || !fPerfil || !fTarjeta || !fSeguro || !fCarnet) {
-            alert("⚠️ Error: Debes completar todos los datos y subir las 4 fotos obligatorias.");
+        if (!nombre || !modelo || !patente || !color || 
+            !imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || 
+            !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
+            alert("⚠️ Debes completar todos los datos y subir las 4 fotos.");
             return;
         }
 
@@ -104,10 +122,10 @@
                 modelo: modelo,
                 patente: patente,
                 color: color,
-                fotoPerfil: await toBase64(fPerfil),
-                fotoTarjeta: await toBase64(fTarjeta),
-                fotoSeguro: await toBase64(fSeguro),
-                fotoCarnet: await toBase64(fCarnet)
+                fotoPerfil: imagenesComprimidas.pPerfil,
+                fotoCarnet: imagenesComprimidas.pCarnet,
+                fotoSeguro: imagenesComprimidas.pSeguro,
+                fotoTarjeta: imagenesComprimidas.pTarjeta
             };
 
             const response = await fetch('/actualizar-perfil-chofer', {
@@ -119,15 +137,14 @@
             const result = await response.json();
 
             if (result.mensaje === "Ok") {
-                alert("✅ ¡Perfil enviado! El administrador revisará tus documentos.");
+                alert("✅ ¡Perfil enviado correctamente!");
                 window.location.href = 'index.html';
             } else {
-                alert("❌ Error en el servidor al guardar.");
+                alert("❌ Error: " + (result.error || "El servidor rechazó los datos."));
             }
 
         } catch (error) {
-            console.error(error);
-            alert("❌ Error: Posiblemente las fotos sean muy pesadas.");
+            alert("❌ Error crítico de conexión. Intenta de nuevo.");
         } finally {
             btn.innerText = "GUARDAR Y ENVIAR";
             btn.disabled = false;
