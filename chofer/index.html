@@ -10,16 +10,13 @@
   header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
   .screen{ padding:15px; }
   .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
-  #map{ width:100%; height:250px; border-radius:10px; background:#222; }
+  #map{ width:100%; height:350px; border-radius:10px; background:#222; }
   .status-bar{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
   .badge{ padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-  .badge-free{ background: #00c853; color: #000; }
-  .badge-time{ background: #ffb300; color: #000; }
+  .badge-online{ background: #00c853; color: #000; }
   button{ padding:15px; width:100%; margin-top:10px; border:none; border-radius:10px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
   .btn-ocupado{ background: #ff5252; color: #fff; }
   .btn-cambio{ background:none; border:1px solid #555; color:#888; padding:8px; font-size:11px; margin-bottom:10px; }
-  .hidden{ display:none; }
-  input.voucher-input { width:100%; padding:15px; margin-top:10px; border-radius:8px; border:2px solid #ffb300; background:#222; color:#fff; font-size:18px; text-align:center; }
 </style>
 </head>
 <body>
@@ -27,29 +24,21 @@
 <header>
   <button class="btn-cambio" onclick="volverAPasajero()">MODO PASAJERO</button>
   <h2 style="margin:0; font-size:18px;">Smart Chofer</h2>
-  <div style="width:40px; text-align:right">👤</div>
+  <div style="width:40px; text-align:right" onclick="location.href='perfil.html'">👤</div>
 </header>
 
 <div class="screen">
-  <div id="contadoresUI" class="status-bar hidden">
-      <span class="badge badge-free" id="txtViajes">-- viajes</span>
-      <span class="badge badge-time" id="txtReloj">--:--</span>
+  <div id="contadoresUI" class="status-bar">
+      <span class="badge badge-online">SISTEMA ACTIVO</span>
+      <span id="txtNombreChofer" style="color:#888">Hola, Chofer</span>
   </div>
 
-  <div id="areaTrabajo" class="hidden">
+  <div id="areaTrabajo">
     <div class="card"><div id="map"></div></div>
     <div class="card" style="text-align:center;">
         <h3 id="txtEstado" style="color:#00c853; margin:0;">ESTADO: DISPONIBLE</h3>
         <button id="btnToggle" onclick="toggleEstado()">PONERME COMO OCUPADO</button>
     </div>
-  </div>
-
-  <div id="pantallaPago" class="hidden">
-      <div class="card" style="text-align:center; border-color:#ffb300;">
-          <h2 style="color:#ffb300;">App Inactiva</h2>
-          <input type="text" id="inputVoucher" class="voucher-input" placeholder="CÓDIGO DE ACTIVACIÓN">
-          <button onclick="validarCodigo()" style="background:#ffb300;">ACTIVAR 24HS</button>
-      </div>
   </div>
 </div>
 
@@ -61,7 +50,10 @@ const audioAlerta = new Audio("https://assets.mixkit.co/active_storage/sfx/2571/
 
 function initApp() {
     if(!sesion.telefono) return location.href = "/";
-    verificarAcceso();
+    if(sesion.nombre) document.getElementById("txtNombreChofer").innerText = "Hola, " + sesion.nombre;
+    initMap();
+    setInterval(transmitirUbicacion, 7000);
+    setInterval(chequearViajesNuevos, 5000);
 }
 
 function volverAPasajero() {
@@ -70,25 +62,20 @@ function volverAPasajero() {
     window.location.href = "/pasajero/index.html";
 }
 
-function verificarAcceso() {
-    const ahora = Date.now();
-    if (sesion.viajesGratis > 0 || sesion.activoHasta > ahora) {
-        document.getElementById("areaTrabajo").classList.remove("hidden");
-        document.getElementById("contadoresUI").classList.remove("hidden");
-        document.getElementById("txtViajes").innerText = "🎁 " + (sesion.viajesGratis || 0) + " viajes";
-        initMap();
-        setInterval(transmitirUbicacion, 7000);
-        setInterval(chequearViajesNuevos, 5000);
-    } else {
-        document.getElementById("pantallaPago").classList.remove("hidden");
-    }
-}
-
 function initMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
-        marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+        // MAPA NORMAL (Quitamos los estilos oscuros para mejor visibilidad)
+        map = new google.maps.Map(document.getElementById("map"), { 
+            center: myPos, 
+            zoom: 16, 
+            disableDefaultUI: true 
+        });
+        marker = new google.maps.Marker({ 
+            position: myPos, 
+            map: map, 
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
+        });
     });
 }
 
@@ -110,7 +97,6 @@ function chequearViajesNuevos() {
     .then(viaje => {
         if (viaje && viaje.activo && !document.getElementById("alertaViaje")) {
             audioAlerta.play();
-            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
             mostrarPopUpViaje(viaje);
         }
     });
@@ -119,20 +105,21 @@ function chequearViajesNuevos() {
 function mostrarPopUpViaje(v) {
     const div = document.createElement("div");
     div.id = "alertaViaje";
-    div.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+    div.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
     div.innerHTML = `
-        <div style="background:#111; border:3px solid #00c853; border-radius:20px; padding:20px; width:100%; text-align:center;">
-            <h2 style="color:#00c853;">¡NUEVO VIAJE!</h2>
-            <p><b>DE:</b> ${v.origen}</p> <p><b>A:</b> ${v.destino}</p>
-            <h1 style="color:#00c853;">${v.precio}</h1>
+        <div style="background:#111; border:3px solid #00c853; border-radius:20px; padding:25px; width:100%; text-align:center;">
+            <h2 style="color:#00c853; margin-top:0;">¡NUEVO VIAJE!</h2>
+            <p style="font-size:14px; color:#888;">ORIGEN:</p><p>${v.origen}</p> 
+            <p style="font-size:14px; color:#888;">DESTINO:</p><p>${v.destino}</p>
+            <h1 style="color:#00c853; font-size:40px;">${v.precio}</h1>
             <button onclick="aceptarViaje()" style="background:#00c853; padding:20px; font-size:20px;">ACEPTAR</button>
-            <button onclick="this.parentElement.parentElement.remove()" style="background:none; color:#555; margin-top:15px; border:none;">Ignorar</button>
+            <button onclick="this.parentElement.parentElement.remove()" style="background:none; color:#ff5252; margin-top:10px; border:none;">IGNORAR</button>
         </div>`;
     document.body.appendChild(div);
 }
 
 function aceptarViaje() {
-    alert("Viaje aceptado. ¡En camino!");
+    alert("Viaje aceptado.");
     document.getElementById("alertaViaje").remove();
     if(estadoActual === "disponible") toggleEstado();
 }
@@ -145,14 +132,6 @@ function toggleEstado() {
     txt.style.color = (estadoActual === "disponible") ? "#00c853" : "#ff5252";
     btn.innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
     btn.className = (estadoActual === "disponible") ? "" : "btn-ocupado";
-}
-
-function validarCodigo() {
-    if(document.getElementById("inputVoucher").value.toUpperCase() === "SMART24") {
-        sesion.activoHasta = Date.now() + 86400000;
-        localStorage.setItem("sesion", JSON.stringify(sesion));
-        location.reload();
-    } else alert("Código inválido");
 }
 
 window.onload = initApp;
