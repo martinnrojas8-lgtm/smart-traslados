@@ -18,10 +18,9 @@
     min-height:100vh; 
   }
 
-  /* ANIMACIÓN DE 5 SEGUNDOS: De oscuro/borroso a color total */
-  @keyframes fadeInSuave {
-    0% { opacity: 0; filter: brightness(0) blur(5px); transform: scale(0.85); }
-    50% { opacity: 0.5; filter: brightness(0.5) blur(2px); }
+  /* ANIMACIÓN LENTA DE 7 SEGUNDOS */
+  @keyframes fadeInRevelado {
+    0% { opacity: 0; filter: brightness(0) blur(10px); transform: scale(0.8); }
     100% { opacity: 1; filter: brightness(1) blur(0); transform: scale(1); }
   }
 
@@ -30,33 +29,33 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 25px; /* Espacio antes del título Registro */
-    padding-top: 10px;
+    margin-bottom: 25px;
+    padding: 10px 0;
   }
 
   .logo-img {
-    width: 140px; /* Tamaño ideal para móviles */
+    width: 150px; 
     height: auto;
-    border-radius: 20px; /* Para que coincida con la forma de tu logo */
-    animation: fadeInSuave 5s ease-in-out forwards;
+    border-radius: 25px; /* Ajustado a la forma de tu logo */
+    animation: fadeInRevelado 7s ease-in-out forwards;
+    display: block;
   }
   
   .card { 
     background:#1e2630; 
-    padding:30px; 
+    padding:35px 25px; 
     border-radius:25px; 
     width:90%; 
     max-width:360px; 
     text-align:center; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.7);
   }
   
   h2 { 
     margin: 0 0 25px 0; 
     font-weight: 400; 
     color: #f0f0f0;
-    font-size: 26px;
-    letter-spacing: 1px;
+    font-size: 28px;
   }
   
   input, select, .btn { 
@@ -82,20 +81,11 @@
     font-weight: bold; 
     cursor: pointer; 
     text-decoration: none; 
-    transition: 0.3s all; 
+    transition: 0.3s ease; 
   }
 
-  .btn-verde { 
-    background:#2ecc71; 
-    color:#fff; 
-    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2); 
-  }
-
-  .btn-azul { 
-    background:#00bcd4; 
-    color:#fff; 
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2); 
-  }
+  .btn-verde { background:#2ecc71; color:#fff; }
+  .btn-azul { background:#00bcd4; color:#fff; }
   
   .btn-download { 
     background: transparent; 
@@ -103,10 +93,9 @@
     color: #888; 
     font-size: 14px;
     margin-top: 5px;
-    margin-bottom: 0;
   }
 
-  .btn:active { transform: scale(0.96); }
+  .btn:active { transform: scale(0.96); opacity: 0.9; }
 
   #ios-prompt { 
     display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; 
@@ -119,7 +108,7 @@
 
   <div class="card">
     <div class="logo-container">
-      <img src="1000681814.png" alt="Smart Traslados" class="logo-img">
+      <img src="Public/file_000000008fd0720eb71af76359ccb359.png" alt="Smart Traslados" class="logo-img">
     </div>
 
     <h2>Registro</h2>
