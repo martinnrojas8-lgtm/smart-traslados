@@ -1,65 +1,70 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
+const cors = require('cors');
 const path = require('path');
-const app = express();
-const port = process.env.PORT || 3000;
+require('dotenv').config();
 
-// 1. CONFIGURACIÓN DE TAMAÑO (Para que no rebote las fotos del perfil)
+const app = express();
+
+// 1. CONFIGURACIÓN DE TAMAÑO (Para recibir las fotos pesadas del carnet/seguro)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cors());
 
-app.use(express.static('public'));
+// 2. SERVIR ARCHIVOS ESTÁTICOS (Carpeta public)
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. CONEXIÓN A MONGODB (Usamos tu configuración actual)
-const uri = process.env.MONGO_URI || "mongodb+srv://tu_usuario:tu_clave@cluster.mongodb.net/smart_traslados"; 
-const client = new MongoClient(uri);
-let db;
+// 3. CONEXIÓN A MONGODB ATLAS (Respetando tu configuración de env)
+const mongoURI = process.env.MONGO_URI;
+mongoose.connect(mongoURI)
+    .then(() => console.log('✅ Conexión exitosa a MongoDB Atlas'))
+    .catch(err => {
+        console.error('❌ Error de conexión:', err.message);
+    });
 
-async function connectDB() {
-    try {
-        await client.connect();
-        db = client.db('smart_traslados');
-        console.log("Conectado a MongoDB");
-    } catch (e) {
-        console.error("Error en conexión:", e);
-    }
-}
-connectDB();
+// --- ESQUEMA DE USUARIO (Para que Mongo sepa dónde guardar todo) ---
+const usuarioSchema = new mongoose.Schema({
+    telefono: String,
+    rol: String,
+    nombre: String,
+    foto: String,
+    autoModelo: String,
+    autoPatente: String,
+    autoColor: String,
+    documentacion: Object,
+    activo: { type: Boolean, default: true },
+    lat: Number,
+    lng: Number,
+    estado: String,
+    perfilCompleto: { type: Boolean, default: false }
+});
+const Usuario = mongoose.model('Usuario', usuarioSchema);
 
-// --- RUTAS DE LOGIN Y REGISTRO ---
+// --- RUTAS DE LÓGICA ---
 
 app.post('/register', async (req, res) => {
     try {
         const { telefono, rol } = req.body;
-        const usuarios = db.collection('usuarios');
-        const existe = await usuarios.findOne({ telefono });
-        if (existe) return res.json({ mensaje: "Ok", usuario: existe });
-
-        const nuevo = { 
-            telefono, 
-            rol, 
-            nombre: "", 
-            activo: true, 
-            fecha: new Date(),
-            perfilCompleto: false 
-        };
-        await usuarios.insertOne(nuevo);
-        res.json({ mensaje: "Ok", usuario: nuevo });
-    } catch (e) { res.status(500).send(e); }
+        let user = await Usuario.findOne({ telefono });
+        if (!user) {
+            user = new Usuario({ telefono, rol });
+            await user.save();
+        }
+        res.json({ mensaje: "Ok", usuario: user });
+    } catch (e) { res.status(500).json(e); }
 });
 
 app.post('/login', async (req, res) => {
     try {
         const { telefono } = req.body;
-        const user = await db.collection('usuarios').findOne({ telefono });
+        const user = await Usuario.findOne({ telefono });
         if (!user) return res.status(404).json({ error: "No existe" });
         if (!user.activo) return res.status(403).json({ error: "Suspendido" });
         res.json(user);
-    } catch (e) { res.status(500).send(e); }
+    } catch (e) { res.status(500).json(e); }
 });
 
-// --- RUTA NUEVA: ACTUALIZAR PERFIL COMPLETO ---
-
+// NUEVA: RUTA DE PERFIL PESADO
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const { 
@@ -67,7 +72,7 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
             fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta 
         } = req.body;
 
-        const resultado = await db.collection('usuarios').updateOne(
+        await Usuario.updateOne(
             { telefono: telefono },
             { 
                 $set: { 
@@ -81,47 +86,29 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
                         seguro: fotoSeguro,
                         tarjeta: fotoTarjeta
                     },
-                    perfilCompleto: true,
-                    ultimaActualizacion: new Date()
+                    perfilCompleto: true
                 } 
             }
         );
         res.json({ mensaje: "Ok" });
     } catch (e) {
-        console.error(e);
         res.status(500).json({ error: "Error al guardar perfil" });
     }
 });
 
-// --- UBICACIÓN Y VIAJES ---
-
 app.post('/actualizar-ubicacion-chofer', async (req, res) => {
     const { telefono, lat, lng, estado } = req.body;
-    await db.collection('usuarios').updateOne(
-        { telefono },
-        { $set: { lat, lng, estado, lastUpdate: new Date() } }
-    );
+    await Usuario.updateOne({ telefono }, { $set: { lat, lng, estado } });
     res.json({ mensaje: "Ok" });
 });
 
-app.get('/verificar-pedidos', async (req, res) => {
-    // Aquí iría tu lógica de búsqueda de viajes activos
-    // Por ahora enviamos un objeto vacío o el último pedido
-    const viaje = await db.collection('pedidos').findOne({ activo: true });
-    res.json(viaje);
+// --- RUTA PRINCIPAL (Para evitar el Cannot GET /) ---
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// --- PANEL ADMIN ---
-
-app.get('/admin/usuarios', async (req, res) => {
-    const lista = await db.collection('usuarios').find().toArray();
-    res.json(lista);
+// --- PUERTO ---
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
-
-app.post('/admin/toggle-usuario', async (req, res) => {
-    const { telefono, activo } = req.body;
-    await db.collection('usuarios').updateOne({ telefono }, { $set: { activo } });
-    res.json({ mensaje: "Ok" });
-});
-
-app.listen(port, () => console.log("Servidor Smart en puerto " + port));
