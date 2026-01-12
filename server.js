@@ -1,94 +1,98 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const path = require('path');
-const cors = require('cors');
-require('dotenv').config();
-
+const mongoose = require('mongoose');
+const cors = require('cors'); 
 const app = express();
 
-// 1. CONFIGURACIÓN DE SEGURIDAD Y TAMAÑO
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// 2. CONEXIÓN A TU MONGODB (Usando tu variable de entorno)
-const mongoURI = process.env.MONGO_URI;
-mongoose.connect(mongoURI)
-    .then(() => console.log('✅ Conexión MONGODB OK'))
-    .catch(err => console.error('❌ Error conexión:', err));
+// Aumentamos el límite para fotos de alta resolución
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// 3. ESQUEMA DE USUARIO (Con los campos nuevos para el perfil del chofer)
-const usuarioSchema = new mongoose.Schema({
-    telefono: String,
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("Conectado a MongoDB ✅"))
+  .catch(err => console.error("Error Mongo ❌:", err));
+
+// ESQUEMA IGUAL AL TUYO
+const UsuarioSchema = new mongoose.Schema({
+    telefono: { type: String, unique: true },
     rol: String,
     nombre: String,
     foto: String,
     autoModelo: String,
     autoPatente: String,
     autoColor: String,
-    documentacion: Object,
-    perfilCompleto: { type: Boolean, default: false },
-    activo: { type: Boolean, default: true },
-    lat: Number,
-    lng: Number,
-    estado: String
+    fotoCarnet: String,
+    fotoSeguro: String,
+    fotoTarjeta: String,
+    estadoRevision: { type: String, default: "pendiente" }
 });
-const Usuario = mongoose.model('Usuario', usuarioSchema);
+const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
-// 4. SERVIR ARCHIVOS ESTÁTICOS (Esto es lo que estaba fallando)
-// Asegúrate de que tus archivos estén en una carpeta llamada "public"
-app.use(express.static('public'));
+// --- SERVIR CARPETAS (Corregido a minúsculas para evitar errores en Render) ---
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
+app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- RUTAS DE API ---
+// --- RUTAS DE REGISTRO Y LOGIN ---
 
 app.post('/register', async (req, res) => {
     try {
         const { telefono, rol } = req.body;
-        let user = await Usuario.findOne({ telefono });
-        if (!user) {
-            user = new Usuario({ telefono, rol, perfilCompleto: false });
-            await user.save();
-        }
-        res.json({ mensaje: "Ok", usuario: user });
-    } catch (e) { res.status(500).json(e); }
+        if(!telefono || !rol) return res.status(400).json({ error: "Datos incompletos" });
+
+        const existe = await Usuario.findOne({ telefono: telefono.trim() });
+        if(existe) return res.json({ mensaje: "Ok" }); 
+
+        const nuevoUsuario = new Usuario({ 
+            telefono: telefono.trim(), 
+            rol: rol.toLowerCase().trim() 
+        });
+        await nuevoUsuario.save();
+        res.json({ mensaje: "Ok" });
+    } catch (e) {
+        res.status(500).json({ error: "Error al registrar" });
+    }
 });
 
 app.post('/login', async (req, res) => {
     try {
         const { telefono } = req.body;
-        const user = await Usuario.findOne({ telefono });
-        if (!user) return res.status(404).json({ error: "No existe" });
-        if (!user.activo) return res.status(403).json({ error: "Suspendido" });
-        res.json(user);
-    } catch (e) { res.status(500).json(e); }
+        const usuario = await Usuario.findOne({ telefono: telefono.trim() });
+        if (usuario) {
+            res.json(usuario); // Enviamos el usuario completo
+        } else {
+            res.status(404).json({ error: "Número no registrado" });
+        }
+    } catch (e) {
+        res.status(500).json({ error: "Error en servidor" });
+    }
 });
 
-// ESTA ES LA RUTA QUE RECIBE LAS FOTOS Y DATOS DEL AUTO
+// --- RUTA PERFIL CHOFER (ACTUALIZADA) ---
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
-        const { telefono, nombre, modelo, patente, color, fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta } = req.body;
-        await Usuario.updateOne(
-            { telefono },
-            { $set: { 
-                nombre, autoModelo: modelo, autoPatente: patente, autoColor: color, foto: fotoPerfil,
-                documentacion: { carnet: fotoCarnet, seguro: fotoSeguro, tarjeta: fotoTarjeta },
-                perfilCompleto: true
-            }}
-        );
+        const d = req.body;
+        await Usuario.findOneAndUpdate({ telefono: d.telefono.trim() }, { 
+            nombre: d.nombre, 
+            autoModelo: d.modelo, 
+            autoPatente: d.patente, 
+            autoColor: d.color, 
+            foto: d.fotoPerfil, 
+            fotoCarnet: d.fotoCarnet,
+            fotoSeguro: d.fotoSeguro, 
+            fotoTarjeta: d.fotoTarjeta 
+        });
         res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error al guardar" }); }
+    } catch (e) { res.status(500).json({ error: "Error al guardar perfil" }); }
 });
 
-app.post('/actualizar-ubicacion-chofer', async (req, res) => {
-    const { telefono, lat, lng, estado } = req.body;
-    await Usuario.updateOne({ telefono }, { $set: { lat, lng, estado } });
-    res.json({ mensaje: "Ok" });
-});
-
-// --- RUTA FINAL PARA EVITAR PANTALLA BLANCA ---
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+// --- RUTA RAÍZ ---
+app.get('/', (req, res) => { 
+    res.sendFile(path.join(__dirname, 'public', 'login.html')); 
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+app.listen(PORT, () => console.log("Servidor Smart en marcha 🚀"));
