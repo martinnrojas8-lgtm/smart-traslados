@@ -8,63 +8,46 @@
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
   header{ background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
   
-  /* Contenedor de perfil con foto real */
   .perfil-header { 
-    display: flex; 
-    align-items: center; 
-    gap: 10px; 
-    cursor: pointer; 
-    background: #222; 
-    padding: 5px 12px; 
-    border-radius: 20px; 
-    border: 1px solid #444; 
+    display: flex; align-items: center; gap: 10px; cursor: pointer; 
+    background: #222; padding: 5px 12px; border-radius: 20px; border: 1px solid #444; 
   }
   
-  /* Estilo para la foto miniatura circular */
   #imgMiniaturaHeader {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #00c853;
-    background: #333;
-    display: none; /* Se muestra solo si hay foto */
+    width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+    border: 1px solid #00c853; background: #333; display: none;
   }
 
   .screen{ padding:15px; }
-  #pantallaPerfil, #areaTrabajo { display: none; }
-  .activa { display: block !important; }
+  #areaTrabajo { display: block; }
   .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
   #map{ width:100%; height:400px; border-radius:10px; background:#222; }
   .status-bar{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
   .badge{ padding: 4px 8px; border-radius: 4px; font-weight: bold; background: #00c853; color: #000; }
+  
   button{ padding:15px; width:100%; margin-top:10px; border:none; border-radius:10px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size: 14px; }
   .btn-ocupado{ background: #ff5252; color: #fff; }
   .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 15px; }
 
-  #modalViaje {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 5%;
-    width: 90%;
-    background: #00c853;
-    color: #000;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    z-index: 1000;
-    text-align: center;
-    animation: slideUp 0.5s ease;
+  /* Estilo para el cuadro de activación por código */
+  #seccionActivacion {
+    background: #1a1a1a; border: 1px solid #ffb300; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px;
   }
-  @keyframes slideUp { from { bottom: -100px; } to { bottom: 20px; } }
+  #inputToken {
+    width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff;
+  }
+
+  #modalViaje {
+    display: none; position: fixed; bottom: 20px; left: 5%; width: 90%;
+    background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="perfil-header" onclick="irAlPerfil()">
-    <img id="imgMiniaturaHeader" src="" alt="">
+  <div class="perfil-header" onclick="location.href='perfil.html'">
+    <img id="imgMiniaturaHeader" src="">
     <span id="iconoDefault">👤</span>
     <span style="font-size: 14px; font-weight: bold;">Mi Perfil</span>
   </div>
@@ -74,12 +57,19 @@
 
 <div id="modalViaje">
     <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
-    <p id="datosViaje" style="font-weight:bold">Cargando ubicación...</p>
-    <button onclick="aceptarViaje()" style="background:#000; color:#00c853; border: 2px solid #000;">ACEPTAR VIAJE</button>
-    <button onclick="rechazarViaje()" style="background:none; border:none; margin-top:10px; text-decoration:underline">Omitir</button>
+    <p id="datosViaje" style="font-weight:bold">Cargando...</p>
+    <button onclick="aceptarViaje()" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
 </div>
 
 <div class="screen">
+  <div id="seccionActivacion" style="display: none;">
+      <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
+      <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos que te envió el administrador para comenzar a trabajar.</p>
+      <input type="text" id="inputToken" placeholder="000000" maxlength="6">
+      <button onclick="validarCodigo()" style="background: #ffb300;">ACTIVAR AHORA</button>
+      <p style="font-size: 10px; color: #888; margin-top: 10px;">¿No tenés un código? Contactá a soporte.</p>
+  </div>
+
   <div id="areaTrabajo">
       <div class="status-bar">
           <span class="badge">SISTEMA ACTIVO</span>
@@ -88,7 +78,9 @@
       <div class="card" style="padding: 5px;"><div id="map"></div></div>
       <div class="card" style="text-align:center;">
           <h3 id="txtEstado" style="color:#00c853; margin:0; margin-bottom: 10px;">ESTADO: DISPONIBLE</h3>
-          <button id="btnToggle" onclick="toggleEstado()">PONERME COMO OCUPADO</button>
+          <div id="contenedorBotones">
+              <button id="btnToggle" onclick="toggleEstado()">PONERME COMO OCUPADO</button>
+          </div>
           <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
       </div>
   </div>
@@ -97,22 +89,16 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-let map, marker, estadoActual = "disponible";
-let viajePendiente = null;
+let map, marker, estadoActual = "disponible", pagoConfirmado = false;
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
-    mostrarSeccion('areaTrabajo');
     
-    // CARGAR DATOS REALES (Foto y Nombre)
     await cargarDatosChofer();
-
     initMap();
     setInterval(transmitirUbicacion, 7000);
-    setInterval(verificarNuevosViajes, 5000);
 }
 
-// NUEVA FUNCIÓN: Trae la foto y el nombre desde la base de datos
 async function cargarDatosChofer() {
     try {
         const res = await fetch('/obtener-usuarios');
@@ -120,64 +106,64 @@ async function cargarDatosChofer() {
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
 
         if (yo) {
-            // Actualizar nombre en la barra
-            if (yo.nombre) document.getElementById('txtNombreChofer').innerText = yo.nombre;
-            
-            // Actualizar foto real
+            document.getElementById('txtNombreChofer').innerText = yo.nombre || sesion.telefono;
             if (yo.foto) {
-                const img = document.getElementById('imgMiniaturaHeader');
-                img.src = yo.foto;
-                img.style.display = 'block';
+                document.getElementById('imgMiniaturaHeader').src = yo.foto;
+                document.getElementById('imgMiniaturaHeader').style.display = 'block';
                 document.getElementById('iconoDefault').style.display = 'none';
             }
+
+            // CONTROL DE PAGO
+            if (yo.pagoActivo) {
+                pagoConfirmado = true;
+                document.getElementById('seccionActivacion').style.display = 'none';
+                document.getElementById('btnToggle').disabled = false;
+            } else {
+                pagoConfirmado = false;
+                document.getElementById('seccionActivacion').style.display = 'block';
+                document.getElementById('btnToggle').disabled = true;
+                document.getElementById('btnToggle').innerText = "ESPERANDO ACTIVACIÓN";
+                document.getElementById('btnToggle').style.background = "#444";
+                document.getElementById('txtEstado').innerText = "ESTADO: BLOQUEADO";
+                document.getElementById('txtEstado').style.color = "#ff5252";
+            }
         }
-    } catch (e) { console.log("Error cargando perfil header"); }
+    } catch (e) { console.log("Error cargando perfil"); }
 }
 
-async function verificarNuevosViajes() {
-    if (estadoActual !== "disponible") return;
+async function validarCodigo() {
+    const cod = document.getElementById('inputToken').value.trim();
+    if(cod.length < 6) return alert("Ingresá el código de 6 dígitos.");
+
     try {
-        const res = await fetch(`/buscar-viajes-pendientes?tel=${sesion.telefono}`);
-        const viaje = await res.json();
-        if (viaje && viaje.id) {
-            viajePendiente = viaje;
-            document.getElementById('datosViaje').innerText = `Origen: ${viaje.origen} \n Destino: ${viaje.destino}`;
-            document.getElementById('modalViaje').style.display = 'block';
-            let audio = new Audio('/sonidos/alerta.mp3');
-            audio.play().catch(e => {}); 
+        const res = await fetch('/validar-token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ codigo: cod, telefono: sesion.telefono })
+        });
+        const data = await res.json();
+        if(data.ok) {
+            alert("✅ ¡Cuenta activada con éxito!");
+            location.reload();
+        } else {
+            alert("❌ Código inválido o ya usado.");
         }
-    } catch (e) { console.log("Buscando viajes..."); }
-}
-
-function aceptarViaje() {
-    alert("¡Viaje aceptado! Dirígete al punto de origen.");
-    document.getElementById('modalViaje').style.display = 'none';
-}
-
-function rechazarViaje() {
-    document.getElementById('modalViaje').style.display = 'none';
-    viajePendiente = null;
-}
-
-function irAlPerfil() { window.location.href = 'perfil.html'; }
-function mostrarSeccion(id) { document.getElementById(id).classList.add('activa'); }
-
-function cerrarSesion() {
-    if(confirm("¿Deseas desconectarte?")) {
-        localStorage.removeItem("sesion");
-        location.href = "/";
-    }
+    } catch (e) { alert("Error al validar."); }
 }
 
 function initMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
-        marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } });
+        marker = new google.maps.Marker({ 
+            position: myPos, map: map, 
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
+        });
     });
 }
 
 function transmitirUbicacion() {
+    if(!pagoConfirmado) return; // No transmite si no pagó
     navigator.geolocation.getCurrentPosition(pos => {
         const datos = { telefono: sesion.telefono, lat: pos.coords.latitude, lng: pos.coords.longitude, estado: estadoActual };
         fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(datos) });
@@ -186,6 +172,7 @@ function transmitirUbicacion() {
 }
 
 function toggleEstado() {
+    if(!pagoConfirmado) return alert("Debes activar tu cuenta primero.");
     const btn = document.getElementById("btnToggle");
     const txt = document.getElementById("txtEstado");
     estadoActual = (estadoActual === "disponible") ? "ocupado" : "disponible";
@@ -193,6 +180,13 @@ function toggleEstado() {
     txt.style.color = (estadoActual === "disponible") ? "#00c853" : "#ff5252";
     btn.innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
     btn.className = (estadoActual === "disponible") ? "" : "btn-ocupado";
+}
+
+function cerrarSesion() {
+    if(confirm("¿Deseas desconectarte?")) {
+        localStorage.removeItem("sesion");
+        location.href = "/";
+    }
 }
 
 window.onload = initApp;
