@@ -1,27 +1,25 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 
-// --- CONEXIÓN A MONGO (Corregida para que no rompa Render) ---
-const mongoURI = process.env.MONGO_URL || 'AQUÍ_VA_TU_URL_REAL_DE_MONGODB';
+// CONEXIÓN A MONGO (Restaurada para que Render conecte correctamente)
+// Si tenés la URL en las variables de entorno de Render, la tomará de ahí.
+const mongoURI = process.env.MONGO_URL || 'mongodb+srv://martinnrojas8:martin123@cluster0.v7z8x.mongodb.net/smart-traslados?retryWrites=true&w=majority';
 
 mongoose.connect(mongoURI, { 
     useNewUrlParser: true, 
     useUnifiedTopology: true 
 })
-.then(() => console.log("✅ Conectado a MongoDB"))
-.catch(err => {
-    console.log("⚠️ Error en MongoDB, pero el servidor seguirá corriendo:");
-    console.log(err.message);
-});
+.then(() => console.log("✅ Conexión exitosa a MongoDB"))
+.catch(err => console.log("⚠️ Error de conexión:", err.message));
 
 // --- ESQUEMAS ---
-
 const UsuarioSchema = new mongoose.Schema({
     telefono: String,
     nombre: String,
@@ -44,38 +42,27 @@ const TokenSchema = new mongoose.Schema({
 });
 const Token = mongoose.model('Token', TokenSchema);
 
-// --- RUTAS DE USUARIO ---
-
+// --- RUTAS ---
 app.get('/obtener-usuarios', async (req, res) => {
-    try {
-        const usuarios = await Usuario.find();
-        res.json(usuarios);
-    } catch (error) {
-        res.status(500).json({ error: "Error al obtener usuarios" });
-    }
+    const usuarios = await Usuario.find();
+    res.json(usuarios);
 });
 
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     const { telefono, nombre, modelo, patente, color, fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta, pagoActivo } = req.body;
-    try {
-        await Usuario.findOneAndUpdate(
-            { telefono: telefono },
-            { nombre, autoModelo: modelo, autoPatente: patente, autoColor: color, foto: fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta, pagoActivo },
-            { upsert: true }
-        );
-        res.json({ mensaje: "Ok" });
-    } catch (error) {
-        res.status(500).json({ error: "Error al actualizar" });
-    }
+    await Usuario.findOneAndUpdate(
+        { telefono: telefono },
+        { nombre, autoModelo: modelo, autoPatente: patente, autoColor: color, foto: fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta, pagoActivo },
+        { upsert: true }
+    );
+    res.json({ mensaje: "Ok" });
 });
-
-// --- RUTAS DE TOKENS ---
 
 app.post('/crear-token', async (req, res) => {
     const { codigo } = req.body;
     const nuevoToken = new Token({ codigo: codigo });
     await nuevoToken.save();
-    res.json({ mensaje: "Token creado con éxito" });
+    res.json({ mensaje: "Token creado" });
 });
 
 app.post('/validar-token', async (req, res) => {
@@ -85,18 +72,16 @@ app.post('/validar-token', async (req, res) => {
         tokenEncontrado.usado = true;
         await tokenEncontrado.save();
         await Usuario.findOneAndUpdate({ telefono: telefono }, { pagoActivo: true });
-        res.json({ ok: true, mensaje: "Cuenta activada correctamente" });
+        res.json({ ok: true });
     } else {
-        res.status(400).json({ ok: false, mensaje: "Código inválido" });
+        res.status(400).json({ ok: false });
     }
 });
 
-// --- RUTA PARA EL PANEL ADMIN (Asegura que cargue tu index-admin.html) ---
+// Ruta para asegurar que cargue tu panel admin corregido
 app.get('/admin', (req, res) => {
-    const path = require('path');
     res.sendFile(path.join(__dirname, 'admin', 'index-admin.html'));
 });
 
-// INICIAR SERVIDOR
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor funcionando en puerto ${PORT}`));
