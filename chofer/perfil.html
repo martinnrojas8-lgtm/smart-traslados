@@ -8,94 +8,85 @@
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; padding:20px; }
   .card{ background:#111; padding:20px; border-radius:15px; border:1px solid #333; text-align:center; max-width:400px; margin:auto; }
   
-  /* ESTADO DE CUENTA */
+  /* ESTADO DE CUENTA PROFESIONAL */
   .status-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #00c853; text-align: left; }
-  .status-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-  .status-value { font-size: 16px; font-weight: bold; color: #00c853; margin-top: 5px; }
+  .status-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .status-value { font-size: 15px; font-weight: bold; color: #00c853; margin-top: 3px; }
   
-  input{ width:100%; padding:12px; margin-top:10px; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
-  button{ width:100%; padding:15px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
+  input{ width:100%; padding:14px; margin-top:10px; border-radius:8px; border:1px solid #333; background:#222; color:#fff; box-sizing:border-box; font-size: 16px; }
+  input:focus { border-color: #00c853; outline: none; }
+
+  button{ width:100%; padding:15px; margin-top:20px; border-radius:8px; border:none; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size:16px; }
   
   .grid-fotos{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:15px; }
-  .foto-box{ background:#222; border:1px dashed #444; padding:10px; border-radius:8px; font-size:11px; }
-  .preview-img{ width:100%; height:80px; object-fit:cover; border-radius:5px; margin-top:5px; display:none; }
-  label{ display:block; cursor:pointer; color:#00c853; font-weight:bold; }
+  .foto-box{ background:#1a1a1a; border:1px dashed #444; padding:10px; border-radius:8px; font-size:11px; position: relative; }
+  .preview-img{ width:100%; height:85px; object-fit:cover; border-radius:5px; margin-top:5px; display:none; border: 1px solid #00c853; }
+  
+  label{ display:block; cursor:pointer; color:#00c853; font-weight:bold; margin-bottom: 5px; }
   input[type="file"]{ display:none; }
   
   .btn-volver{ background:transparent; color:#888; font-size:12px; margin-top:10px; border: 1px solid #333; }
+  #loader { display:none; color: #00c853; margin-top: 10px; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h2 id="titulo" style="margin-top:0;">Perfil Chofer</h2>
+  <h2 style="margin-top:0; color:#00c853;">Perfil Chofer</h2>
 
   <div class="status-card">
-      <div class="status-title">Beneficio de Bienvenida</div>
-      <div class="status-value" id="valViajes">-- viajes restantes</div>
-      
-      <div class="status-title" style="margin-top:10px;">Suscripción 24hs</div>
-      <div class="status-value" id="valTiempo" style="color: #ffb300;">Inactiva</div>
+      <div class="status-title">Estado de Cuenta</div>
+      <div class="status-value" id="valEstado">Verificando...</div>
   </div>
 
-  <input type="text" id="nombre" placeholder="Nombre y Apellido">
-  <input type="text" id="autoModelo" placeholder="Modelo del Vehículo">
+  <input type="text" id="nombre" placeholder="Nombre y Apellido completo">
+  <input type="text" id="autoModelo" placeholder="Vehículo (Ej: Fiat Cronos)">
   <input type="text" id="autoPatente" placeholder="Patente / Dominio">
   <input type="text" id="autoColor" placeholder="Color del Vehículo">
 
   <div class="grid-fotos">
     <div class="foto-box">
-      <label for="fPerfil">Foto Perfil</label>
+      <label for="fPerfil">FOTO PERFIL</label>
       <input type="file" id="fPerfil" accept="image/*" onchange="pre(this, 'pPerfil')">
       <img id="pPerfil" class="preview-img">
     </div>
     <div class="foto-box">
-      <label for="fCarnet">Carnet</label>
+      <label for="fCarnet">CARNET</label>
       <input type="file" id="fCarnet" accept="image/*" onchange="pre(this, 'pCarnet')">
       <img id="pCarnet" class="preview-img">
     </div>
     <div class="foto-box">
-      <label for="fSeguro">Seguro</label>
+      <label for="fSeguro">SEGURO</label>
       <input type="file" id="fSeguro" accept="image/*" onchange="pre(this, 'pSeguro')">
       <img id="pSeguro" class="preview-img">
     </div>
     <div class="foto-box">
-      <label for="fTarjeta">Tarjeta Auto</label>
+      <label for="fTarjeta">CÉDULA</label>
       <input type="file" id="fTarjeta" accept="image/*" onchange="pre(this, 'pTarjeta')">
       <img id="pTarjeta" class="preview-img">
     </div>
   </div>
 
-  <button onclick="guardar()">GUARDAR CAMBIOS</button>
-  <button class="btn-volver" onclick="window.location.href='index.html'">VOLVER AL MAPA</button>
+  <div id="loader">Subiendo datos pesados... esperá.</div>
+  <button id="btnGuardar" onclick="guardar()">GUARDAR Y TRABAJAR</button>
+  <button class="btn-volver" onclick="window.location.href='index.html'">SOLO VOLVER</button>
 </div>
 
 <script>
-// Recuperamos la sesión completa
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 
-function cargarDatos() {
-    if(sesion.nombre) {
-        document.getElementById("nombre").value = sesion.nombre;
-        document.getElementById("autoModelo").value = sesion.autoModelo || "";
-        document.getElementById("autoPatente").value = sesion.autoPatente || "";
-        document.getElementById("autoColor").value = sesion.autoColor || "";
-    }
-
-    // Actualizar info de negocio en la UI
-    document.getElementById("valViajes").innerText = `${sesion.viajesGratis || 0} viajes gratis`;
+window.onload = () => {
+    if(!sesion.telefono) return location.href = "/";
     
-    const ahora = Date.now();
-    if (sesion.activoHasta > ahora) {
-        const diff = sesion.activoHasta - ahora;
-        const horas = Math.floor(diff / (1000 * 60 * 60));
-        document.getElementById("valTiempo").innerText = `Activa (${horas}hs restantes)`;
-        document.getElementById("valTiempo").style.color = "#00c853";
-    } else {
-        document.getElementById("valTiempo").innerText = "Inactiva / Requiere pago";
-        document.getElementById("valTiempo").style.color = "#ffb300";
-    }
-}
+    // Rellenar campos si ya existen
+    document.getElementById("nombre").value = sesion.nombre || "";
+    document.getElementById("autoModelo").value = sesion.autoModelo || "";
+    document.getElementById("autoPatente").value = sesion.autoPatente || "";
+    document.getElementById("autoColor").value = sesion.autoColor || "";
+    
+    // Estado de cuenta simplificado
+    document.getElementById("valEstado").innerText = "Activo - Bajo Revisión Admin";
+};
 
 function pre(input, idImg) {
     if (input.files && input.files[0]) {
@@ -109,46 +100,55 @@ function pre(input, idImg) {
     }
 }
 
-function guardar() {
-    const datos = {
+async function guardar() {
+    const btn = document.getElementById("btnGuardar");
+    const loader = document.getElementById("loader");
+
+    // Datos obligatorios
+    const payload = {
         telefono: sesion.telefono,
-        nombre: document.getElementById("nombre").value,
-        modelo: document.getElementById("autoModelo").value,
-        patente: document.getElementById("autoPatente").value,
-        color: document.getElementById("autoColor").value,
-        // Enviamos las fotos solo si se cargaron nuevas (para no saturar si ya existen)
-        fotoPerfil: document.getElementById("pPerfil").src || sesion.foto,
+        nombre: document.getElementById("nombre").value.trim(),
+        modelo: document.getElementById("autoModelo").value.trim(),
+        patente: document.getElementById("autoPatente").value.trim(),
+        color: document.getElementById("autoColor").value.trim(),
+        fotoPerfil: document.getElementById("pPerfil").src,
         fotoCarnet: document.getElementById("pCarnet").src,
         fotoSeguro: document.getElementById("pSeguro").src,
         fotoTarjeta: document.getElementById("pTarjeta").src
     };
 
-    // Simulamos el envío al servidor (fetch)
-    // Nota: Mantengo tu estructura de fetch original
-    fetch("/actualizar-perfil-chofer", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(datos)
-    })
-    .then(r => r.json().catch(() => ({mensaje: "Ok"}))) // Fallback para pruebas sin server
-    .then(d => {
-        if(d.mensaje === "Ok") {
-            // Actualizamos la sesión local SIN borrar viajesGratis ni activoHasta
-            sesion.nombre = datos.nombre;
-            sesion.autoModelo = datos.modelo;
-            sesion.autoPatente = datos.patente;
-            sesion.autoColor = datos.color;
-            sesion.foto = datos.fotoPerfil;
+    if(!payload.nombre || !payload.modelo || !payload.patente || !payload.fotoPerfil) {
+        return alert("¡Faltan datos o fotos! No podemos habilitarte sin la documentación.");
+    }
 
+    btn.disabled = true;
+    loader.style.display = "block";
+
+    try {
+        const res = await fetch("/actualizar-perfil-chofer", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+
+        if(res.ok) {
+            // Actualizar local
+            sesion.nombre = payload.nombre;
+            sesion.autoModelo = payload.modelo;
+            sesion.autoPatente = payload.patente;
+            sesion.autoColor = payload.color;
             localStorage.setItem("sesion", JSON.stringify(sesion));
-            alert("Perfil actualizado correctamente");
+            
+            alert("Perfil guardado. En revisión por la administración.");
             window.location.href = "index.html";
         }
-    });
+    } catch (e) {
+        alert("Error al conectar. ¿Internet?");
+    } finally {
+        btn.disabled = false;
+        loader.style.display = "none";
+    }
 }
-
-// Inicializar al cargar
-window.onload = cargarDatos;
 </script>
 </body>
 </html>
