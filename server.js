@@ -1,21 +1,23 @@
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
-const cors = require('cors'); // Agregamos cors por seguridad
+const cors = require('cors'); 
 const app = express();
 
 app.use(cors());
 
-// Aumentamos el límite al máximo posible para fotos de alta resolución de iPhone
+// Aumentamos el límite para fotos de alta resolución
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 let viajesActivos = [];
 
+// Conexión a Base de Datos
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Conectado a MongoDB ✅"))
   .catch(err => console.error("Error Mongo ❌:", err));
 
+// Modelo de Usuario
 const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
     rol: String,
@@ -27,26 +29,25 @@ const UsuarioSchema = new mongoose.Schema({
     fotoCarnet: String,
     fotoSeguro: String,
     fotoTarjeta: String,
-    estadoRevision: { type: String, default: "pendiente" }
+    estadoRevision: { type: String, default: "pendiente" } // pendiente, aprobado, suspendido
 });
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
-// Servir carpetas
+// Servir carpetas estáticas
 app.use(express.static(path.join(__dirname, 'Public')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- RUTAS DE REGISTRO Y LOGIN (MEJORADAS PARA IPHONE) ---
+// --- RUTAS DE REGISTRO Y LOGIN ---
 
 app.post('/register', async (req, res) => {
     try {
         const { telefono, rol } = req.body;
         if(!telefono || !rol) return res.status(400).json({ error: "Datos incompletos" });
 
-        // Verificamos si ya existe para evitar error de duplicado en Mongo
         const existe = await Usuario.findOne({ telefono: telefono.trim() });
-        if(existe) return res.json({ mensaje: "Ok" }); // Si ya existe, lo dejamos pasar como si fuera nuevo
+        if(existe) return res.json({ mensaje: "Ok" });
 
         const nuevoUsuario = new Usuario({ 
             telefono: telefono.trim(), 
@@ -64,12 +65,19 @@ app.post('/login', async (req, res) => {
     try {
         const { telefono } = req.body;
         const usuario = await Usuario.findOne({ telefono: telefono.trim() });
+        
         if (usuario) {
+            // Bloqueo de seguridad si está suspendido
+            if (usuario.estadoRevision === "suspendido") {
+                return res.status(403).json({ error: "Cuenta suspendida. Contacte al administrador." });
+            }
+
             res.json({
                 telefono: usuario.telefono,
                 rol: usuario.rol,
                 nombre: usuario.nombre || null,
-                foto: usuario.foto || null
+                foto: usuario.foto || null,
+                estado: usuario.estadoRevision
             });
         } else {
             res.status(404).json({ error: "Número no registrado" });
@@ -79,7 +87,8 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Rutas de perfil y viajes (Se mantienen igual pero con el nuevo límite de 100mb)
+// --- RUTAS DE PERFIL ---
+
 app.post('/actualizar-perfil', async (req, res) => {
     try {
         await Usuario.findOneAndUpdate({ telefono: req.body.telefono.trim() }, { nombre: req.body.nombre, foto: req.body.foto });
@@ -99,6 +108,40 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// --- NUEVAS RUTAS DE ADMINISTRACIÓN ---
+
+// Listar todos los usuarios
+app.get('/admin/obtener-usuarios', async (req, res) => {
+    try {
+        const usuarios = await Usuario.find({}, 'nombre telefono rol estadoRevision');
+        res.json(usuarios);
+    } catch (e) {
+        res.status(500).json({ error: "Error al obtener lista" });
+    }
+});
+
+// Cambiar estado (Activar/Suspender)
+app.post('/admin/cambiar-estado', async (req, res) => {
+    try {
+        const { telefono, nuevoEstado } = req.body;
+        await Usuario.findOneAndUpdate({ telefono: telefono.trim() }, { estadoRevision: nuevoEstado });
+        res.json({ mensaje: "Ok" });
+    } catch (e) {
+        res.status(500).json({ error: "Error al cambiar estado" });
+    }
+});
+
+// Eliminar usuario
+app.delete('/admin/eliminar-usuario/:telefono', async (req, res) => {
+    try {
+        await Usuario.findOneAndDelete({ telefono: req.params.telefono.trim() });
+        res.json({ mensaje: "Ok" });
+    } catch (e) {
+        res.status(500).json({ error: "Error al eliminar" });
+    }
+});
+
+// Ruta inicial
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'Public', 'login.html')); });
 
 const PORT = process.env.PORT || 10000;
