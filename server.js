@@ -1,148 +1,127 @@
 const express = require('express');
+const { MongoClient } = require('mongodb');
 const path = require('path');
-const mongoose = require('mongoose');
-const cors = require('cors'); 
 const app = express();
+const port = process.env.PORT || 3000;
 
-app.use(cors());
+// 1. CONFIGURACIÓN DE TAMAÑO (Para que no rebote las fotos del perfil)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Aumentamos el límite para fotos de alta resolución
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+app.use(express.static('public'));
 
-let viajesActivos = [];
+// 2. CONEXIÓN A MONGODB (Usamos tu configuración actual)
+const uri = process.env.MONGO_URI || "mongodb+srv://tu_usuario:tu_clave@cluster.mongodb.net/smart_traslados"; 
+const client = new MongoClient(uri);
+let db;
 
-// Conexión a Base de Datos
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("Conectado a MongoDB ✅"))
-  .catch(err => console.error("Error Mongo ❌:", err));
+async function connectDB() {
+    try {
+        await client.connect();
+        db = client.db('smart_traslados');
+        console.log("Conectado a MongoDB");
+    } catch (e) {
+        console.error("Error en conexión:", e);
+    }
+}
+connectDB();
 
-// Modelo de Usuario
-const UsuarioSchema = new mongoose.Schema({
-    telefono: { type: String, unique: true },
-    rol: String,
-    nombre: String,
-    foto: String,
-    autoModelo: String,
-    autoPatente: String,
-    autoColor: String,
-    fotoCarnet: String,
-    fotoSeguro: String,
-    fotoTarjeta: String,
-    estadoRevision: { type: String, default: "pendiente" } // pendiente, aprobado, suspendido
-});
-const Usuario = mongoose.model('Usuario', UsuarioSchema);
-
-// Servir carpetas estáticas
-app.use(express.static(path.join(__dirname, 'Public')));
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
-app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
-app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
-
-// --- RUTAS DE REGISTRO Y LOGIN ---
+// --- RUTAS DE LOGIN Y REGISTRO ---
 
 app.post('/register', async (req, res) => {
     try {
         const { telefono, rol } = req.body;
-        if(!telefono || !rol) return res.status(400).json({ error: "Datos incompletos" });
+        const usuarios = db.collection('usuarios');
+        const existe = await usuarios.findOne({ telefono });
+        if (existe) return res.json({ mensaje: "Ok", usuario: existe });
 
-        const existe = await Usuario.findOne({ telefono: telefono.trim() });
-        if(existe) return res.json({ mensaje: "Ok" });
-
-        const nuevoUsuario = new Usuario({ 
-            telefono: telefono.trim(), 
-            rol: rol.toLowerCase().trim() 
-        });
-        await nuevoUsuario.save();
-        res.json({ mensaje: "Ok" });
-    } catch (e) {
-        console.log("Error Registro:", e);
-        res.status(500).json({ error: "Error al registrar" });
-    }
+        const nuevo = { 
+            telefono, 
+            rol, 
+            nombre: "", 
+            activo: true, 
+            fecha: new Date(),
+            perfilCompleto: false 
+        };
+        await usuarios.insertOne(nuevo);
+        res.json({ mensaje: "Ok", usuario: nuevo });
+    } catch (e) { res.status(500).send(e); }
 });
 
 app.post('/login', async (req, res) => {
     try {
         const { telefono } = req.body;
-        const usuario = await Usuario.findOne({ telefono: telefono.trim() });
-        
-        if (usuario) {
-            // Bloqueo de seguridad si está suspendido
-            if (usuario.estadoRevision === "suspendido") {
-                return res.status(403).json({ error: "Cuenta suspendida. Contacte al administrador." });
-            }
-
-            res.json({
-                telefono: usuario.telefono,
-                rol: usuario.rol,
-                nombre: usuario.nombre || null,
-                foto: usuario.foto || null,
-                estado: usuario.estadoRevision
-            });
-        } else {
-            res.status(404).json({ error: "Número no registrado" });
-        }
-    } catch (e) {
-        res.status(500).json({ error: "Error en servidor" });
-    }
+        const user = await db.collection('usuarios').findOne({ telefono });
+        if (!user) return res.status(404).json({ error: "No existe" });
+        if (!user.activo) return res.status(403).json({ error: "Suspendido" });
+        res.json(user);
+    } catch (e) { res.status(500).send(e); }
 });
 
-// --- RUTAS DE PERFIL ---
-
-app.post('/actualizar-perfil', async (req, res) => {
-    try {
-        await Usuario.findOneAndUpdate({ telefono: req.body.telefono.trim() }, { nombre: req.body.nombre, foto: req.body.foto });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
+// --- RUTA NUEVA: ACTUALIZAR PERFIL COMPLETO ---
 
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
-        const d = req.body;
-        await Usuario.findOneAndUpdate({ telefono: d.telefono.trim() }, { 
-            nombre: d.nombre, autoModelo: d.modelo, autoPatente: d.patente, 
-            autoColor: d.color, foto: d.fotoPerfil, fotoCarnet: d.fotoCarnet,
-            fotoSeguro: d.fotoSeguro, fotoTarjeta: d.fotoTarjeta 
-        });
+        const { 
+            telefono, nombre, modelo, patente, color, 
+            fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta 
+        } = req.body;
+
+        const resultado = await db.collection('usuarios').updateOne(
+            { telefono: telefono },
+            { 
+                $set: { 
+                    nombre: nombre,
+                    autoModelo: modelo,
+                    autoPatente: patente,
+                    autoColor: color,
+                    foto: fotoPerfil,
+                    documentacion: {
+                        carnet: fotoCarnet,
+                        seguro: fotoSeguro,
+                        tarjeta: fotoTarjeta
+                    },
+                    perfilCompleto: true,
+                    ultimaActualizacion: new Date()
+                } 
+            }
+        );
         res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-// --- NUEVAS RUTAS DE ADMINISTRACIÓN ---
-
-// Listar todos los usuarios
-app.get('/admin/obtener-usuarios', async (req, res) => {
-    try {
-        const usuarios = await Usuario.find({}, 'nombre telefono rol estadoRevision');
-        res.json(usuarios);
     } catch (e) {
-        res.status(500).json({ error: "Error al obtener lista" });
+        console.error(e);
+        res.status(500).json({ error: "Error al guardar perfil" });
     }
 });
 
-// Cambiar estado (Activar/Suspender)
-app.post('/admin/cambiar-estado', async (req, res) => {
-    try {
-        const { telefono, nuevoEstado } = req.body;
-        await Usuario.findOneAndUpdate({ telefono: telefono.trim() }, { estadoRevision: nuevoEstado });
-        res.json({ mensaje: "Ok" });
-    } catch (e) {
-        res.status(500).json({ error: "Error al cambiar estado" });
-    }
+// --- UBICACIÓN Y VIAJES ---
+
+app.post('/actualizar-ubicacion-chofer', async (req, res) => {
+    const { telefono, lat, lng, estado } = req.body;
+    await db.collection('usuarios').updateOne(
+        { telefono },
+        { $set: { lat, lng, estado, lastUpdate: new Date() } }
+    );
+    res.json({ mensaje: "Ok" });
 });
 
-// Eliminar usuario
-app.delete('/admin/eliminar-usuario/:telefono', async (req, res) => {
-    try {
-        await Usuario.findOneAndDelete({ telefono: req.params.telefono.trim() });
-        res.json({ mensaje: "Ok" });
-    } catch (e) {
-        res.status(500).json({ error: "Error al eliminar" });
-    }
+app.get('/verificar-pedidos', async (req, res) => {
+    // Aquí iría tu lógica de búsqueda de viajes activos
+    // Por ahora enviamos un objeto vacío o el último pedido
+    const viaje = await db.collection('pedidos').findOne({ activo: true });
+    res.json(viaje);
 });
 
-// Ruta inicial
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'Public', 'login.html')); });
+// --- PANEL ADMIN ---
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log("Servidor Smart en marcha 🚀"));
+app.get('/admin/usuarios', async (req, res) => {
+    const lista = await db.collection('usuarios').find().toArray();
+    res.json(lista);
+});
+
+app.post('/admin/toggle-usuario', async (req, res) => {
+    const { telefono, activo } = req.body;
+    await db.collection('usuarios').updateOne({ telefono }, { $set: { activo } });
+    res.json({ mensaje: "Ok" });
+});
+
+app.listen(port, () => console.log("Servidor Smart en puerto " + port));
