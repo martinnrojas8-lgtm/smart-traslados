@@ -10,46 +10,63 @@
         h2 { text-align: center; color: #333; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
         input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .foto-preview { width: 100%; height: 150px; background: #eee; border: 2px dashed #ccc; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .foto-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-img { width: 100%; height: 100px; object-fit: cover; border-radius: 5px; margin-top: 5px; display: none; border: 1px solid #ddd; }
         button { width: 100%; padding: 15px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
-        button:disabled { background: #ccc; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .requerido { color: red; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Completar Perfil</h2>
+    <h2>Completar Perfil Chofer</h2>
+    <p style="font-size: 12px; color: #666; text-align: center;">Todos los campos son obligatorios para la habilitación.</p>
     
-    <label>Nombre Completo</label>
+    <label>Nombre Completo <span class="requerido">*</span></label>
     <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
 
-    <label>Modelo del Auto</label>
-    <input type="text" id="modelo" placeholder="Ej: Toyota Corolla">
+    <label>Modelo del Auto <span class="requerido">*</span></label>
+    <input type="text" id="modelo" placeholder="Ej: Fiat Cronos">
 
-    <label>Patente</label>
+    <label>Patente <span class="requerido">*</span></label>
     <input type="text" id="patente" placeholder="Ej: AA123BB">
 
-    <label>Color del Auto</label>
+    <label>Color del Auto <span class="requerido">*</span></label>
     <input type="text" id="color" placeholder="Ej: Blanco">
 
-    <label>Foto de Perfil</label>
-    <input type="file" id="fotoPerfil" accept="image/*">
+    <label>Foto de Perfil <span class="requerido">*</span></label>
+    <input type="file" id="fotoPerfil" accept="image/*" onchange="preview(this, 'pPerfil')">
+    <img id="pPerfil" class="preview-img">
 
-    <label>Foto de Carnet de Conducir</label>
-    <input type="file" id="fotoCarnet" accept="image/*">
+    <label>Foto de Carnet de Conducir <span class="requerido">*</span></label>
+    <input type="file" id="fotoCarnet" accept="image/*" onchange="preview(this, 'pCarnet')">
+    <img id="pCarnet" class="preview-img">
 
-    <label>Foto de Seguro</label>
-    <input type="file" id="fotoSeguro" accept="image/*">
+    <label>Foto de Seguro <span class="requerido">*</span></label>
+    <input type="file" id="fotoSeguro" accept="image/*" onchange="preview(this, 'pSeguro')">
+    <img id="pSeguro" class="preview-img">
 
-    <label>Foto de Tarjeta Verde/Azul</label>
-    <input type="file" id="fotoTarjeta" accept="image/*">
+    <label>Foto de Tarjeta Vehículo <span class="requerido">*</span></label>
+    <input type="file" id="fotoTarjeta" accept="image/*" onchange="preview(this, 'pTarjeta')">
+    <img id="pTarjeta" class="preview-img">
 
     <button id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
 </div>
 
 <script>
-    // Función mágica para convertir imagen a texto (Base64)
+    // Función para previsualizar la foto antes de enviarla
+    function preview(input, id) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.getElementById(id);
+                img.src = e.target.result;
+                img.style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
     const toBase64 = file => new Promise((resolve, reject) => {
         if (!file) resolve(null);
         const reader = new FileReader();
@@ -59,31 +76,35 @@
     });
 
     async function guardarPerfil() {
+        const tel = localStorage.getItem('userTelefono');
         const btn = document.getElementById('btnGuardar');
-        const tel = localStorage.getItem('userTelefono'); // Sacamos el tel del login previo
 
-        if (!tel) {
-            alert("Error: No se encontró el teléfono del usuario. Reingresa a la app.");
+        // --- TRABAS DE SEGURIDAD (CAMPOS OBLIGATORIOS) ---
+        const nombre = document.getElementById('nombre').value.trim();
+        const modelo = document.getElementById('modelo').value.trim();
+        const patente = document.getElementById('patente').value.trim();
+        const color = document.getElementById('color').value.trim();
+        
+        const fPerfil = document.getElementById('fotoPerfil').files[0];
+        const fCarnet = document.getElementById('fotoCarnet').files[0];
+        const fSeguro = document.getElementById('fotoSeguro').files[0];
+        const fTarjeta = document.getElementById('fotoTarjeta').files[0];
+
+        if (!nombre || !modelo || !patente || !color || !fPerfil || !fCarnet || !fSeguro || !fTarjeta) {
+            alert("⚠️ Error: Debes completar todos los datos y subir las 4 fotos obligatorias.");
             return;
         }
 
-        btn.innerText = "PROCESANDO FOTOS...";
+        btn.innerText = "ENVIANDO DOCUMENTACIÓN...";
         btn.disabled = true;
 
         try {
-            // Capturamos los archivos
-            const fPerfil = document.getElementById('fotoPerfil').files[0];
-            const fCarnet = document.getElementById('fotoCarnet').files[0];
-            const fSeguro = document.getElementById('fotoSeguro').files[0];
-            const fTarjeta = document.getElementById('fotoTarjeta').files[0];
-
-            // Los convertimos a texto para enviarlos
             const datos = {
                 telefono: tel,
-                nombre: document.getElementById('nombre').value,
-                modelo: document.getElementById('modelo').value,
-                patente: document.getElementById('patente').value,
-                color: document.getElementById('color').value,
+                nombre: nombre,
+                modelo: modelo,
+                patente: patente,
+                color: color,
                 fotoPerfil: await toBase64(fPerfil),
                 fotoCarnet: await toBase64(fCarnet),
                 fotoSeguro: await toBase64(fSeguro),
@@ -99,15 +120,15 @@
             const result = await response.json();
 
             if (result.mensaje === "Ok") {
-                alert("✅ ¡Perfil enviado correctamente! Espera la aprobación del administrador.");
-                window.location.href = 'index.html'; // O la página principal del chofer
+                alert("✅ ¡Perfil enviado! El administrador revisará tus documentos.");
+                window.location.href = 'index.html';
             } else {
-                alert("❌ Error al guardar el perfil.");
+                alert("❌ Error en el servidor al guardar.");
             }
 
         } catch (error) {
             console.error(error);
-            alert("❌ Error de conexión o fotos muy pesadas.");
+            alert("❌ Error: Posiblemente las fotos sean muy pesadas.");
         } finally {
             btn.innerText = "GUARDAR Y ENVIAR";
             btn.disabled = false;
