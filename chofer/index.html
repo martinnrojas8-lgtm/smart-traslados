@@ -7,7 +7,30 @@
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
   header{ background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
-  .perfil-header { display: flex; align-items: center; gap: 10px; cursor: pointer; background: #222; padding: 5px 12px; border-radius: 20px; border: 1px solid #444; }
+  
+  /* Contenedor de perfil con foto real */
+  .perfil-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    cursor: pointer; 
+    background: #222; 
+    padding: 5px 12px; 
+    border-radius: 20px; 
+    border: 1px solid #444; 
+  }
+  
+  /* Estilo para la foto miniatura circular */
+  #imgMiniaturaHeader {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #00c853;
+    background: #333;
+    display: none; /* Se muestra solo si hay foto */
+  }
+
   .screen{ padding:15px; }
   #pantallaPerfil, #areaTrabajo { display: none; }
   .activa { display: block !important; }
@@ -19,7 +42,6 @@
   .btn-ocupado{ background: #ff5252; color: #fff; }
   .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 15px; }
 
-  /* Estilo para la ventana flotante de nuevo viaje (Estilo Uber) */
   #modalViaje {
     display: none;
     position: fixed;
@@ -42,7 +64,8 @@
 
 <header>
   <div class="perfil-header" onclick="irAlPerfil()">
-    <span>👤</span>
+    <img id="imgMiniaturaHeader" src="" alt="">
+    <span id="iconoDefault">👤</span>
     <span style="font-size: 14px; font-weight: bold;">Mi Perfil</span>
   </div>
   <h2 style="margin:0; font-size:18px; color: #00c853;">Smart Chofer</h2>
@@ -77,31 +100,49 @@ let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, estadoActual = "disponible";
 let viajePendiente = null;
 
-function initApp() {
+async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
     mostrarSeccion('areaTrabajo');
+    
+    // CARGAR DATOS REALES (Foto y Nombre)
+    await cargarDatosChofer();
+
     initMap();
-    
-    // Transmitir ubicación cada 7 segundos
     setInterval(transmitirUbicacion, 7000);
-    
-    // BUSCAR VIAJES cada 5 segundos (Estilo Uber)
     setInterval(verificarNuevosViajes, 5000);
+}
+
+// NUEVA FUNCIÓN: Trae la foto y el nombre desde la base de datos
+async function cargarDatosChofer() {
+    try {
+        const res = await fetch('/obtener-usuarios');
+        const usuarios = await res.json();
+        const yo = usuarios.find(u => u.telefono === sesion.telefono);
+
+        if (yo) {
+            // Actualizar nombre en la barra
+            if (yo.nombre) document.getElementById('txtNombreChofer').innerText = yo.nombre;
+            
+            // Actualizar foto real
+            if (yo.foto) {
+                const img = document.getElementById('imgMiniaturaHeader');
+                img.src = yo.foto;
+                img.style.display = 'block';
+                document.getElementById('iconoDefault').style.display = 'none';
+            }
+        }
+    } catch (e) { console.log("Error cargando perfil header"); }
 }
 
 async function verificarNuevosViajes() {
     if (estadoActual !== "disponible") return;
-
     try {
         const res = await fetch(`/buscar-viajes-pendientes?tel=${sesion.telefono}`);
         const viaje = await res.json();
-
         if (viaje && viaje.id) {
             viajePendiente = viaje;
             document.getElementById('datosViaje').innerText = `Origen: ${viaje.origen} \n Destino: ${viaje.destino}`;
             document.getElementById('modalViaje').style.display = 'block';
-            
-            // Sonido de alerta (opcional)
             let audio = new Audio('/sonidos/alerta.mp3');
             audio.play().catch(e => {}); 
         }
@@ -111,7 +152,6 @@ async function verificarNuevosViajes() {
 function aceptarViaje() {
     alert("¡Viaje aceptado! Dirígete al punto de origen.");
     document.getElementById('modalViaje').style.display = 'none';
-    // Aquí enviarías a MongoDB que el viaje ya tiene chofer
 }
 
 function rechazarViaje() {
