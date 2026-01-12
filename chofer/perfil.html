@@ -10,60 +10,50 @@
         h2 { text-align: center; color: #00c853; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #ccc; }
         input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #333; border-radius: 5px; box-sizing: border-box; background: #222; color: #fff; }
-        input[type="file"] { margin-top: 10px; font-size: 12px; }
         .preview-img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-top: 10px; display: none; border: 1px solid #00c853; }
         button { width: 100%; padding: 15px; background: #00c853; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; color: #000; }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
-        .requerido { color: #00c853; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Completar Perfil Chofer</h2>
-    <p style="font-size: 12px; color: #888; text-align: center;">Todos los documentos son obligatorios.</p>
     
-    <label>Nombre Completo <span class="requerido">*</span></label>
+    <label>Nombre Completo</label>
     <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
 
-    <label>Modelo del Auto <span class="requerido">*</span></label>
+    <label>Modelo del Auto</label>
     <input type="text" id="modelo" placeholder="Ej: Fiat Cronos">
 
-    <label>Patente <span class="requerido">*</span></label>
+    <label>Patente</label>
     <input type="text" id="patente" placeholder="Ej: AA123BB">
 
-    <label>Color del Auto <span class="requerido">*</span></label>
+    <label>Color del Auto</label>
     <input type="text" id="color" placeholder="Ej: Blanco">
 
-    <label>Foto de Perfil <span class="requerido">*</span></label>
-    <input type="file" id="fotoPerfil" accept="image/*" onchange="procesarFoto(this, 'pPerfil')">
+    <label>Foto de Perfil</label>
+    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pPerfil')">
     <img id="pPerfil" class="preview-img">
 
-    <label>Foto de Carnet de Conducir <span class="requerido">*</span></label>
-    <input type="file" id="fotoCarnet" accept="image/*" onchange="procesarFoto(this, 'pCarnet')">
+    <label>Foto de Carnet de Conducir</label>
+    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pCarnet')">
     <img id="pCarnet" class="preview-img">
 
-    <label>Foto de Seguro <span class="requerido">*</span></label>
-    <input type="file" id="fotoSeguro" accept="image/*" onchange="procesarFoto(this, 'pSeguro')">
+    <label>Foto de Seguro</label>
+    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pSeguro')">
     <img id="pSeguro" class="preview-img">
 
-    <label>Foto de Tarjeta Vehículo <span class="requerido">*</span></label>
-    <input type="file" id="fotoTarjeta" accept="image/*" onchange="procesarFoto(this, 'pTarjeta')">
+    <label>Foto de Tarjeta Vehículo</label>
+    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pTarjeta')">
     <img id="pTarjeta" class="preview-img">
 
     <button id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
 </div>
 
 <script>
-    // Objeto para guardar las imágenes ya comprimidas en Base64
-    const imagenesComprimidas = {
-        pPerfil: null,
-        pCarnet: null,
-        pSeguro: null,
-        pTarjeta: null
-    };
+    const imagenesComprimidas = { pPerfil: null, pCarnet: null, pSeguro: null, pTarjeta: null };
 
-    // Función mágica para comprimir la imagen antes de subirla
     function procesarFoto(input, idPreview) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -73,23 +63,15 @@
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    
-                    // Redimensionamos a un máximo de 800px para que no pese nada
                     const maxW = 800;
                     const scale = maxW / img.width;
                     canvas.width = maxW;
                     canvas.height = img.height * scale;
-                    
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
-                    // Comprimimos al 70% de calidad
                     const base64 = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    // Guardamos y mostramos preview
                     imagenesComprimidas[idPreview] = base64;
-                    const preview = document.getElementById(idPreview);
-                    preview.src = base64;
-                    preview.style.display = 'block';
+                    document.getElementById(idPreview).src = base64;
+                    document.getElementById(idPreview).style.display = 'block';
                 }
             }
             reader.readAsDataURL(input.files[0]);
@@ -97,22 +79,30 @@
     }
 
     async function guardarPerfil() {
-        const tel = localStorage.getItem('userTelefono');
-        const btn = document.getElementById('btnGuardar');
+        // --- DETECCIÓN DEL TELÉFONO ---
+        let tel = localStorage.getItem('userTelefono');
+        if (!tel) {
+            const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+            tel = sesion.telefono;
+        }
+
+        if (!tel) {
+            alert("❌ No se detectó tu sesión. Por favor reingresa.");
+            return;
+        }
 
         const nombre = document.getElementById('nombre').value.trim();
         const modelo = document.getElementById('modelo').value.trim();
         const patente = document.getElementById('patente').value.trim();
         const color = document.getElementById('color').value.trim();
 
-        if (!nombre || !modelo || !patente || !color || 
-            !imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || 
-            !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
-            alert("⚠️ Debes completar todos los datos y subir las 4 fotos.");
+        if (!nombre || !modelo || !patente || !color || !imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
+            alert("⚠️ Completa todos los campos y fotos.");
             return;
         }
 
-        btn.innerText = "ENVIANDO DOCUMENTACIÓN...";
+        const btn = document.getElementById('btnGuardar');
+        btn.innerText = "ENVIANDO...";
         btn.disabled = true;
 
         try {
@@ -137,20 +127,18 @@
             const result = await response.json();
 
             if (result.mensaje === "Ok") {
-                alert("✅ ¡Perfil enviado correctamente!");
+                alert("✅ Perfil actualizado correctamente.");
                 window.location.href = 'index.html';
             } else {
-                alert("❌ Error: " + (result.error || "El servidor rechazó los datos."));
+                alert("❌ Error: " + (result.error || "Rechazado por el servidor"));
             }
-
         } catch (error) {
-            alert("❌ Error crítico de conexión. Intenta de nuevo.");
+            alert("❌ Error de conexión.");
         } finally {
             btn.innerText = "GUARDAR Y ENVIAR";
             btn.disabled = false;
         }
     }
 </script>
-
 </body>
 </html>
