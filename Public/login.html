@@ -8,120 +8,141 @@
 <link rel="manifest" href="/manifest.json">
 
 <style>
-  body { margin:0; font-family: Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; overflow: hidden; }
-  .logo { width:120px; margin-bottom:20px; border-radius: 20px; }
-  .login-card { background:#111; padding:25px; border-radius:20px; border:1px solid #333; width:85%; max-width:350px; text-align:center; position: relative; z-index: 1; }
-  h1 { font-size:24px; color:#00c853; margin-bottom:20px; }
+  body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; overflow: hidden; }
   
-  input { width:100%; padding:18px; border-radius:12px; border:1px solid #444; background:#222; color:#fff; font-size:20px; margin-bottom:20px; box-sizing:border-box; text-align:center; }
+  /* Animación del Auto */
+  .car-container { width: 100%; position: absolute; top: 15%; display: flex; justify-content: center; pointer-events: none; }
+  .car-icon { font-size: 50px; position: relative; animation: driveIn 1.5s ease-out forwards; }
   
-  .btn-choice { width:100%; padding:20px; border-radius:12px; border:none; font-weight:bold; font-size:18px; cursor:pointer; margin-bottom:15px; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s; }
-  .btn-choice:active { transform: scale(0.95); }
-  .btn-pasajero { background:#00c853; color:#000; }
-  .btn-chofer { background:#333; color:#fff; border: 1px solid #555; }
-  
-  /* Cartel de ayuda para iPhone mejorado */
-  #ios-prompt {
-    display: none; 
-    position: fixed; 
-    bottom: 30px; 
-    left: 20px; 
-    right: 20px; 
-    background: #ffffff; 
-    color: #000;
-    padding: 15px; 
-    border-radius: 18px; 
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
-    z-index: 9999;
-    animation: slideUp 0.5s ease-out;
+  @keyframes driveIn {
+    0% { transform: translateX(-200vw); }
+    70% { transform: translateX(20px); }
+    100% { transform: translateX(0); }
   }
 
-  /* La flechita que señala el botón de compartir de iPhone */
-  #ios-prompt::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid #ffffff;
-  }
+  .logo { width:100px; margin-bottom:15px; border-radius: 20px; animation: fadeIn 2s; }
+  
+  .login-card { background:#111; padding:30px; border-radius:25px; border:1px solid #333; width:85%; max-width:360px; text-align:center; position: relative; z-index: 10; box-shadow: 0 20px 50px rgba(0,200,83,0.1); }
+  
+  h1 { font-size:26px; color:#00c853; margin-bottom:10px; font-weight: 800; }
+  p { color: #888; font-size: 14px; margin-bottom: 25px; }
+  
+  input { width:100%; padding:18px; border-radius:15px; border:1px solid #444; background:#222; color:#fff; font-size:20px; margin-bottom:20px; box-sizing:border-box; text-align:center; transition: 0.3s; }
+  input:focus { border-color: #00c853; outline: none; background: #2a2a2a; }
+  
+  .btn-choice { width:100%; padding:18px; border-radius:15px; border:none; font-weight:bold; font-size:16px; cursor:pointer; margin-bottom:15px; display:flex; align-items:center; justify-content:center; gap:12px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+  
+  .btn-choice:active { transform: scale(0.96); }
+  .btn-pasajero { background:#00c853; color:#000; box-shadow: 0 4px 15px rgba(0,200,83,0.3); }
+  .btn-chofer { background:#1a1a1a; color:#fff; border: 1px solid #444; }
 
-  @keyframes slideUp {
-    from { transform: translateY(100px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
+  /* Pantalla de carga */
+  #loader { display:none; color: #00c853; font-weight: bold; margin-top: 10px; }
 
-  .ios-icon { width: 22px; vertical-align: middle; margin: 0 5px; }
-  .close-prompt { display: block; margin-top: 10px; font-size: 12px; color: #666; text-decoration: underline; }
+  /* Estilos iOS Prompt igual a los tuyos */
+  #ios-prompt { display: none; position: fixed; bottom: 30px; left: 20px; right: 20px; background: #fff; color: #000; padding: 15px; border-radius: 18px; text-align: center; z-index: 9999; animation: slideUp 0.5s ease-out; }
+  @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
 </head>
 <body>
 
+  <div class="car-container">
+    <div class="car-icon">🚖</div>
+  </div>
+
   <img src="/public/IMG_20260103_204207.png" class="logo">
 
   <div class="login-card">
-    <h1>Smart Traslados</h1>
-    <input type="tel" id="telefono" placeholder="Tu número de celular">
+    <h1>Smart</h1>
+    <p>Traslados seguros y rápidos</p>
     
-    <button class="btn-choice btn-pasajero" onclick="ingresar('pasajero')">
-        <span>📍</span> BUSCAR TRASLADO
+    <input type="tel" id="telefono" placeholder="Número de celular" maxlength="15">
+    
+    <div id="loader">Verificando...</div>
+
+    <button class="btn-choice btn-pasajero" id="btn-p" onclick="procesarIngreso('pasajero')">
+        <span>📍</span> Buscar Traslado
     </button>
     
-    <button class="btn-choice btn-chofer" onclick="ingresar('chofer')">
-        <span>🚖</span> SOY CHOFER
+    <button class="btn-choice btn-chofer" id="btn-c" onclick="procesarIngreso('chofer')">
+        <span>🚖</span> Soy Chofer
     </button>
   </div>
 
   <div id="ios-prompt">
-    <div style="font-size: 15px; line-height: 1.5;">
-        <strong>¡Instalá la App en tu iPhone!</strong><br>
-        1. Tocá el botón <strong>Compartir</strong> <img src="https://img.icons8.com/ios/50/000000/sent.png" class="ios-icon"><br>
-        2. Deslizá y elegí <strong>"Agregar al inicio"</strong> <img src="https://img.icons8.com/ios/50/000000/plus-2-math.png" class="ios-icon">
-    </div>
-    <span class="close-prompt" onclick="document.getElementById('ios-prompt').style.display='none'">Cerrar ayuda</span>
+    <strong>¡Instalá la App!</strong><br>
+    Tocá <img src="https://img.icons8.com/ios/50/000000/sent.png" style="width:18px"> y luego <strong>"Agregar al inicio"</strong>
+    <span onclick="this.parentElement.style.display='none'" style="display:block; margin-top:10px; font-size:12px; color:blue;">Cerrar</span>
   </div>
 
 <script>
-// 1. AUTO-LOGIN
-const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-if(sesion.telefono && sesion.tipo){
-    // Ajustamos rutas para que coincidan con tus carpetas
-    window.location.href = (sesion.tipo === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
-}
+// --- LÓGICA DE LOGIN REAL ---
 
-function ingresar(tipoElegido) {
+async function procesarIngreso(rolElegido) {
     const tel = document.getElementById("telefono").value.trim();
     if (tel.length < 8) {
-        alert("Por favor, ingresá tu número de teléfono.");
+        alert("Ingresá un número válido.");
         return;
     }
 
-    const datosSesion = { 
-        telefono: tel, 
-        tipo: tipoElegido, 
-        nombre: "" 
-    };
-    localStorage.setItem("sesion", JSON.stringify(datosSesion));
+    // Bloquear botones y mostrar carga
+    document.getElementById("btn-p").disabled = true;
+    document.getElementById("btn-c").disabled = true;
+    document.getElementById("loader").style.display = "block";
 
-    if(tipoElegido === 'chofer') {
-        window.location.href = "/chofer/index.html";
-    } else {
-        window.location.href = "/pasajero/index.html";
+    try {
+        // 1. Registrar o verificar en el servidor
+        const res = await fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ telefono: tel, rol: rolElegido })
+        });
+        const data = await res.json();
+
+        if (data.mensaje === "Ok") {
+            // 2. Hacer Login para obtener datos frescos
+            const resLogin = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ telefono: tel })
+            });
+            const user = await resLogin.json();
+
+            if (resLogin.ok) {
+                // Guardar sesión local
+                localStorage.setItem("sesion", JSON.stringify({
+                    telefono: user.telefono,
+                    tipo: user.rol,
+                    nombre: user.nombre || "",
+                    foto: user.foto || ""
+                }));
+
+                // 3. Redirección final
+                window.location.href = (user.rol === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
+            } else {
+                alert(user.error || "Error al entrar");
+            }
+        }
+    } catch (e) {
+        alert("Error de conexión. Reintentá.");
+    } finally {
+        document.getElementById("btn-p").disabled = false;
+        document.getElementById("btn-c").disabled = false;
+        document.getElementById("loader").style.display = "none";
     }
 }
 
-// 2. LÓGICA DE DETECCIÓN IPHONE
-const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-const isStandalone = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+// Auto-login al cargar
+window.onload = () => {
+    const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+    if(sesion.telefono && sesion.tipo){
+        window.location.href = (sesion.tipo === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
+    }
+};
 
-// Solo mostramos el cartel si es iPhone Y si NO está abierta como App
-if (isIos() && !isStandalone()) {
-  setTimeout(() => {
-    document.getElementById('ios-prompt').style.display = 'block';
-  }, 1000); // Aparece 1 segundo después de cargar para que se note
+// Detección iPhone igual
+if (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) && !navigator.standalone) {
+  setTimeout(() => document.getElementById('ios-prompt').style.display = 'block', 2000);
 }
 </script>
 </body>
