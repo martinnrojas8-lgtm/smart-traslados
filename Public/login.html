@@ -5,11 +5,15 @@
 <title>Smart Traslados</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  /* ESTILO SIMPLE BASADO EN TU FOTO */
+  /* RESET Y ESTILOS BASE */
+  * {
+    box-sizing: border-box; /* Esto evita que los bordes desalineen los botones */
+  }
+
   body { 
     margin:0; 
     font-family: sans-serif; 
-    background:#121921; /* El fondo oscuro de tu imagen */
+    background:#121921; 
     color:#fff; 
     display:flex; 
     align-items:center; 
@@ -21,54 +25,82 @@
     background:#1e2630; 
     padding:30px; 
     border-radius:15px; 
-    width:85%; 
+    width:90%; 
     max-width:340px; 
     text-align:center; 
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   }
   
-  h2 { margin-bottom: 20px; font-weight: normal; }
+  h2 { 
+    margin-top: 0;
+    margin-bottom: 25px; 
+    font-weight: normal; 
+  }
+  
+  /* UNIFICACIÓN DE TODOS LOS CAMPOS Y BOTONES */
+  input, select, .btn { 
+    width: 100%; 
+    height: 50px; /* Altura idéntica para todos */
+    border-radius: 8px; 
+    font-size: 16px; 
+    margin-bottom: 12px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    outline: none;
+  }
   
   input, select { 
-    width:100%; 
-    padding:12px; 
-    border-radius:8px; 
-    border:none; 
-    background:#f0f0f0; 
-    color:#333; 
-    font-size:16px; 
-    margin-bottom:15px; 
-    box-sizing:border-box; 
+    padding: 0 15px; 
+    background: #f0f0f0; 
+    color: #333; 
   }
   
   .btn { 
-    width:100%; 
-    padding:14px; 
-    border-radius:8px; 
-    border:none; 
-    font-weight:bold; 
-    font-size:16px; 
-    cursor:pointer; 
-    margin-bottom:12px; 
-    display:block;
+    font-weight: bold; 
+    cursor: pointer; 
     text-decoration: none;
+    transition: background 0.3s;
+  }
+
+  .btn-verde { 
+    background:#2ecc71; 
+    color:#fff; 
   }
   
-  .btn-verde { background:#2ecc71; color:#fff; }
-  .btn-azul { background:#00bcd4; color:#fff; }
+  .btn-azul { 
+    background:#00bcd4; 
+    color:#fff; 
+  }
   
-  /* Botón de descarga sutil */
+  /* BOTÓN DE DESCARGA - Alineado perfectamente */
   .btn-download { 
     background: transparent; 
-    border: 1px solid #444; 
+    border: 1px solid #3d4752; 
     color: #888; 
     font-size: 14px;
-    margin-top: 10px;
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+
+  .btn:active {
+    opacity: 0.8;
   }
 
   #ios-prompt { 
-    display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; 
-    background: #fff; color: #000; padding: 15px; border-radius: 12px; text-align: center; 
+    display: none; 
+    position: fixed; 
+    bottom: 20px; 
+    left: 20px; 
+    right: 20px; 
+    background: #fff; 
+    color: #000; 
+    padding: 15px; 
+    border-radius: 12px; 
+    text-align: center; 
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    z-index: 1000;
   }
 </style>
 </head>
@@ -92,17 +124,19 @@
 
   <div id="ios-prompt">
     Tocá compartir y luego <strong>"Agregar al inicio"</strong> para instalar.
-    <br><small onclick="this.parentElement.style.display='none'">Cerrar</small>
+    <br><small onclick="this.parentElement.style.display='none'" style="cursor:pointer; color:blue;">Cerrar</small>
   </div>
 
 <script>
-// --- VÍNCULOS Y LÓGICA CON TU SERVIDOR ---
-
+// Lógica de registro
 async function enviarRegistro() {
     const tel = document.getElementById("telefono").value.trim();
     const rolElegido = document.getElementById("rol").value;
 
-    if (tel.length < 8) return alert("Ingresá un teléfono válido.");
+    if (tel.length < 8) {
+        alert("Ingresá un teléfono válido.");
+        return;
+    }
 
     try {
         const res = await fetch('/register', {
@@ -113,22 +147,21 @@ async function enviarRegistro() {
         const data = await res.json();
 
         if (data.mensaje === "Ok") {
-            // Guardar sesión y redirigir según el rol elegido
             localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
             window.location.href = (rolElegido === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
         } else {
-            alert("Error al registrar");
+            alert("Error al registrar: " + (data.error || "Intente nuevamente"));
         }
     } catch (e) {
-        alert("Error de conexión");
+        alert("Error de conexión con el servidor");
     }
 }
 
 function volverLogin() {
-    window.location.href = "/login.html"; // O la ruta de tu login
+    window.location.href = "/login.html";
 }
 
-// --- DESCARGA SEGÚN CELULAR ---
+// Lógica de descarga según dispositivo
 const link = document.getElementById('descargaLink');
 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     link.onclick = (e) => {
@@ -140,5 +173,6 @@ if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     link.setAttribute("download", "SmartTraslados.apk");
 }
 </script>
+
 </body>
 </html>
