@@ -5,13 +5,11 @@
 <title>Smart Traslados</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   body { 
     margin:0; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    font-family: 'Segoe UI', sans-serif; 
     background:#121921; 
     color:#fff; 
     display:flex; 
@@ -20,48 +18,51 @@
     min-height:100vh; 
   }
 
-  /* Animación del Logo */
-  @keyframes fadeInLogo {
-    0% { opacity: 0; transform: scale(0.9); filter: grayscale(100%); }
-    50% { opacity: 0.5; filter: grayscale(50%); }
-    100% { opacity: 1; transform: scale(1); filter: grayscale(0%); }
+  /* ANIMACIÓN DE 5 SEGUNDOS: De oscuro/borroso a color total */
+  @keyframes fadeInSuave {
+    0% { opacity: 0; filter: brightness(0) blur(5px); transform: scale(0.85); }
+    50% { opacity: 0.5; filter: brightness(0.5) blur(2px); }
+    100% { opacity: 1; filter: brightness(1) blur(0); transform: scale(1); }
   }
 
   .logo-container {
     width: 100%;
-    margin-bottom: 30px; /* Baja el menú respecto al logo */
-    animation: fadeInLogo 2s ease-out forwards;
     display: flex;
     justify-content: center;
+    align-items: center;
+    margin-bottom: 25px; /* Espacio antes del título Registro */
+    padding-top: 10px;
   }
 
-  .logo-container img {
-    width: 120px; /* Ajusta el tamaño según tu logo */
+  .logo-img {
+    width: 140px; /* Tamaño ideal para móviles */
     height: auto;
+    border-radius: 20px; /* Para que coincida con la forma de tu logo */
+    animation: fadeInSuave 5s ease-in-out forwards;
   }
   
   .card { 
     background:#1e2630; 
-    padding:40px 30px; 
-    border-radius:20px; 
+    padding:30px; 
+    border-radius:25px; 
     width:90%; 
     max-width:360px; 
     text-align:center; 
-    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
   }
   
   h2 { 
-    margin-top: 0;
-    margin-bottom: 25px; 
-    font-weight: 300;
-    letter-spacing: 1px;
+    margin: 0 0 25px 0; 
+    font-weight: 400; 
     color: #f0f0f0;
+    font-size: 26px;
+    letter-spacing: 1px;
   }
   
   input, select, .btn { 
     width: 100%; 
-    height: 52px; 
-    border-radius: 10px; 
+    height: 54px; 
+    border-radius: 12px; 
     font-size: 16px; 
     margin-bottom: 15px; 
     display: flex;
@@ -69,7 +70,6 @@
     justify-content: center;
     border: none;
     outline: none;
-    transition: all 0.3s ease;
   }
   
   input, select { 
@@ -81,48 +81,37 @@
   .btn { 
     font-weight: bold; 
     cursor: pointer; 
-    text-decoration: none;
+    text-decoration: none; 
+    transition: 0.3s all; 
   }
 
   .btn-verde { 
     background:#2ecc71; 
     color:#fff; 
-    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.2); 
   }
-  
+
   .btn-azul { 
     background:#00bcd4; 
     color:#fff; 
-    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2); 
   }
   
   .btn-download { 
     background: transparent; 
     border: 1px solid #3d4752; 
-    color: #aaa; 
+    color: #888; 
     font-size: 14px;
-    margin-top: 10px;
+    margin-top: 5px;
     margin-bottom: 0;
   }
 
-  .btn:active {
-    transform: scale(0.98);
-    opacity: 0.9;
-  }
+  .btn:active { transform: scale(0.96); }
 
   #ios-prompt { 
-    display: none; 
-    position: fixed; 
-    bottom: 20px; 
-    left: 20px; 
-    right: 20px; 
-    background: #fff; 
-    color: #000; 
-    padding: 20px; 
-    border-radius: 15px; 
-    text-align: center; 
-    box-shadow: 0 5px 25px rgba(0,0,0,0.7);
-    z-index: 1000;
+    display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; 
+    background: #fff; color: #000; padding: 20px; border-radius: 15px; text-align: center; 
+    box-shadow: 0 5px 25px rgba(0,0,0,0.7); z-index: 1000;
   }
 </style>
 </head>
@@ -130,7 +119,7 @@
 
   <div class="card">
     <div class="logo-container">
-      <img src="logo.png" alt="Smart Traslados">
+      <img src="1000681814.png" alt="Smart Traslados" class="logo-img">
     </div>
 
     <h2>Registro</h2>
@@ -158,11 +147,7 @@
 async function enviarRegistro() {
     const tel = document.getElementById("telefono").value.trim();
     const rolElegido = document.getElementById("rol").value;
-
-    if (tel.length < 8) {
-        alert("Ingresá un teléfono válido.");
-        return;
-    }
+    if (tel.length < 8) return alert("Ingresá un teléfono válido.");
 
     try {
         const res = await fetch('/register', {
@@ -171,21 +156,14 @@ async function enviarRegistro() {
             body: JSON.stringify({ telefono: tel, rol: rolElegido })
         });
         const data = await res.json();
-
         if (data.mensaje === "Ok") {
             localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
             window.location.href = (rolElegido === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
-        } else {
-            alert("Error al registrar");
-        }
-    } catch (e) {
-        alert("Error de conexión");
-    }
+        } else { alert("Error al registrar"); }
+    } catch (e) { alert("Error de conexión"); }
 }
 
-function volverLogin() {
-    window.location.href = "/login.html";
-}
+function volverLogin() { window.location.href = "/login.html"; }
 
 const link = document.getElementById('descargaLink');
 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -198,6 +176,5 @@ if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     link.setAttribute("download", "SmartTraslados.apk");
 }
 </script>
-
 </body>
 </html>
