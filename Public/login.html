@@ -153,7 +153,8 @@ async function enviarRegistro() {
         const data = await res.json();
         if (data.mensaje === "Ok") {
             localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
-            window.location.href = (rolElegido === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
+            // Lógica: Chofer va a Perfil, Pasajero va a Index
+            window.location.href = (rolElegido === "chofer") ? "/chofer/perfil-chofer.html" : "/pasajero/index.html";
         } else { alert("Error al registrar"); }
     } catch (e) { alert("Error de conexión"); }
 }
@@ -176,7 +177,8 @@ async function volverLogin() {
         
         if (res.ok) {
             localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
-            window.location.href = (rolElegido === "chofer") ? "/chofer/index.html" : "/pasajero/index.html";
+            // Lógica: Chofer va a Perfil, Pasajero va a Index
+            window.location.href = (rolElegido === "chofer") ? "/chofer/perfil-chofer.html" : "/pasajero/index.html";
         } else {
             alert(data.mensaje || "Usuario no encontrado. Por favor, regístrate.");
         }
