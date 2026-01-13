@@ -6,77 +6,22 @@
 <title>Smart Traslados – Panel Propietario</title>
 
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#000;
-    color:#fff;
-}
-header{
-    background:#111;
-    padding:15px;
-    text-align:center;
-    font-size:22px;
-    font-weight:bold;
-}
-.menu{
-    display:flex;
-    flex-wrap:wrap;
-    background:#1a1a1a;
-}
-.menu button{
-    flex:1;
-    padding:15px;
-    border:none;
-    background:#1a1a1a;
-    color:#fff;
-    cursor:pointer;
-    font-size:14px;
-}
-.menu button:hover{
-    background:#333;
-}
-.pantalla{
-    display:none;
-    padding:20px;
-}
-.activa{
-    display:block;
-}
-.card{
-    background:#111;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:15px;
-}
-input, select{
-    width:100%;
-    padding:10px;
-    margin-top:8px;
-    margin-bottom:12px;
-    border-radius:6px;
-    border:none;
-}
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-th, td{
-    padding:10px;
-    border-bottom:1px solid #333;
-    text-align:left;
-    font-size:14px;
-}
+body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
+header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #00c853; }
+.menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; }
+.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; border-bottom: 1px solid #333; }
+.menu button:hover{ background:#333; }
+.pantalla{ display:none; padding:20px; }
+.activa{ display:block; }
+.card{ background:#111; padding:15px; border-radius:10px; margin-bottom:15px; border: 1px solid #333; }
+input, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background: #222; color: #fff; box-sizing: border-box; }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:14px; }
 .estado-ok{ color:#4caf50; }
 .estado-off{ color:#f44336; }
-.btn{
-    padding:8px 12px;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-}
-.btn-ok{ background:#4caf50; }
-.btn-del{ background:#f44336; }
+.btn{ padding:12px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+.btn-ok{ background:#00c853; color: #000; }
+.btn-del{ background:#f44336; color: #fff; }
 </style>
 </head>
 
@@ -95,125 +40,54 @@ th, td{
     <button onclick="mostrar('config')">Configuración</button>
 </div>
 
-<!-- INICIO -->
 <div id="inicio" class="pantalla activa">
     <div class="card">
         <h3>Resumen general</h3>
-        <p>Conductores activos: <b id="cActivos">0</b></p>
+        <p>Conductores registrados: <b id="cTotal">0</b></p>
         <p>Pasajeros registrados: <b id="pTotal">0</b></p>
-        <p>Viajes del día: <b id="vHoy">0</b></p>
-        <p>Ganancia estimada hoy: <b>$ <span id="gHoy">0</span></b></p>
-        <p>Monto fijo recaudado hoy: <b>$ <span id="montoHoy">0</span></b></p>
     </div>
 </div>
 
-<!-- CONDUCTORES -->
 <div id="conductores" class="pantalla">
     <div class="card">
-        <h3>Conductores</h3>
+        <h3>Conductores registrados</h3>
         <table id="tablaConductores">
             <tr>
                 <th>Nombre</th>
                 <th>Teléfono</th>
-                <th>Estado</th>
-                <th>Acción</th>
+                <th>Estado Pago</th>
             </tr>
         </table>
     </div>
 </div>
 
-<!-- PASAJEROS -->
 <div id="pasajeros" class="pantalla">
     <div class="card">
-        <h3>Pasajeros</h3>
+        <h3>Pasajeros registrados</h3>
         <table id="tablaPasajeros">
             <tr>
                 <th>Nombre</th>
                 <th>Teléfono</th>
-                <th>Viajes</th>
             </tr>
         </table>
     </div>
 </div>
 
-<!-- VIAJES -->
-<div id="viajes" class="pantalla">
-    <div class="card">
-        <h3>Historial de viajes</h3>
-        <table id="tablaViajes">
-            <tr>
-                <th>Fecha</th>
-                <th>Chofer</th>
-                <th>Pasajero</th>
-                <th>Monto</th>
-            </tr>
-        </table>
-    </div>
-</div>
-
-<!-- PAGOS / HISTORIAL -->
-<div id="pagos" class="pantalla">
-    <div class="card">
-        <h3>Historial de cobros por choferes</h3>
-        <label>Filtrar por chofer:</label>
-        <select id="filtroChofer" onchange="cargarPagos()">
-            <option value="">Todos</option>
-        </select>
-        <label>Filtrar por fecha:</label>
-        <input type="date" id="filtroFecha" onchange="cargarPagos()">
-        <table id="tablaPagos">
-            <tr>
-                <th>Chofer</th>
-                <th>Monto total</th>
-                <th>Saldo bancario recibido</th>
-            </tr>
-        </table>
-    </div>
-</div>
-
-<!-- TARIFAS -->
 <div id="tarifas" class="pantalla">
     <div class="card">
-        <h3>Tarifas</h3>
-        <label>Precio base por viaje</label>
-        <input type="number" id="precioBase" value="500">
-        <label>Precio por km</label>
-        <input type="number" id="precioKm" value="150">
-        <label>Monto fijo para conectarse</label>
-        <input type="number" id="montoFijo" value="10000">
-        <button class="btn btn-ok" onclick="guardarTarifas()">Guardar cambios</button>
+        <h3>Configuración de Tarifas</h3>
+        <label>Precio base (Hasta 4 km)</label>
+        <input type="number" id="precioBase" placeholder="Ej: 3500">
+        <label>Precio por km adicional</label>
+        <input type="number" id="precioKm" placeholder="Ej: 900">
+        <button class="btn btn-ok" id="btnGuardarTarifas" onclick="guardarTarifas()">GUARDAR EN BASE DE DATOS</button>
     </div>
 </div>
 
-<!-- MENSAJES -->
-<div id="mensajes" class="pantalla">
-    <div class="card">
-        <h3>Enviar mensaje</h3>
-        <select>
-            <option>Todos los conductores</option>
-            <option>Todos los pasajeros</option>
-        </select>
-        <input type="text" placeholder="Escribí el mensaje">
-        <button class="btn btn-ok">Enviar</button>
-    </div>
-</div>
-
-<!-- CONFIG -->
-<div id="config" class="pantalla">
-    <div class="card">
-        <h3>Configuración general</h3>
-        <label>Nombre de la app</label>
-        <input value="Smart Traslados">
-        <label>Teléfono soporte</label>
-        <input value="+54 9">
-        <label>Email soporte</label>
-        <input value="soporte@smart.com">
-        <label>Cuenta bancaria para recibir pagos (token/ID)</label>
-        <input id="cuentaBancaria" placeholder="Ingresá tu token o ID">
-        <button class="btn btn-ok" onclick="guardarCuentaBancaria()">Guardar cuenta bancaria</button>
-        <button class="btn btn-ok" onclick="mostrarCuenta()">Ver cuenta bancaria vinculada</button>
-    </div>
-</div>
+<div id="viajes" class="pantalla"><div class="card"><h3>Próximamente: Historial de viajes</h3></div></div>
+<div id="pagos" class="pantalla"><div class="card"><h3>Próximamente: Historial de cobros</h3></div></div>
+<div id="mensajes" class="pantalla"><div class="card"><h3>Enviar notificaciones</h3></div></div>
+<div id="config" class="pantalla"><div class="card"><h3>Configuración del Sistema</h3></div></div>
 
 <script>
 function mostrar(id){
@@ -221,108 +95,86 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
 }
 
-let conductores = JSON.parse(localStorage.getItem('conductores')) || [];
-let pasajeros = JSON.parse(localStorage.getItem('pasajeros')) || [];
-let viajes = JSON.parse(localStorage.getItem('viajes')) || [];
-let tarifas = JSON.parse(localStorage.getItem('tarifas')) || {precioBase:500, precioKm:150, montoFijo:10000};
-let pagosBancarios = JSON.parse(localStorage.getItem('pagosBancarios')) || {};
-let cuentaBancaria = localStorage.getItem('cuentaBancaria') || '';
-
-document.getElementById('precioBase').value = tarifas.precioBase;
-document.getElementById('precioKm').value = tarifas.precioKm;
-document.getElementById('montoFijo').value = tarifas.montoFijo;
-document.getElementById('cuentaBancaria').value = cuentaBancaria;
-
-function guardarTarifas(){
-    tarifas.precioBase = parseInt(document.getElementById('precioBase').value) || 500;
-    tarifas.precioKm = parseInt(document.getElementById('precioKm').value) || 150;
-    tarifas.montoFijo = parseInt(document.getElementById('montoFijo').value) || 10000;
-    localStorage.setItem('tarifas', JSON.stringify(tarifas));
-    alert('Tarifas guardadas correctamente');
+// 1. CARGAR TARIFAS DESDE EL SERVIDOR AL ABRIR
+async function cargarTarifasAdmin() {
+    try {
+        const res = await fetch('/obtener-tarifas');
+        const data = await res.json();
+        document.getElementById('precioBase').value = data.precioBase || 3500;
+        document.getElementById('precioKm').value = data.precioKm || 900;
+    } catch (e) { console.error("Error cargando tarifas"); }
 }
 
-function guardarCuentaBancaria(){
-    cuentaBancaria = document.getElementById('cuentaBancaria').value.trim();
-    localStorage.setItem('cuentaBancaria', cuentaBancaria);
-    alert('Cuenta bancaria vinculada correctamente');
+// 2. GUARDAR TARIFAS EN EL SERVIDOR (MONGODB)
+async function guardarTarifas() {
+    const pBase = parseInt(document.getElementById('precioBase').value);
+    const pKm = parseInt(document.getElementById('precioKm').value);
+
+    if(!pBase || !pKm) return alert("Por favor completa los precios");
+
+    const btn = document.getElementById('btnGuardarTarifas');
+    btn.innerText = "GUARDANDO...";
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/actualizar-tarifas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ precioBase: pBase, precioKm: pKm })
+        });
+        const data = await res.json();
+        if(data.mensaje === "Ok") {
+            alert("✅ Tarifas actualizadas en todo el sistema");
+        }
+    } catch (e) {
+        alert("❌ Error al conectar con el servidor");
+    } finally {
+        btn.innerText = "GUARDAR EN BASE DE DATOS";
+        btn.disabled = false;
+    }
 }
 
-function mostrarCuenta(){
-    alert('Cuenta bancaria vinculada: ' + (cuentaBancaria || 'No hay cuenta vinculada'));
+// 3. CARGAR DATOS DE USUARIOS DESDE MONGODB
+async function cargarDatosGlobales() {
+    try {
+        const res = await fetch('/obtener-usuarios');
+        const usuarios = await res.json();
+
+        const conds = usuarios.filter(u => u.rol === 'chofer');
+        const pasas = usuarios.filter(u => u.rol === 'pasajero');
+
+        document.getElementById('cTotal').innerText = conds.length;
+        document.getElementById('pTotal').innerText = pasas.length;
+
+        // Tabla Conductores
+        let tC = document.getElementById('tablaConductores');
+        tC.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado Pago</th></tr>`;
+        conds.forEach(c => {
+            tC.innerHTML += `<tr>
+                <td>${c.nombre || 'S/N'}</td>
+                <td>${c.telefono}</td>
+                <td class="${c.pagoActivo?'estado-ok':'estado-off'}">${c.pagoActivo?'Al día':'Pendiente'}</td>
+            </tr>`;
+        });
+
+        // Tabla Pasajeros
+        let tP = document.getElementById('tablaPasajeros');
+        tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
+        pasas.forEach(p => {
+            tP.innerHTML += `<tr>
+                <td>${p.nombre || 'S/N'}</td>
+                <td>${p.telefono}</td>
+            </tr>`;
+        });
+
+    } catch (e) { console.error("Error cargando usuarios"); }
 }
 
-function cargarConductores(){
-    let tabla = document.getElementById('tablaConductores');
-    tabla.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Acción</th></tr>`;
-    let filtroChofer = document.getElementById('filtroChofer');
-    filtroChofer.innerHTML = `<option value="">Todos</option>`;
-    conductores.forEach(c=>{
-        tabla.innerHTML += `
-        <tr>
-            <td>${c.nombre}</td>
-            <td>${c.telefono}</td>
-            <td class="${c.activo?'estado-ok':'estado-off'}">${c.activo?'Activo':'Bloqueado'}</td>
-            <td><button class="btn btn-del" onclick="toggle('${c.telefono}')">Cambiar</button></td>
-        </tr>`;
-        filtroChofer.innerHTML += `<option value="${c.nombre}">${c.nombre}</option>`;
-    });
-}
-
-function toggle(tel){
-    conductores = conductores.map(c=>{
-        if(c.telefono===tel) c.activo=!c.activo;
-        return c;
-    });
-    localStorage.setItem('conductores',JSON.stringify(conductores));
-    cargarConductores();
-}
-
-function registrarPagoBancario(telefonoChofer, monto){
-    pagosBancarios[telefonoChofer] = (pagosBancarios[telefonoChofer] || 0) + monto;
-    localStorage.setItem('pagosBancarios', JSON.stringify(pagosBancarios));
-    conductores = conductores.map(c=>{
-        if(c.telefono===telefonoChofer) c.activo = true;
-        return c;
-    });
-    localStorage.setItem('conductores', JSON.stringify(conductores));
-    cargarTodo();
-}
-
-function cargarPagos(){
-    let tabla = document.getElementById('tablaPagos');
-    let filtroChofer = document.getElementById('filtroChofer').value;
-    let filtroFecha = document.getElementById('filtroFecha').value;
-    tabla.innerHTML = `<tr><th>Chofer</th><th>Monto total</th><th>Saldo bancario recibido</th></tr>`;
-    
-    let choferesFiltrados = filtroChofer ? conductores.filter(c=>c.nombre===filtroChofer) : conductores;
-
-    choferesFiltrados.forEach(c=>{
-        let totalViajes = viajes
-            .filter(v=>v.chofer===c.nombre)
-            .filter(v=>!filtroFecha || v.fecha.startsWith(filtroFecha))
-            .reduce((a,v)=>a+v.monto,0);
-        let saldoBanco = pagosBancarios[c.telefono] || 0;
-        tabla.innerHTML += `<tr><td>${c.nombre}</td><td>$${totalViajes}</td><td>$${saldoBanco}</td></tr>`;
-    });
-}
-
-function cargarTodo(){
-    document.getElementById('cActivos').innerText = conductores.filter(c=>c.activo).length;
-    document.getElementById('pTotal').innerText = pasajeros.length;
-    document.getElementById('vHoy').innerText = viajes.length;
-    document.getElementById('gHoy').innerText = viajes.reduce((a,v)=>a+v.monto*0.15,0);
-
-    let hoy = new Date().toISOString().slice(0,10);
-    let totalMontoHoy = viajes
-        .filter(v=>v.fecha.startsWith(hoy))
-        .reduce((a,v)=>a+tarifas.montoFijo,0);
-    document.getElementById('montoHoy').innerText = totalMontoHoy;
-
-    cargarConductores();
-    cargarPagos();
-}
-
-cargarTodo();
+// INICIO AUTOMÁTICO
+window.onload = () => {
+    cargarTarifasAdmin();
+    cargarDatosGlobales();
+};
 </script>
 
 </body>
