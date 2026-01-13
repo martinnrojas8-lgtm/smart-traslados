@@ -6,87 +6,30 @@
 <title>Smart Traslados – Panel Propietario</title>
 
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#000;
-    color:#fff;
-}
-header{
-    background:#111;
-    padding:15px;
-    text-align:center;
-    font-size:22px;
-    font-weight:bold;
-}
-.menu{
-    display:flex;
-    flex-wrap:wrap;
-    background:#1a1a1a;
-}
-.menu button{
-    flex:1;
-    padding:15px;
-    border:none;
-    background:#1a1a1a;
-    color:#fff;
-    cursor:pointer;
-    font-size:14px;
-}
-.menu button:hover{
-    background:#333;
-}
-.pantalla{
-    display:none;
-    padding:20px;
-}
-.activa{
-    display:block;
-}
-.card{
-    background:#111;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:15px;
-}
-input, select{
-    width:100%;
-    padding:10px;
-    margin-top:8px;
-    margin-bottom:12px;
-    border-radius:6px;
-    border:none;
-    background: #fff; /* Mantengo tus campos blancos originales */
-    color: #000;
-}
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-th, td{
-    padding:10px;
-    border-bottom:1px solid #333;
-    text-align:left;
-    font-size:14px;
-}
+body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
+header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #4caf50; }
+.menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; }
+.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; border-bottom: 1px solid #333; }
+.menu button:hover{ background:#333; }
+.pantalla{ display:none; padding:20px; }
+.activa{ display:block; }
+.card{ background:#111; padding:15px; border-radius:10px; margin-bottom:15px; border: 1px solid #333; }
+input, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background: #fff; color: #000; }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:14px; }
 .estado-ok{ color:#4caf50; }
 .estado-off{ color:#f44336; }
-.btn{
-    padding:8px 12px;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-}
-.btn-ok{ background:#4caf50; }
-.btn-del{ background:#f44336; }
+.btn{ padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; }
+.btn-ok{ background:#4caf50; color: #fff; width: 100%; margin-top: 10px; }
+.btn-del{ background:#f44336; color: #fff; }
 
-/* Solo agrego esto para que se vea la ficha del PIN cuando la generes */
+/* DISEÑO DE LA FICHA PIN */
 #contenedorFicha { 
     display: none; flex-direction: column; align-items: center; 
     background: #fff; padding: 20px; border-radius: 15px; 
     max-width: 280px; margin: 20px auto; color: #000;
 }
-.ficha-codigo { font-size: 30px; font-weight: bold; color: #4caf50; letter-spacing: 4px; }
+.ficha-codigo { font-size: 30px; font-weight: bold; color: #4caf50; letter-spacing: 4px; margin: 10px 0; }
 </style>
 </head>
 
@@ -110,7 +53,7 @@ th, td{
         <h3>Resumen general</h3>
         <p>Conductores registrados: <b id="cActivos">0</b></p>
         <p>Pasajeros registrados: <b id="pTotal">0</b></p>
-        <p>Viajes del día: <b id="vHoy">0</b></p>
+        <p>Viajes registrados: <b id="vHoy">0</b></p>
     </div>
 </div>
 
@@ -145,11 +88,10 @@ th, td{
     <div class="card" style="text-align:center;">
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
-        
         <div id="contenedorFicha">
             <div style="font-weight:bold;">Smart Traslados</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
-            <div>Válido por 24 Horas</div>
+            <div style="font-size: 12px;">Válido por 24 Horas</div>
         </div>
     </div>
 </div>
@@ -157,10 +99,16 @@ th, td{
 <div id="tarifas" class="pantalla">
     <div class="card">
         <h3>Tarifas</h3>
-        <label>Precio base por viaje</label>
+        <label>Precio base por viaje (Pasajeros)</label>
         <input type="number" id="precioBase">
-        <label>Precio por km</label>
+        <label>Precio por km (Pasajeros)</label>
         <input type="number" id="precioKm">
+        
+        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+        
+        <label>Monto sugerido suscripción 24hs (Solo Info Admin)</label>
+        <input type="number" id="montoFijo" placeholder="Ej: 10000">
+        
         <button class="btn btn-ok" onclick="guardarTarifas()">Guardar cambios</button>
     </div>
 </div>
@@ -168,11 +116,11 @@ th, td{
 <div id="mensajes" class="pantalla">
     <div class="card">
         <h3>Enviar mensaje</h3>
-        <select>
+        <select id="tipoMensaje">
             <option>Todos los conductores</option>
             <option>Todos los pasajeros</option>
         </select>
-        <input type="text" placeholder="Escribí el mensaje">
+        <input type="text" id="inputMensaje" placeholder="Escribí el mensaje">
         <button class="btn btn-ok">Enviar</button>
     </div>
 </div>
@@ -181,14 +129,14 @@ th, td{
     <div class="card">
         <h3>Configuración general</h3>
         <label>Nombre de la app</label>
-        <input value="Smart Traslados">
+        <input id="confApp" value="Smart Traslados">
         <label>Teléfono soporte</label>
-        <input value="+54 9">
+        <input id="confTel" value="+54 9">
         <label>Email soporte</label>
-        <input value="soporte@smart.com">
-        <label>Cuenta bancaria para recibir pagos (token/ID)</label>
-        <input id="cuentaBancaria" placeholder="Ingresá tu token o ID">
-        <button class="btn btn-ok">Guardar configuración</button>
+        <input id="confMail" value="soporte@smart.com">
+        <label>Alias / CBU para recibir pagos (Mercado Pago)</label>
+        <input id="confAlias" placeholder="Tu alias aquí">
+        <button class="btn btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
 
@@ -198,30 +146,35 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
 }
 
-// 1. VINCULACIÓN DE TARIFAS
+// 1. CARGAR Y GUARDAR TARIFAS (VINCULADO AL SERVER)
 async function cargarTarifas() {
     try {
         const res = await fetch('/obtener-tarifas');
         const data = await res.json();
         document.getElementById('precioBase').value = data.precioBase || 500;
         document.getElementById('precioKm').value = data.precioKm || 150;
+        // El monto fijo se guarda localmente por ahora como pediste (informativo)
+        document.getElementById('montoFijo').value = localStorage.getItem('montoFijoInfo') || 10000;
     } catch (e) {}
 }
 
 async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
+    const mFijo = document.getElementById('montoFijo').value;
+    
     try {
         await fetch('/actualizar-tarifas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ precioBase: pBase, precioKm: pKm })
         });
-        alert('Tarifas guardadas en el servidor');
+        localStorage.setItem('montoFijoInfo', mFijo); // Guardamos la info admin
+        alert('Tarifas actualizadas correctamente');
     } catch (e) { alert('Error al guardar'); }
 }
 
-// 2. VINCULACIÓN DE PIN (NUEVA RUTA)
+// 2. GENERAR PIN DE ACTIVACIÓN
 async function generarNuevoCodigo() {
     const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
     try {
@@ -234,10 +187,10 @@ async function generarNuevoCodigo() {
             document.getElementById('txtFichaCodigo').innerText = nuevoCod;
             document.getElementById('contenedorFicha').style.display = 'flex';
         }
-    } catch (e) { alert("Error al generar"); }
+    } catch (e) { alert("Error al generar el PIN"); }
 }
 
-// 3. VINCULACIÓN DE CONDUCTORES Y PASAJEROS REALES
+// 3. CARGAR USUARIOS REALES (CONDUCTORES Y PASAJEROS)
 async function cargarDatosReales() {
     try {
         const res = await fetch('/obtener-usuarios');
@@ -256,7 +209,7 @@ async function cargarDatosReales() {
                 <td>${c.nombre || 'S/N'}</td>
                 <td>${c.telefono}</td>
                 <td class="${activo?'estado-ok':'estado-off'}">${activo?'Al día':'Vencido'}</td>
-                <td><button class="btn btn-del">Bloquear</button></td>
+                <td><button class="btn btn-del" onclick="alert('Función de bloqueo en desarrollo')">Cambiar</button></td>
             </tr>`;
         });
 
@@ -268,11 +221,33 @@ async function cargarDatosReales() {
     } catch (e) {}
 }
 
+// 4. GUARDAR CONFIGURACIÓN GENERAL (LOCAL)
+function guardarConfiguracion() {
+    const config = {
+        app: document.getElementById('confApp').value,
+        tel: document.getElementById('confTel').value,
+        mail: document.getElementById('confMail').value,
+        alias: document.getElementById('confAlias').value
+    };
+    localStorage.setItem('configAdmin', JSON.stringify(config));
+    alert('Configuración guardada correctamente');
+}
+
+function cargarConfiguracion() {
+    const config = JSON.parse(localStorage.getItem('configAdmin'));
+    if(config) {
+        document.getElementById('confApp').value = config.app;
+        document.getElementById('confTel').value = config.tel;
+        document.getElementById('confMail').value = config.mail;
+        document.getElementById('confAlias').value = config.alias;
+    }
+}
+
 window.onload = () => {
     cargarTarifas();
     cargarDatosReales();
+    cargarConfiguracion();
 };
 </script>
-
 </body>
 </html>
