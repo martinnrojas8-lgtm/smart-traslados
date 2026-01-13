@@ -9,20 +9,21 @@
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
 header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #00c853; }
 .menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; }
-.menu button{ flex: 1 1 30%; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:12px; border-bottom: 1px solid #333; border-right: 1px solid #333; }
+.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; border-bottom: 1px solid #333; }
 .menu button:hover{ background:#333; }
 .pantalla{ display:none; padding:20px; }
 .activa{ display:block; }
 .card{ background:#111; padding:15px; border-radius:10px; margin-bottom:15px; border: 1px solid #333; }
 input, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background: #222; color: #fff; box-sizing: border-box; }
 table{ width:100%; border-collapse:collapse; }
-th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
+th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:14px; }
 .estado-ok{ color:#4caf50; }
 .estado-off{ color:#f44336; }
 .btn{ padding:12px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; margin-top: 10px; }
 .btn-ok{ background:#00c853; color: #000; }
+.btn-del{ background:#f44336; color: #fff; }
 
-/* FICHA PROFESIONAL */
+/* NUEVO: ESTILO FICHA WHATSAPP (SOLO ESTO SE AGREGA) */
 #contenedorFicha { 
     display: none; flex-direction: column; align-items: center; 
     background: #000; padding: 20px; border-radius: 15px; 
@@ -40,14 +41,13 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 
 <div class="menu">
     <button onclick="mostrar('inicio')">Inicio</button>
-    <button onclick="mostrar('conductores')">Choferes</button>
+    <button onclick="mostrar('conductores')">Conductores</button>
     <button onclick="mostrar('pasajeros')">Pasajeros</button>
     <button onclick="mostrar('viajes')">Viajes</button>
-    <button onclick="mostrar('pagos')">Cobros</button>
-    <button onclick="mostrar('seccionTokens')">Generar PIN</button>
+    <button onclick="mostrar('pagos')">Historial Cobros</button>
     <button onclick="mostrar('tarifas')">Tarifas</button>
     <button onclick="mostrar('mensajes')">Mensajes</button>
-    <button onclick="mostrar('config')">Config</button>
+    <button onclick="mostrar('config')">Configuración</button>
 </div>
 
 <div id="inicio" class="pantalla activa">
@@ -62,7 +62,11 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card">
         <h3>Conductores registrados</h3>
         <table id="tablaConductores">
-            <tr><th>Nombre</th><th>Teléfono</th><th>Estado</th></tr>
+            <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Estado Pago</th>
+            </tr>
         </table>
     </div>
 </div>
@@ -71,23 +75,11 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card">
         <h3>Pasajeros registrados</h3>
         <table id="tablaPasajeros">
-            <tr><th>Nombre</th><th>Teléfono</th></tr>
+            <tr>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+            </tr>
         </table>
-    </div>
-</div>
-
-<div id="seccionTokens" class="pantalla">
-    <div class="card" style="text-align: center;">
-        <h3>Generar Activación 24hs</h3>
-        <button class="btn btn-ok" onclick="generarNuevoCodigo()">GENERAR CÓDIGO NUEVO</button>
-        
-        <div id="contenedorFicha">
-            <img src="../file_000000008fd0720eb71af76359ccb359.png" class="ficha-logo">
-            <div class="ficha-info">Smart Traslados</div>
-            <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
-            <div class="ficha-info" style="color: #fff;">Válido por 24 Horas</div>
-        </div>
-        <p id="instruccionFicha" style="display:none; font-size: 11px; color: #00c853;">↑ Sacale captura para enviar ↑</p>
     </div>
 </div>
 
@@ -95,17 +87,32 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card">
         <h3>Configuración de Tarifas</h3>
         <label>Precio base (Hasta 4 km)</label>
-        <input type="number" id="precioBase">
+        <input type="number" id="precioBase" placeholder="Ej: 3500">
         <label>Precio por km adicional</label>
-        <input type="number" id="precioKm">
-        <button class="btn btn-ok" onclick="guardarTarifas()">GUARDAR TARIFAS</button>
+        <input type="number" id="precioKm" placeholder="Ej: 900">
+        <button class="btn btn-ok" id="btnGuardarTarifas" onclick="guardarTarifas()">GUARDAR EN BASE DE DATOS</button>
     </div>
 </div>
 
-<div id="viajes" class="pantalla"><div class="card"><h3>Historial de viajes</h3><p>Próximamente reporte de rutas.</p></div></div>
-<div id="pagos" class="pantalla"><div class="card"><h3>Historial de cobros</h3><p>Registro de códigos usados.</p></div></div>
-<div id="mensajes" class="pantalla"><div class="card"><h3>Enviar notificaciones</h3><p>Función de aviso global.</p></div></div>
-<div id="config" class="pantalla"><div class="card"><h3>Configuración del Sistema</h3><p>Ajustes generales del servidor.</p></div></div>
+<div id="viajes" class="pantalla"><div class="card"><h3>Próximamente: Historial de viajes</h3></div></div>
+
+<div id="pagos" class="pantalla">
+    <div class="card" style="text-align: center;">
+        <h3>Generar Pin de Activación 24hs</h3>
+        <button class="btn btn-ok" onclick="generarNuevoCodigo()">NUEVO CÓDIGO</button>
+        
+        <div id="contenedorFicha">
+            <img src="../file_000000008fd0720eb71af76359ccb359.png" class="ficha-logo">
+            <div class="ficha-info">Smart Traslados</div>
+            <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
+            <div class="ficha-info" style="color: #fff;">Válido por 24 Horas</div>
+        </div>
+        <p id="instruccionFicha" style="display:none; font-size: 11px; color: #00c853;">↑ Sacale captura y mandala por WhatsApp ↑</p>
+    </div>
+</div>
+
+<div id="mensajes" class="pantalla"><div class="card"><h3>Enviar notificaciones</h3></div></div>
+<div id="config" class="pantalla"><div class="card"><h3>Configuración del Sistema</h3></div></div>
 
 <script>
 function mostrar(id){
@@ -113,6 +120,7 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
 }
 
+// NUEVA FUNCIÓN PARA GENERAR EL PIN
 async function generarNuevoCodigo() {
     const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
     try {
@@ -126,29 +134,34 @@ async function generarNuevoCodigo() {
             document.getElementById('contenedorFicha').style.display = 'flex';
             document.getElementById('instruccionFicha').style.display = 'block';
         }
-    } catch (e) { alert("Error"); }
+    } catch (e) { alert("Error al generar"); }
 }
 
 async function cargarTarifasAdmin() {
     try {
         const res = await fetch('/obtener-tarifas');
         const data = await res.json();
-        document.getElementById('precioBase').value = data.precioBase;
-        document.getElementById('precioKm').value = data.precioKm;
-    } catch (e) {}
+        document.getElementById('precioBase').value = data.precioBase || 3500;
+        document.getElementById('precioKm').value = data.precioKm || 900;
+    } catch (e) { console.error("Error cargando tarifas"); }
 }
 
 async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
+    if(!pBase || !pKm) return alert("Por favor completa los precios");
+    const btn = document.getElementById('btnGuardarTarifas');
+    btn.innerText = "GUARDANDO...";
+    btn.disabled = true;
     try {
-        await fetch('/actualizar-tarifas', {
+        const res = await fetch('/actualizar-tarifas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ precioBase: pBase, precioKm: pKm })
         });
-        alert("✅ Tarifas actualizadas");
-    } catch (e) { alert("Error"); }
+        if(res.ok) alert("✅ Tarifas actualizadas");
+    } catch (e) { alert("❌ Error"); }
+    finally { btn.innerText = "GUARDAR EN BASE DE DATOS"; btn.disabled = false; }
 }
 
 async function cargarDatosGlobales() {
@@ -162,13 +175,14 @@ async function cargarDatosGlobales() {
         document.getElementById('pTotal').innerText = pasas.length;
 
         let tC = document.getElementById('tablaConductores');
-        tC.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado</th></tr>`;
+        tC.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado Pago</th></tr>`;
         conds.forEach(c => {
+            // Lógica de vencimiento real
             const estaActivo = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
             tC.innerHTML += `<tr>
                 <td>${c.nombre || 'S/N'}</td>
                 <td>${c.telefono}</td>
-                <td class="${estaActivo?'estado-ok':'estado-off'}">${estaActivo?'ACTIVO':'VENCIDO'}</td>
+                <td class="${estaActivo?'estado-ok':'estado-off'}">${estaActivo?'Al día':'Vencido'}</td>
             </tr>`;
         });
 
@@ -177,7 +191,7 @@ async function cargarDatosGlobales() {
         pasas.forEach(p => {
             tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`;
         });
-    } catch (e) {}
+    } catch (e) { console.error("Error cargando usuarios"); }
 }
 
 window.onload = () => {
@@ -185,5 +199,6 @@ window.onload = () => {
     cargarDatosGlobales();
 };
 </script>
+
 </body>
 </html>
