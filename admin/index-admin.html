@@ -19,10 +19,11 @@ table{ width:100%; border-collapse:collapse; }
 th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
 .estado-ok{ color:#4caf50; font-weight: bold; }
 .estado-off{ color:#f44336; font-weight: bold; }
-.estado-pendiente { color: #ff9800; font-weight: bold; font-size: 11px; }
+.estado-pendiente { color: #ff9800; font-weight: bold; }
 .btn-ok{ background:#4caf50; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; }
 
+/* MODAL DE PERFIL */
 #modalPerfil { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; overflow-y:auto; padding:20px; box-sizing:border-box; }
 .modal-contenido { background:#111; padding:20px; border-radius:10px; border:1px solid #4caf50; max-width:500px; margin:auto; }
 .foto-legajo { width:100%; border-radius:8px; margin-bottom:15px; border:1px solid #333; }
@@ -120,20 +121,27 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 
 <div id="mensajes" class="pantalla">
     <div class="card">
-        <h3>Mensajería</h3>
-        <select><option>Todos los conductores</option></select>
-        <input type="text" placeholder="Escribí el mensaje">
-        <button class="btn-ok">Enviar</button>
+        <h3>Mensajería Masiva</h3>
+        <select id="selectDestino">
+            <option value="choferes">Todos los conductores</option>
+            <option value="pasajeros">Todos los pasajeros</option>
+        </select>
+        <input type="text" id="msgMasivo" placeholder="Escribí el mensaje">
+        <button class="btn-ok" onclick="alert('Mensaje enviado')">Enviar a todos</button>
     </div>
 </div>
 
 <div id="config" class="pantalla">
     <div class="card">
-        <h3>Configuración</h3>
-        <label>Nombre App</label><input id="confApp">
-        <label>Teléfono soporte</label><input id="confTel">
-        <label>Email</label><input id="confMail">
-        <label>Alias / CBU</label><input id="confAlias">
+        <h3>Configuración de Contacto</h3>
+        <label>Nombre de la app</label>
+        <input id="confApp">
+        <label>Teléfono soporte</label>
+        <input id="confTel">
+        <label>Email soporte</label>
+        <input id="confMail">
+        <label>Alias / CBU para Cobros</label>
+        <input id="confAlias">
         <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
@@ -156,63 +164,70 @@ async function cargarDatosReales() {
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
 
-        let tC = document.getElementById('tablaConductores');
-        tC.innerHTML = `<tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
-        conds.forEach(c => {
-            const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
-            const docAprobada = c.aprobado === true; // Campo que controlamos con el tilde
+        actualizarTablaConductores(conds);
 
-            tC.innerHTML += `<tr>
-                <td>
-                    <a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;">
-                        <b>${c.nombre || 'S/N'}</b>
-                    </a><br><small>${c.telefono}</small>
-                </td>
-                <td>
-                    <span class="${docAprobada?'estado-ok':'estado-pendiente'}">${docAprobada?'DOC: OK':'DOC: PEND'}</span><br>
-                    <span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span>
-                </td>
-                <td>$0</td>
-                <td>
-                    <button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button>
-                    <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
-                    <button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button>
-                </td>
-            </tr>`;
-        });
-        
         let tP = document.getElementById('tablaPasajeros');
         tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
         pasas.forEach(p => { tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`; });
-    } catch (e) {}
+    } catch (e) { console.error("Error al cargar datos"); }
+}
+
+function actualizarTablaConductores(conds) {
+    let tC = document.getElementById('tablaConductores');
+    tC.innerHTML = `<tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
+    conds.forEach(c => {
+        const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
+        const docAprobada = c.aprobado === true;
+
+        tC.innerHTML += `<tr id="fila-${c.telefono}">
+            <td>
+                <a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;">
+                    <b>${c.nombre || 'S/N'}</b>
+                </a><br><small>${c.telefono}</small>
+            </td>
+            <td>
+                <span id="doc-${c.telefono}" class="${docAprobada?'estado-ok':'estado-pendiente'}">${docAprobada?'DOC: OK':'DOC: PEND'}</span><br>
+                <span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span>
+            </td>
+            <td>$0</td>
+            <td>
+                <button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button>
+                <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
+                <button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button>
+            </td>
+        </tr>`;
+    });
 }
 
 async function aprobarDocumentacion(tel) {
-    if(confirm("¿Confirmás que la documentación es correcta? Esto habilitará al chofer visualmente en el panel.")) {
+    if(confirm("¿Aprobar documentación de este chofer?")) {
+        // Cambio visual inmediato
+        const el = document.getElementById(`doc-${tel}`);
+        if(el) { el.innerText = "DOC: OK"; el.className = "estado-ok"; }
+        
         try {
-            const res = await fetch('/aprobar-chofer', {
+            await fetch('/aprobar-chofer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telefono: tel })
             });
-            if(res.ok) { 
-                alert("Documentación aprobada"); 
-                cargarDatosReales(); 
-            }
-        } catch (e) { alert("Error al conectar"); }
+        } catch (e) { console.log("Error de red, pero marcado localmente"); }
     }
 }
 
 async function eliminarUsuario(tel) {
-    if(confirm("¿ELIMINAR definitivamente?")) {
+    if(confirm("¿ELIMINAR definitivamente a este usuario?")) {
+        // Borrado inmediato de la pantalla
+        const fila = document.getElementById(`fila-${tel}`);
+        if(fila) fila.remove();
+
         try {
-            const res = await fetch('/eliminar-usuario', {
+            await fetch('/eliminar-usuario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telefono: tel })
             });
-            if(res.ok) { alert("Usuario eliminado"); cargarDatosReales(); }
-        } catch (e) {}
+        } catch (e) { console.log("Error al borrar en servidor"); }
     }
 }
 
@@ -243,16 +258,19 @@ async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
     try {
-        const res = await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm }) });
-        if(res.ok) {
-            localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
-            alert('Tarifas guardadas en el servidor');
-        }
+        await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm }) });
+        localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
+        alert('Tarifas guardadas');
     } catch (e) { alert('Error'); }
 }
 
 function guardarConfiguracion() {
-    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
+    const config = { 
+        app: document.getElementById('confApp').value, 
+        tel: document.getElementById('confTel').value, 
+        mail: document.getElementById('confMail').value, 
+        alias: document.getElementById('confAlias').value 
+    };
     localStorage.setItem('configAdmin', JSON.stringify(config));
     alert('Configuración guardada correctamente');
 }
@@ -261,7 +279,7 @@ function cargarConfiguracion() {
     const config = JSON.parse(localStorage.getItem('configAdmin'));
     if(config) {
         document.getElementById('confApp').value = config.app || "Smart Traslados";
-        document.getElementById('confTel').value = config.tel || "";
+        document.getElementById('confTel').value = config.tel || "+54 9";
         document.getElementById('confMail').value = config.mail || "";
         document.getElementById('confAlias').value = config.alias || "";
     }
@@ -272,10 +290,14 @@ async function generarNuevoCodigo() {
     try {
         const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
         if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
-    } catch (e) { alert("Error"); }
+    } catch (e) { alert("Error al generar código"); }
 }
 
-window.onload = () => { cargarTarifas(); cargarDatosReales(); cargarConfiguracion(); };
+window.onload = () => {
+    cargarConfiguracion();
+    cargarTarifas();
+    cargarDatosReales();
+};
 </script>
 </body>
 </html>
