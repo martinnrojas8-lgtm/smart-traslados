@@ -30,8 +30,10 @@ const UsuarioSchema = new mongoose.Schema({
     fotoSeguro: String,
     fotoTarjeta: String,
     pagoActivo: { type: Boolean, default: false }, 
-    vencimientoPago: { type: Date, default: null }, // NUEVO: Para el countdown
+    vencimientoPago: { type: Date, default: null },
     estadoRevision: { type: String, default: "pendiente" },
+    aprobado: { type: Boolean, default: false }, // Para el tilde verde
+    bloqueado: { type: Boolean, default: false }, // Para el candado rojo
     fechaRegistro: { type: Date, default: Date.now }
 });
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
@@ -57,7 +59,30 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- API ---
+// --- API PANEL ADMIN (NUEVAS FUNCIONES) ---
+
+app.post('/aprobar-chofer', async (req, res) => {
+    try {
+        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { aprobado: true, estadoRevision: "aprobado" });
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+app.post('/eliminar-usuario', async (req, res) => {
+    try {
+        await Usuario.findOneAndDelete({ telefono: req.body.telefono });
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+app.post('/bloquear-usuario', async (req, res) => {
+    try {
+        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { bloqueado: true });
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+// --- API EXISTENTE ---
 
 app.post('/actualizar-tarifas', async (req, res) => {
     try {
@@ -85,14 +110,14 @@ app.post('/login', async (req, res) => {
         const usuario = await Usuario.findOne({ telefono: tel, rol: rolElegido });
         
         if (usuario) {
-            // Verificamos si el pago expiró antes de responder
+            if (usuario.bloqueado) return res.status(403).json({ mensaje: "Usuario bloqueado" });
+            
             let pagoActivo = false;
             if (usuario.vencimientoPago && usuario.vencimientoPago > new Date()) {
                 pagoActivo = true;
             }
             usuario.pagoActivo = pagoActivo;
             await usuario.save();
-
             res.json({ mensaje: "Ok", usuario: usuario });
         } else {
             res.status(404).json({ mensaje: "Usuario no encontrado" });
@@ -104,7 +129,10 @@ app.post('/register', async (req, res) => {
     try {
         const { telefono, rol } = req.body;
         const existe = await Usuario.findOne({ telefono });
-        if(existe) return res.json({ mensaje: "Ok", usuario: existe });
+        if(existe) {
+            if (existe.bloqueado) return res.status(403).json({ mensaje: "Número bloqueado" });
+            return res.json({ mensaje: "Ok", usuario: existe });
+        }
         const nuevo = new Usuario({ telefono, rol: rol.toLowerCase() });
         await nuevo.save();
         res.json({ mensaje: "Ok", usuario: nuevo });
@@ -130,8 +158,6 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- SISTEMA DE TOKENS 24HS ---
-
 app.post('/crear-token', async (req, res) => {
     try {
         const nuevoToken = new Token({ codigo: req.body.codigo });
@@ -144,21 +170,14 @@ app.post('/validar-token', async (req, res) => {
     try {
         const { codigo, telefono } = req.body;
         const t = await Token.findOne({ codigo: codigo.trim(), usado: false });
-        
         if (t) {
             const ahora = new Date();
-            const vencimiento = new Date(ahora.getTime() + (24 * 60 * 60 * 1000)); // +24hs
-
+            const vencimiento = new Date(ahora.getTime() + (24 * 60 * 60 * 1000));
             t.usado = true;
             t.usadoPor = telefono;
             t.fechaUso = ahora;
             await t.save();
-
-            await Usuario.findOneAndUpdate({ telefono }, { 
-                pagoActivo: true, 
-                vencimientoPago: vencimiento 
-            });
-
+            await Usuario.findOneAndUpdate({ telefono }, { pagoActivo: true, vencimientoPago: vencimiento });
             res.json({ ok: true, vencimiento: vencimiento });
         } else { 
             res.status(400).json({ ok: false, mensaje: "Código inválido o ya usado" }); 
@@ -166,7 +185,6 @@ app.post('/validar-token', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error al validar" }); }
 });
 
-// Obtener estado de suscripción (para el cronómetro del chofer)
 app.get('/estado-suscripcion/:telefono', async (req, res) => {
     try {
         const u = await Usuario.findOne({ telefono: req.params.telefono });
