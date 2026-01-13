@@ -29,6 +29,128 @@
   .btn { font-weight: bold; cursor: pointer; text-decoration: none; transition: 0.3s; }
   .btn-verde { background:#2ecc71; color:#fff; }
   .btn-azul { background:#00bcd4; color:#fff; }
-  .btn-download { background: transparent; border: 1px solid #3d4752; color: #888; font-size: 14px; margin-top: 5px; }
+  /* Botón de instalación: inicialmente oculto */
+  .btn-download { background: transparent; border: 1px solid #2ecc71; color: #2ecc71; font-size: 14px; margin-top: 5px; display: none; }
   .btn:active { transform: scale(0.96); }
 </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo-container">
+      <img src="file_000000008fd0720eb71af76359ccb359.png" alt="Smart Traslados" class="logo-img">
+    </div>
+
+    <h2>Registro</h2>
+    
+    <input type="tel" id="telefono" placeholder="Número de celular">
+    
+    <select id="rol" onchange="toggleNombre()">
+        <option value="pasajero">Pasajero</option>
+        <option value="chofer">Chofer</option>
+    </select>
+
+    <input type="text" id="campoNombre" placeholder="Tu nombre completo">
+
+    <button class="btn btn-verde" onclick="enviarRegistro()">Registrarse</button>
+    <button class="btn btn-azul" onclick="volverLogin()">Ingresar</button>
+
+    <button id="btnInstalar" class="btn btn-download">Instalar App Oficial</button>
+  </div>
+
+<script>
+// --- LÓGICA DE INSTALACIÓN ---
+let deferredPrompt;
+const btnInstalar = document.getElementById('btnInstalar');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstalar.style.display = 'flex'; // Mostramos el botón cuando el celu está listo
+});
+
+btnInstalar.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            btnInstalar.style.display = 'none';
+        }
+        deferredPrompt = null;
+    }
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(() => console.log("SW registrado"));
+}
+
+// --- LÓGICA DE NEGOCIO ---
+function verificarSesion() {
+    const sesion = JSON.parse(localStorage.getItem("sesion"));
+    if (sesion && sesion.telefono && sesion.tipo) {
+        window.location.href = (sesion.tipo === "chofer") ? "/chofer/perfil.html" : "/pasajero/index.html";
+    }
+}
+
+function toggleNombre() {
+    const rol = document.getElementById("rol").value;
+    const campoNombre = document.getElementById("campoNombre");
+    campoNombre.style.display = (rol === "pasajero") ? "block" : "none";
+}
+
+window.onload = () => {
+    verificarSesion();
+    toggleNombre();
+};
+
+async function enviarRegistro() {
+    const tel = document.getElementById("telefono").value.trim();
+    const rolElegido = document.getElementById("rol").value;
+    const nombrePasajero = document.getElementById("campoNombre").value.trim();
+
+    if (tel.length < 8) return alert("Ingresá un teléfono válido.");
+    if (rolElegido === "pasajero" && !nombrePasajero) return alert("Por favor, ingresá tu nombre.");
+    
+    try {
+        const res = await fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                telefono: tel, 
+                rol: rolElegido,
+                nombre: (rolElegido === "pasajero") ? nombrePasajero : "" 
+            })
+        });
+        const data = await res.json();
+        if (data.mensaje === "Ok") {
+            localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
+            window.location.href = (rolElegido === "chofer") ? "/chofer/perfil.html" : "/pasajero/index.html";
+        } else { alert("Error al registrar"); }
+    } catch (e) { alert("Error de conexión"); }
+}
+
+async function volverLogin() {
+    const tel = document.getElementById("telefono").value.trim();
+    const rolElegido = document.getElementById("rol").value;
+
+    if (tel.length < 8) return alert("Por favor, ingresá tu número registrado.");
+
+    try {
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ telefono: tel, rol: rolElegido })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            localStorage.setItem("sesion", JSON.stringify({ telefono: tel, tipo: rolElegido }));
+            window.location.href = (rolElegido === "chofer") ? "/chofer/perfil.html" : "/pasajero/index.html";
+        } else {
+            alert(data.mensaje || "Usuario no encontrado.");
+        }
+    } catch (e) { alert("Error de conexión"); }
+}
+</script>
+</body>
+</html>
