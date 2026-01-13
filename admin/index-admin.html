@@ -19,10 +19,10 @@ table{ width:100%; border-collapse:collapse; }
 th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
 .estado-ok{ color:#4caf50; font-weight: bold; }
 .estado-off{ color:#f44336; font-weight: bold; }
+.estado-pendiente { color: #ff9800; font-weight: bold; font-size: 11px; }
 .btn-ok{ background:#4caf50; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; }
 
-/* VENTANA MODAL PARA VER FOTOS */
 #modalPerfil { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; overflow-y:auto; padding:20px; box-sizing:border-box; }
 .modal-contenido { background:#111; padding:20px; border-radius:10px; border:1px solid #4caf50; max-width:500px; margin:auto; }
 .foto-legajo { width:100%; border-radius:8px; margin-bottom:15px; border:1px solid #333; }
@@ -159,19 +159,24 @@ async function cargarDatosReales() {
         let tC = document.getElementById('tablaConductores');
         tC.innerHTML = `<tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
         conds.forEach(c => {
-            const activo = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
+            const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
+            const docAprobada = c.aprobado === true; // Campo que controlamos con el tilde
+
             tC.innerHTML += `<tr>
                 <td>
                     <a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;">
                         <b>${c.nombre || 'S/N'}</b>
                     </a><br><small>${c.telefono}</small>
                 </td>
-                <td class="${activo?'estado-ok':'estado-off'}">${activo?'Al día':'Vencido'}</td>
+                <td>
+                    <span class="${docAprobada?'estado-ok':'estado-pendiente'}">${docAprobada?'DOC: OK':'DOC: PEND'}</span><br>
+                    <span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span>
+                </td>
                 <td>$0</td>
                 <td>
-                    <button class="btn-accion" style="background:#4caf50;">✔</button>
+                    <button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button>
                     <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
-                    <button class="btn-accion" style="background:#f44336;">✖</button>
+                    <button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button>
                 </td>
             </tr>`;
         });
@@ -180,6 +185,35 @@ async function cargarDatosReales() {
         tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
         pasas.forEach(p => { tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`; });
     } catch (e) {}
+}
+
+async function aprobarDocumentacion(tel) {
+    if(confirm("¿Confirmás que la documentación es correcta? Esto habilitará al chofer visualmente en el panel.")) {
+        try {
+            const res = await fetch('/aprobar-chofer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono: tel })
+            });
+            if(res.ok) { 
+                alert("Documentación aprobada"); 
+                cargarDatosReales(); 
+            }
+        } catch (e) { alert("Error al conectar"); }
+    }
+}
+
+async function eliminarUsuario(tel) {
+    if(confirm("¿ELIMINAR definitivamente?")) {
+        try {
+            const res = await fetch('/eliminar-usuario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono: tel })
+            });
+            if(res.ok) { alert("Usuario eliminado"); cargarDatosReales(); }
+        } catch (e) {}
+    }
 }
 
 function verPerfilCompleto(tel) {
