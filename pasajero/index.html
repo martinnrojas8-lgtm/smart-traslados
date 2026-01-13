@@ -9,7 +9,7 @@
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
   header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
   .screen{ padding:15px; }
-  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
+  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; box-sizing: border-box; }
   input{ width:100%; padding:12px; margin:5px 0; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
   .price-box{ font-size:24px; color:#00c853; font-weight:bold; text-align:center; margin:15px 0; border: 1px dashed #00c853; padding: 10px; border-radius: 8px; }
@@ -47,7 +47,11 @@
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, directionsService, directionsRenderer;
 let marcadoresChoferes = {};
-let valorKM = 300; let valorBase = 500;
+
+// CONFIGURACIÓN DE TARIFAS SOLICITADA
+const TARIFA_BASE_4KM = 3500;
+const PRECIO_POR_KM = 900;
+const LIMITE_KM_BASE = 4;
 
 // COORDENADAS DE SALADILLO (Centro)
 const SALADILLO_COORD = { lat: -35.6380, lng: -59.7793 };
@@ -70,7 +74,6 @@ function initApp() {
     directionsService = new google.maps.DirectionsService();
     directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
 
-    // Configuración del buscador para que solo mire Saladillo y alrededores
     const bounds = new google.maps.Circle({ center: SALADILLO_COORD, radius: RADIO_MAXIMO_KM * 1000 }).getBounds();
     
     const setupAuto = (id) => {
@@ -78,7 +81,7 @@ function initApp() {
             bounds: bounds,
             componentRestrictions: { country: "ar" },
             fields: ["formatted_address", "geometry"],
-            strictBounds: false // Permite sugerencias cercanas si no hay exactas
+            strictBounds: false 
         });
         auto.addListener("place_changed", calcularRuta);
     };
@@ -89,25 +92,20 @@ function initApp() {
     if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(p => {
             const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
-            
-            // Verificar si el pasajero está dentro del radio de 40km
             if (calcularDistancia(SALADILLO_COORD, pos) > RADIO_MAXIMO_KM) {
                 alert("Smart Traslados opera únicamente en Saladillo y zona rural (Radio 40km).");
             }
-
             map.setCenter(pos);
             new google.maps.Geocoder().geocode({location: pos}, (res, stat) => {
                 if(stat === "OK") document.getElementById("origen").value = res[0].formatted_address;
             });
         });
     }
-
     setInterval(obtenerChoferesCercanos, 5000);
 }
 
-// Función matemática para calcular distancia entre puntos
 function calcularDistancia(p1, p2) {
-    const R = 6371; // Radio de la tierra en km
+    const R = 6371; 
     const dLat = (p2.lat - p1.lat) * Math.PI / 180;
     const dLng = (p2.lng - p1.lng) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -131,7 +129,6 @@ function obtenerChoferesCercanos() {
         choferes.forEach(chofer => {
             const pos = { lat: chofer.lat, lng: chofer.lng };
             const color = (chofer.estado === "ocupado") ? "#ff5252" : "#00c853";
-            
             if (marcadoresChoferes[chofer.telefono]) {
                 marcadoresChoferes[chofer.telefono].setPosition(pos);
             } else {
@@ -154,9 +151,20 @@ function calcularRuta() {
     directionsService.route({ origin: origen, destination: destino, waypoints: waypoints, travelMode: 'DRIVING' }, (res, stat) => {
         if (stat === "OK") {
             directionsRenderer.setDirections(res);
-            let dist = 0; res.routes[0].legs.forEach(l => dist += l.distance.value);
-            const precio = valorBase + ((dist/1000) * valorKM);
-            document.getElementById("cuadroPrecio").innerText = "Total: $" + precio.toFixed(2);
+            let distMetros = 0; 
+            res.routes[0].legs.forEach(l => distMetros += l.distance.value);
+            
+            let distKm = distMetros / 1000;
+            let precioFinal = 0;
+
+            // APLICACIÓN DE LÓGICA DE NEGOCIO
+            if (distKm <= LIMITE_KM_BASE) {
+                precioFinal = TARIFA_BASE_4KM;
+            } else {
+                precioFinal = distKm * PRECIO_POR_KM;
+            }
+
+            document.getElementById("cuadroPrecio").innerText = "Total: $" + Math.round(precioFinal);
         }
     });
 }
@@ -168,7 +176,6 @@ function pedirViaje() {
     
     if(!destino) return alert("Ingresá un destino");
 
-    // VALIDACIÓN FINAL DE RADIO ANTES DE PEDIR
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(p => {
             const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
