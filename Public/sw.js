@@ -1,16 +1,16 @@
-const CACHE_NAME = 'smart-traslados-v1';
+const CACHE_NAME = 'smart-traslados-v2'; // Cambiamos a v2 para forzar la actualización
 const ASSETS = [
-  'login.html',
-  'manifest.json',
-  'file_000000008fd0720eb71af76359ccb359.png',
-  // Agrega aquí otros archivos si tienes (ej: chofer/index.html, pasajero/index.html)
+  './login.html',
+  './manifest.json',
+  './file_000000008fd0720eb71af76359ccb359.png'
 ];
 
 // Instalación: Guarda los archivos en la memoria del celular
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Fuerza a que la nueva versión se active al instante
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Cache abierto y guardando recursos');
+      console.log('Smart Traslados: Guardando recursos en caché...');
       return cache.addAll(ASSETS);
     })
   );
@@ -25,6 +25,7 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  return self.clients.claim(); // Toma el control de la app inmediatamente
 });
 
 // Estrategia de carga: Intenta internet, si falla usa el cache
