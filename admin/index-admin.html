@@ -22,16 +22,6 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 .btn{ padding:12px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; width: 100%; margin-top: 10px; }
 .btn-ok{ background:#00c853; color: #000; }
 .btn-del{ background:#f44336; color: #fff; }
-
-/* NUEVO: ESTILO FICHA WHATSAPP (SOLO ESTO SE AGREGA) */
-#contenedorFicha { 
-    display: none; flex-direction: column; align-items: center; 
-    background: #000; padding: 20px; border-radius: 15px; 
-    border: 2px solid #00c853; max-width: 280px; margin: 20px auto;
-}
-.ficha-logo { width: 70px; border-radius: 12px; margin-bottom: 10px; }
-.ficha-codigo { font-size: 30px; font-weight: bold; color: #00c853; letter-spacing: 4px; margin: 10px 0; }
-.ficha-info { font-size: 11px; color: #888; text-transform: uppercase; }
 </style>
 </head>
 
@@ -95,22 +85,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <div id="viajes" class="pantalla"><div class="card"><h3>Próximamente: Historial de viajes</h3></div></div>
-
-<div id="pagos" class="pantalla">
-    <div class="card" style="text-align: center;">
-        <h3>Generar Pin de Activación 24hs</h3>
-        <button class="btn btn-ok" onclick="generarNuevoCodigo()">NUEVO CÓDIGO</button>
-        
-        <div id="contenedorFicha">
-            <img src="../file_000000008fd0720eb71af76359ccb359.png" class="ficha-logo">
-            <div class="ficha-info">Smart Traslados</div>
-            <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
-            <div class="ficha-info" style="color: #fff;">Válido por 24 Horas</div>
-        </div>
-        <p id="instruccionFicha" style="display:none; font-size: 11px; color: #00c853;">↑ Sacale captura y mandala por WhatsApp ↑</p>
-    </div>
-</div>
-
+<div id="pagos" class="pantalla"><div class="card"><h3>Próximamente: Historial de cobros</h3></div></div>
 <div id="mensajes" class="pantalla"><div class="card"><h3>Enviar notificaciones</h3></div></div>
 <div id="config" class="pantalla"><div class="card"><h3>Configuración del Sistema</h3></div></div>
 
@@ -120,23 +95,7 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
 }
 
-// NUEVA FUNCIÓN PARA GENERAR EL PIN
-async function generarNuevoCodigo() {
-    const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const res = await fetch('/crear-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo: nuevoCod })
-        });
-        if(res.ok) {
-            document.getElementById('txtFichaCodigo').innerText = nuevoCod;
-            document.getElementById('contenedorFicha').style.display = 'flex';
-            document.getElementById('instruccionFicha').style.display = 'block';
-        }
-    } catch (e) { alert("Error al generar"); }
-}
-
+// 1. CARGAR TARIFAS DESDE EL SERVIDOR AL ABRIR
 async function cargarTarifasAdmin() {
     try {
         const res = await fetch('/obtener-tarifas');
@@ -146,54 +105,72 @@ async function cargarTarifasAdmin() {
     } catch (e) { console.error("Error cargando tarifas"); }
 }
 
+// 2. GUARDAR TARIFAS EN EL SERVIDOR (MONGODB)
 async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
+
     if(!pBase || !pKm) return alert("Por favor completa los precios");
+
     const btn = document.getElementById('btnGuardarTarifas');
     btn.innerText = "GUARDANDO...";
     btn.disabled = true;
+
     try {
         const res = await fetch('/actualizar-tarifas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ precioBase: pBase, precioKm: pKm })
         });
-        if(res.ok) alert("✅ Tarifas actualizadas");
-    } catch (e) { alert("❌ Error"); }
-    finally { btn.innerText = "GUARDAR EN BASE DE DATOS"; btn.disabled = false; }
+        const data = await res.json();
+        if(data.mensaje === "Ok") {
+            alert("✅ Tarifas actualizadas en todo el sistema");
+        }
+    } catch (e) {
+        alert("❌ Error al conectar con el servidor");
+    } finally {
+        btn.innerText = "GUARDAR EN BASE DE DATOS";
+        btn.disabled = false;
+    }
 }
 
+// 3. CARGAR DATOS DE USUARIOS DESDE MONGODB
 async function cargarDatosGlobales() {
     try {
         const res = await fetch('/obtener-usuarios');
         const usuarios = await res.json();
+
         const conds = usuarios.filter(u => u.rol === 'chofer');
         const pasas = usuarios.filter(u => u.rol === 'pasajero');
 
         document.getElementById('cTotal').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
 
+        // Tabla Conductores
         let tC = document.getElementById('tablaConductores');
         tC.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Estado Pago</th></tr>`;
         conds.forEach(c => {
-            // Lógica de vencimiento real
-            const estaActivo = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
             tC.innerHTML += `<tr>
                 <td>${c.nombre || 'S/N'}</td>
                 <td>${c.telefono}</td>
-                <td class="${estaActivo?'estado-ok':'estado-off'}">${estaActivo?'Al día':'Vencido'}</td>
+                <td class="${c.pagoActivo?'estado-ok':'estado-off'}">${c.pagoActivo?'Al día':'Pendiente'}</td>
             </tr>`;
         });
 
+        // Tabla Pasajeros
         let tP = document.getElementById('tablaPasajeros');
         tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
         pasas.forEach(p => {
-            tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`;
+            tP.innerHTML += `<tr>
+                <td>${p.nombre || 'S/N'}</td>
+                <td>${p.telefono}</td>
+            </tr>`;
         });
+
     } catch (e) { console.error("Error cargando usuarios"); }
 }
 
+// INICIO AUTOMÁTICO
 window.onload = () => {
     cargarTarifasAdmin();
     cargarDatosGlobales();
