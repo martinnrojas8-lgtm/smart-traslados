@@ -8,31 +8,21 @@
 <style>
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
 header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #4caf50; }
-.menu{ display:flex; flex-wrap:wrap; background:#1a1a1a; }
-.menu button{ flex:1; padding:15px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; border-bottom: 1px solid #333; }
+.menu{ display:flex; overflow-x: auto; background:#1a1a1a; white-space: nowrap; border-bottom: 1px solid #333; }
+.menu button{ padding:15px 20px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; flex-shrink: 0; }
 .menu button:hover{ background:#333; }
 .pantalla{ display:none; padding:20px; }
 .activa{ display:block; }
 .card{ background:#111; padding:15px; border-radius:10px; margin-bottom:15px; border: 1px solid #333; }
-input, select{ width:100%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background: #fff; color: #000; }
-table{ width:100%; border-collapse:collapse; margin-top:10px; }
-th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
-.estado-ok{ color:#4caf50; font-weight:bold; }
-.estado-off{ color:#f44336; font-weight:bold; }
-.btn{ padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-weight: bold; }
-.btn-ok{ background:#4caf50; color: #fff; }
-.btn-del{ background:#f44336; color: #fff; }
-.btn-doc{ background:#444; color:#fff; font-size:10px; padding:5px; margin-right:2px; }
-
-/* FICHA PIN */
-#contenedorFicha { 
-    display: none; flex-direction: column; align-items: center; 
-    background: #fff; padding: 25px; border-radius: 20px; 
-    max-width: 260px; margin: 20px auto; color: #000; 
-    border: 2px solid #4caf50; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-.ficha-logo { width: 80px; height: auto; margin-bottom: 10px; border-radius: 10px; }
-.ficha-codigo { font-size: 38px; font-weight: bold; color: #4caf50; letter-spacing: 5px; margin: 10px 0; padding: 5px 15px; background: #f0f0f0; border-radius: 8px; border: 1px dashed #4caf50; }
+input, select{ width:95%; padding:10px; margin-top:8px; margin-bottom:12px; border-radius:6px; border:none; background: #fff; color: #000; font-weight: bold; }
+table{ width:100%; border-collapse:collapse; }
+th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:13px; }
+.estado-ok{ color:#4caf50; font-weight: bold; }
+.estado-off{ color:#f44336; font-weight: bold; }
+.btn-ok{ background:#4caf50; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+.btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; }
+#contenedorFicha { display: none; flex-direction: column; align-items: center; background: #fff; padding: 20px; border-radius: 15px; max-width: 280px; margin: 20px auto; color: #000; text-align: center; border: 2px solid #4caf50; }
+.ficha-codigo { font-size: 32px; font-weight: bold; color: #4caf50; letter-spacing: 4px; margin: 10px 0; }
 </style>
 </head>
 
@@ -64,13 +54,7 @@ th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-si
         <h3>Gestión de Conductores</h3>
         <div style="overflow-x:auto;">
             <table id="tablaConductores">
-                <tr>
-                    <th>Chofer / Tel</th>
-                    <th>Documentos</th>
-                    <th>Estado</th>
-                    <th>Recaudado (D/S/M)</th>
-                    <th>Acciones</th>
-                </tr>
+                <tr><th>Chofer</th><th>Docs</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>
             </table>
         </div>
     </div>
@@ -78,7 +62,7 @@ th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-si
 
 <div id="pasajeros" class="pantalla">
     <div class="card">
-        <h3>Pasajeros Registrados</h3>
+        <h3>Lista de Pasajeros</h3>
         <table id="tablaPasajeros">
             <tr><th>Nombre</th><th>Teléfono</th></tr>
         </table>
@@ -87,28 +71,27 @@ th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-si
 
 <div id="viajes" class="pantalla">
     <div class="card">
-        <h3>Monitor de Viajes</h3>
-        <p>Registro de rutas y estados.</p>
+        <h3>Historial de Viajes</h3>
+        <p>Registro de rutas en tiempo real.</p>
     </div>
 </div>
 
 <div id="pagos" class="pantalla">
     <div class="card" style="text-align:center;">
         <h3>Generar Pin de Activación 24hs</h3>
-        <button class="btn btn-ok" onclick="generarNuevoCodigo()" style="width:100%">GENERAR NUEVO CÓDIGO</button>
+        <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         <div id="contenedorFicha">
-            <img src="logo.png" class="ficha-logo" onerror="this.src='https://via.placeholder.com/80?text=Smart+Logo'">
-            <div style="font-weight:bold; text-transform:uppercase;">Smart Traslados</div>
+            <img src="logo.png" style="width:70px; margin-bottom:10px;" onerror="this.style.display='none'">
+            <div style="font-weight:bold; color:#333;">Smart Traslados</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
-            <div style="font-size:12px; font-weight:bold; color:#666;">VÁLIDO POR 24 HORAS</div>
+            <div style="font-size: 12px; color:#666;">VÁLIDO POR 24 HORAS</div>
         </div>
-        <p id="instruccionFicha" style="display:none; color: #4caf50; font-size: 12px; margin-top: 15px;">↑ Sacá captura y enviá al chofer ↑</p>
     </div>
 </div>
 
 <div id="tarifas" class="pantalla">
     <div class="card">
-        <h3>Tarifas</h3>
+        <h3>Tarifas de la App</h3>
         <label>Precio base por viaje (Pasajeros)</label>
         <input type="number" id="precioBase">
         <label>Precio por km (Pasajeros)</label>
@@ -116,7 +99,7 @@ th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-si
         <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         <label>Monto sugerido suscripción 24hs (Info Admin)</label>
         <input type="number" id="montoFijo">
-        <button class="btn btn-ok" onclick="guardarTarifas()" style="width:100%">Guardar cambios</button>
+        <button class="btn-ok" onclick="guardarTarifas()">Guardar en servidor</button>
     </div>
 </div>
 
@@ -125,20 +108,22 @@ th, td{ padding:12px 8px; border-bottom:1px solid #333; text-align:left; font-si
         <h3>Enviar Comunicación Masiva</h3>
         <select><option>Todos los conductores</option><option>Todos los pasajeros</option></select>
         <input type="text" placeholder="Escribí el mensaje">
-        <button class="btn btn-ok" style="width:100%">Enviar</button>
+        <button class="btn-ok">Enviar a todos</button>
     </div>
 </div>
 
 <div id="config" class="pantalla">
     <div class="card">
-        <h3>Configuración de Contacto</h3>
+        <h3>Configuración General</h3>
         <label>Nombre de la app</label>
-        <input id="confApp" value="Smart Traslados">
+        <input id="confApp">
         <label>Teléfono soporte</label>
-        <input id="confTel" value="+54 9">
+        <input id="confTel">
+        <label>Email soporte</label>
+        <input id="confMail">
         <label>Alias / CBU para Cobros</label>
         <input id="confAlias">
-        <button class="btn btn-ok" onclick="guardarConfiguracion()" style="width:100%">Guardar configuración</button>
+        <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
 
@@ -148,84 +133,48 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
 }
 
+// ESTA FUNCIÓN TRAE LOS DATOS REALES DEL SERVIDOR
 async function cargarDatosReales() {
     try {
         const res = await fetch('/obtener-usuarios');
         const usuarios = await res.json();
         const conds = usuarios.filter(u => u.rol === 'chofer');
         const pasas = usuarios.filter(u => u.rol === 'pasajero');
-
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
 
         let tC = document.getElementById('tablaConductores');
-        tC.innerHTML = `<tr><th>Chofer / Tel</th><th>Documentos</th><th>Estado</th><th>Recaudado (D/S/M)</th><th>Acciones</th></tr>`;
-        
+        tC.innerHTML = `<tr><th>Chofer</th><th>Docs</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
         conds.forEach(c => {
             const activo = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
             tC.innerHTML += `<tr>
                 <td><b>${c.nombre || 'S/N'}</b><br><small>${c.telefono}</small></td>
                 <td>
-                    <button class="btn-doc" onclick="verDoc('${c.fotoCarnet}')">CARNET</button>
-                    <button class="btn-doc" onclick="verDoc('${c.fotoSeguro}')">SEGURO</button>
+                    <button class="btn-accion" style="background:#444;" onclick="window.open('${c.fotoCarnet}')">C</button>
+                    <button class="btn-accion" style="background:#444;" onclick="window.open('${c.fotoSeguro}')">S</button>
                 </td>
-                <td class="${activo?'estado-ok':'estado-off'}">${activo?'ACTIVO':'VENCIDO'}</td>
-                <td>$${c.recaudadoDia||0} / $${c.recaudadoSemana||0} / $${c.recaudadoMes||0}</td>
+                <td class="${activo?'estado-ok':'estado-off'}">${activo?'Al día':'Vencido'}</td>
+                <td>$0</td>
                 <td>
-                    <button class="btn-ok" style="padding:4px 8px;" onclick="activarManual('${c.telefono}')">✔</button>
-                    <button class="btn-del" style="padding:4px 8px;" onclick="eliminarChofer('${c.telefono}')">✖</button>
-                    <button class="btn" style="background:#25d366; padding:4px 8px;" onclick="mensajeInd('${c.telefono}')">✉</button>
+                    <button class="btn-accion" style="background:#4caf50;">✔</button>
+                    <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
                 </td>
             </tr>`;
         });
-
         let tP = document.getElementById('tablaPasajeros');
         tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
         pasas.forEach(p => { tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`; });
     } catch (e) {}
 }
 
-function verDoc(url) { 
-    if(!url || url === 'undefined') return alert("Sin foto cargada."); 
-    window.open(url, '_blank'); 
-}
-
-function mensajeInd(tel) { 
-    const m = prompt("Mensaje de aviso (WhatsApp):"); 
-    if(m) window.open(`https://wa.me/${tel}?text=${encodeURIComponent(m)}`, '_blank'); 
-}
-
-async function activarManual(tel) { 
-    alert("Activación manual para " + tel + " (Requiere endpoint /activar)"); 
-}
-
-async function eliminarChofer(tel) { 
-    if(confirm("¿Eliminar chofer definitivamente?")) alert("Eliminado: " + tel); 
-}
-
-async function generarNuevoCodigo() {
-    const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const res = await fetch('/crear-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo: nuevoCod })
-        });
-        if(res.ok) {
-            document.getElementById('txtFichaCodigo').innerText = nuevoCod;
-            document.getElementById('contenedorFicha').style.display = 'flex';
-            document.getElementById('instruccionFicha').style.display = 'block';
-        }
-    } catch (e) { alert("Error en servidor"); }
-}
-
+// ESTA FUNCIÓN TRAE LAS TARIFAS DEL SERVIDOR
 async function cargarTarifas() {
     try {
         const res = await fetch('/obtener-tarifas');
         const data = await res.json();
-        document.getElementById('precioBase').value = data.precioBase || 500;
-        document.getElementById('precioKm').value = data.precioKm || 150;
-        document.getElementById('montoFijo').value = localStorage.getItem('montoFijoInfo') || 10000;
+        document.getElementById('precioBase').value = data.precioBase || "";
+        document.getElementById('precioKm').value = data.precioKm || "";
+        document.getElementById('montoFijo').value = localStorage.getItem('montoFijoInfo') || "";
     } catch (e) {}
 }
 
@@ -233,29 +182,37 @@ async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
     try {
-        await fetch('/actualizar-tarifas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ precioBase: pBase, precioKm: pKm })
-        });
-        localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
-        alert('Tarifas actualizadas correctamente');
-    } catch (e) { alert('Error al guardar'); }
+        const res = await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm }) });
+        if(res.ok) {
+            localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
+            alert('Tarifas guardadas en el servidor');
+        }
+    } catch (e) { alert('Error de conexión'); }
 }
 
 function guardarConfiguracion() {
-    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, alias: document.getElementById('confAlias').value };
+    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
     localStorage.setItem('configAdmin', JSON.stringify(config));
-    alert('Configuración guardada');
+    alert('Configuración guardada correctamente');
 }
 
+// ESTA FUNCIÓN TRAE LOS DATOS GUARDADOS EN TU NAVEGADOR (ALIAS, TEL, MAIL)
 function cargarConfiguracion() {
     const config = JSON.parse(localStorage.getItem('configAdmin'));
     if(config) {
-        document.getElementById('confApp').value = config.app;
-        document.getElementById('confTel').value = config.tel;
-        document.getElementById('confAlias').value = config.alias;
+        document.getElementById('confApp').value = config.app || "Smart Traslados";
+        document.getElementById('confTel').value = config.tel || "";
+        document.getElementById('confMail').value = config.mail || "";
+        document.getElementById('confAlias').value = config.alias || "";
     }
+}
+
+async function generarNuevoCodigo() {
+    const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+        const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
+        if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
+    } catch (e) { alert("Error al conectar con Render"); }
 }
 
 window.onload = () => {
