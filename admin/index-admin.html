@@ -43,14 +43,14 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <button onclick="mostrar('config')">Configuración</button>
 </div>
 
-<div id="modalPerfil"><div class="modal-contenido"><h3 id="nomPerfil" style="margin-top:0; color:#4caf50;"></h3><p>Carnet:</p><img id="imgCarnet" class="foto-legajo"><p>Seguro:</p><img id="imgSeguro" class="foto-legajo"><p>Tarjeta:</p><img id="imgTarjeta" class="foto-legajo"><button class="btn-ok" onclick="cerrarPerfil()">CERRAR</button></div></div>
+<div id="modalPerfil"><div class="modal-contenido"><h3 id="nomPerfil" style="margin-top:0; color:#4caf50;"></h3><p><b>Carnet de Conducir:</b></p><img id="imgCarnet" class="foto-legajo"><p><b>Seguro:</b></p><img id="imgSeguro" class="foto-legajo"><p><b>Tarjeta del Auto:</b></p><img id="imgTarjeta" class="foto-legajo"><button class="btn-ok" onclick="cerrarPerfil()">CERRAR PERFIL</button></div></div>
 
 <div id="inicio" class="pantalla activa">
-    <div class="card"><h3>Resumen operativo</h3><p>Conductores: <b id="cActivos">0</b></p><p>Pasajeros: <b id="pTotal">0</b></p></div>
+    <div class="card"><h3>Resumen operativo</h3><p>Conductores registrados: <b id="cActivos">0</b></p><p>Pasajeros registrados: <b id="pTotal">0</b></p></div>
 </div>
 
 <div id="conductores" class="pantalla">
-    <div class="card"><h3>Gestión de Conductores</h3><div style="overflow-x:auto;"><table id="tablaConductores"><tr><th>Chofer</th><th>Estado</th><th>Acción</th></tr></table></div></div>
+    <div class="card"><h3>Gestión de Conductores</h3><div style="overflow-x:auto;"><table id="tablaConductores"><tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr></table></div></div>
 </div>
 
 <div id="pasajeros" class="pantalla">
@@ -62,7 +62,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <div id="pagos" class="pantalla">
-    <div class="card" style="text-align:center;"><h3>Generar Pin de Activación 24hs</h3><button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR PIN</button><div id="contenedorFicha"><div id="txtFichaCodigo" class="ficha-codigo">000000</div><div style="font-size: 12px; color:#666;">VÁLIDO POR 24 HORAS</div></div></div>
+    <div class="card" style="text-align:center;"><h3>Generar Pin de Activación 24hs</h3><button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button><div id="contenedorFicha"><div id="txtFichaCodigo" class="ficha-codigo">000000</div><div style="font-size: 12px; color:#666;">VÁLIDO POR 24 HORAS</div></div></div>
 </div>
 
 <div id="tarifas" class="pantalla">
@@ -121,11 +121,11 @@ async function cargarDatosReales() {
 
 function actualizarTablaConductores(conds) {
     let tC = document.getElementById('tablaConductores');
-    tC.innerHTML = `<tr><th>Chofer</th><th>Estado</th><th>Acción</th></tr>`;
+    tC.innerHTML = `<tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
     conds.forEach(c => {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
     });
 }
 
@@ -148,7 +148,7 @@ async function cargarViajesReales() {
             let color = "#ff9800";
             if(v.estado === "finalizado") color = "#4caf50";
             if(v.estado === "cancelado") color = "#f44336";
-            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td></tr>`;
+            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td></tr>`;
         });
     } catch (e) { console.error("Error viajes"); }
 }
@@ -170,7 +170,7 @@ async function eliminarUsuario(tel) {
 }
 
 async function aprobarDocumentacion(tel) {
-    if(confirm("¿Aprobar chofer?")) {
+    if(confirm("¿Aprobar documentación?")) {
         await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
         cargarDatosReales();
     }
@@ -179,7 +179,7 @@ async function aprobarDocumentacion(tel) {
 function verPerfilCompleto(tel) {
     const u = listaUsuariosGlobal.find(u => u.telefono === tel);
     if(u) {
-        document.getElementById('nomPerfil').innerText = u.nombre || 'S/N';
+        document.getElementById('nomPerfil').innerText = "Perfil: " + (u.nombre || 'S/N');
         document.getElementById('imgCarnet').src = u.fotoCarnet || '';
         document.getElementById('imgSeguro').src = u.fotoSeguro || '';
         document.getElementById('imgTarjeta').src = u.fotoTarjeta || '';
@@ -203,13 +203,13 @@ async function guardarTarifas() {
     const pKm = parseInt(document.getElementById('precioKm').value);
     await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm }) });
     localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
-    alert('Tarifas guardadas en servidor');
+    alert('Tarifas guardadas');
 }
 
 function guardarConfiguracion() {
     const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
     localStorage.setItem('configAdmin', JSON.stringify(config));
-    alert('Configuración guardada localmente');
+    alert('Configuración guardada');
 }
 
 async function generarNuevoCodigo() {
