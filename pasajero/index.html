@@ -48,30 +48,17 @@ const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, directionsService, directionsRenderer;
 let marcadoresChoferes = {};
 
-// Tarifas dinámicas (se cargan desde el servidor)
+// Valores iniciales (se sobreescriben con lo que diga el Admin)
 let TARIFA_BASE_4KM = 3500; 
 let PRECIO_POR_KM = 900;
 const LIMITE_KM_BASE = 4;
 
 const SALADILLO_COORD = { lat: -35.6380, lng: -59.7793 };
-const RADIO_MAXIMO_KM = 40;
 
-async function cargarTarifas() {
-    try {
-        const res = await fetch('/obtener-tarifas');
-        const data = await res.json();
-        if (data.precioBase) TARIFA_BASE_4KM = parseFloat(data.precioBase);
-        if (data.precioKm) PRECIO_POR_KM = parseFloat(data.precioKm);
-        console.log("Tarifas actualizadas desde Admin:", TARIFA_BASE_4KM, PRECIO_POR_KM);
-    } catch (e) {
-        console.log("Usando tarifas por defecto");
-    }
-}
-
-function initApp() {
+async function initApp() {
     if (!sesion.telefono) return location.href = "/";
-    cargarTarifas(); // Carga los precios del Admin al iniciar
-
+    
+    // Carga inicial de datos de usuario
     if(sesion.foto) {
         document.getElementById("fotoHeader").src = sesion.foto;
         document.getElementById("fotoHeader").style.display = "block";
@@ -110,12 +97,27 @@ function initApp() {
     setInterval(obtenerChoferesCercanos, 5000);
 }
 
-function calcularRuta() {
+// ESTA ES LA FUNCIÓN CLAVE QUE SE CONECTA AL ADMIN
+async function calcularRuta() {
     const origen = document.getElementById("origen").value;
     const destino = document.getElementById("destino").value;
     if(!origen || !destino) return;
+
+    // CONSULTA AL ADMIN ANTES DE CALCULAR EL PRECIO
+    try {
+        const res = await fetch('/obtener-tarifas');
+        const data = await res.json();
+        if (data.precioBase) TARIFA_BASE_4KM = parseFloat(data.precioBase);
+        if (data.precioKm) PRECIO_POR_KM = parseFloat(data.precioKm);
+        console.log("Tarifas capturadas del Admin:", TARIFA_BASE_4KM, PRECIO_POR_KM);
+    } catch (e) {
+        console.log("Error consultando Admin, usando valores previos.");
+    }
+
     const waypoints = [];
-    document.querySelectorAll(".input-parada").forEach(inp => { if(inp.value) waypoints.push({location: inp.value, stopover: true}); });
+    document.querySelectorAll(".input-parada").forEach(inp => { 
+        if(inp.value) waypoints.push({location: inp.value, stopover: true}); 
+    });
 
     directionsService.route({ origin: origen, destination: destino, waypoints: waypoints, travelMode: 'DRIVING' }, (res, stat) => {
         if (stat === "OK") {
@@ -126,7 +128,6 @@ function calcularRuta() {
             let distKm = distMetros / 1000;
             let precioFinal = 0;
 
-            // USA LOS VALORES QUE VINIERON DEL ADMIN
             if (distKm <= LIMITE_KM_BASE) {
                 precioFinal = TARIFA_BASE_4KM;
             } else {
@@ -137,8 +138,6 @@ function calcularRuta() {
         }
     });
 }
-
-// ... (resto de funciones: pedirViaje, agregarParada, obtenerChoferesCercanos permanecen igual)
 
 function obtenerChoferesCercanos() {
     fetch("/obtener-choferes-activos")
