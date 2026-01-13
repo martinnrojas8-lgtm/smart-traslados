@@ -6,35 +6,17 @@
     <title>Perfil del Chofer - Smart Taxi</title>
     <style>
         body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
-        
-        /* Header con Foto Real */
-        header {
-            background: #111;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-        }
+        header { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .perfil-info { display: flex; align-items: center; gap: 10px; }
-        #imgMiniatura {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 1px solid #00c853;
-            background: #222;
-        }
-
+        #imgMiniatura { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #00c853; background: #222; }
         .container { max-width: 500px; background: #111; padding: 20px; border-radius: 10px; margin: 20px auto; border: 1px solid #333; box-sizing: border-box; }
         h2 { text-align: center; color: #00c853; margin-top: 0; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #ccc; }
         input[type="text"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; background: #222; color: #fff; }
         .preview-img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-top: 10px; display: none; border: 1px solid #00c853; }
-        
         button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; }
         .btn-guardar { background: #00c853; color: #000; }
-        .btn-volver { background: #333; color: #fff; border: 1px solid #444; }
+        .btn-volver { background: #333; color: #fff; border: 1px solid #444; display: none; } /* Oculto por defecto */
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
     </style>
 </head>
@@ -49,7 +31,7 @@
 </header>
 
 <div class="container">
-    <h2>Mis Datos</h2>
+    <h2 id="titulo">Completar Registro</h2>
     
     <label>Nombre Completo</label>
     <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
@@ -80,13 +62,13 @@
     <img id="pTarjeta" class="preview-img">
 
     <button class="btn-guardar" id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
-    <button class="btn-volver" onclick="location.href='index.html'">VOLVER AL MAPA</button>
+    <button class="btn-volver" id="btnVolver" onclick="location.href='index.html'">VOLVER AL MAPA</button>
 </div>
 
 <script>
     const imagenesComprimidas = { pPerfil: null, pCarnet: null, pSeguro: null, pTarjeta: null };
 
-    async function cargarDatosActuales() {
+    async function cargarDatosYValidar() {
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
         if (!tel) return;
 
@@ -95,22 +77,27 @@
             const usuarios = await response.json();
             const miPerfil = usuarios.find(u => u.telefono === tel);
 
-            if (miPerfil) {
+            if (miPerfil && miPerfil.nombre && miPerfil.autoPatente) {
+                // SI YA TIENE DATOS: Mostramos el botón de volver y cambiamos el título
+                document.getElementById('btnVolver').style.display = 'block';
+                document.getElementById('titulo').innerText = "Mis Datos";
+
+                // Rellenamos los campos
                 document.getElementById('nombre').value = miPerfil.nombre || "";
                 document.getElementById('modelo').value = miPerfil.autoModelo || "";
                 document.getElementById('patente').value = miPerfil.autoPatente || "";
                 document.getElementById('color').value = miPerfil.autoColor || "";
 
-                // Foto del Header
                 if (miPerfil.foto) {
                     document.getElementById('imgMiniatura').src = miPerfil.foto;
+                    mostrarFotoExistente('pPerfil', miPerfil.foto);
                 }
-
-                // Previews
-                if (miPerfil.foto) mostrarFotoExistente('pPerfil', miPerfil.foto);
                 if (miPerfil.fotoCarnet) mostrarFotoExistente('pCarnet', miPerfil.fotoCarnet);
                 if (miPerfil.fotoSeguro) mostrarFotoExistente('pSeguro', miPerfil.fotoSeguro);
                 if (miPerfil.fotoTarjeta) mostrarFotoExistente('pTarjeta', miPerfil.fotoTarjeta);
+            } else {
+                // SI ES NUEVO: El botón de volver se queda oculto (display: none)
+                document.getElementById('titulo').innerText = "Registro Obligatorio";
             }
         } catch (e) { console.error(e); }
     }
@@ -140,8 +127,6 @@
                     imagenesComprimidas[idPreview] = base64;
                     document.getElementById(idPreview).src = base64;
                     document.getElementById(idPreview).style.display = 'block';
-                    
-                    // Si es la foto de perfil, actualizar miniatura arriba también
                     if(idPreview === 'pPerfil') document.getElementById('imgMiniatura').src = base64;
                 }
             }
@@ -162,7 +147,7 @@
         }
 
         const btn = document.getElementById('btnGuardar');
-        btn.innerText = "ACTUALIZANDO...";
+        btn.innerText = "ENVIANDO...";
         btn.disabled = true;
 
         try {
@@ -186,14 +171,14 @@
 
             const result = await response.json();
             if (result.mensaje === "Ok") {
-                alert("✅ Perfil actualizado correctamente.");
+                alert("✅ Datos guardados con éxito.");
                 window.location.href = 'index.html';
             }
-        } catch (error) { alert("❌ Error."); }
+        } catch (error) { alert("❌ Error al guardar."); }
         finally { btn.innerText = "GUARDAR Y ENVIAR"; btn.disabled = false; }
     }
 
-    window.onload = cargarDatosActuales;
+    window.onload = cargarDatosYValidar;
 </script>
 </body>
 </html>
