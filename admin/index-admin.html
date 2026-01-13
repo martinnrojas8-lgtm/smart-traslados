@@ -21,6 +21,12 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 .estado-off{ color:#f44336; font-weight: bold; }
 .btn-ok{ background:#4caf50; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 .btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; }
+
+/* VENTANA MODAL PARA VER FOTOS */
+#modalPerfil { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; overflow-y:auto; padding:20px; box-sizing:border-box; }
+.modal-contenido { background:#111; padding:20px; border-radius:10px; border:1px solid #4caf50; max-width:500px; margin:auto; }
+.foto-legajo { width:100%; border-radius:8px; margin-bottom:15px; border:1px solid #333; }
+
 #contenedorFicha { display: none; flex-direction: column; align-items: center; background: #fff; padding: 20px; border-radius: 15px; max-width: 280px; margin: 20px auto; color: #000; text-align: center; border: 2px solid #4caf50; }
 .ficha-codigo { font-size: 32px; font-weight: bold; color: #4caf50; letter-spacing: 4px; margin: 10px 0; }
 </style>
@@ -39,6 +45,19 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <button onclick="mostrar('tarifas')">Tarifas</button>
     <button onclick="mostrar('mensajes')">Mensajes</button>
     <button onclick="mostrar('config')">Configuración</button>
+</div>
+
+<div id="modalPerfil">
+    <div class="modal-contenido">
+        <h3 id="nomPerfil" style="margin-top:0; color:#4caf50;">Perfil Chofer</h3>
+        <p><b>Carnet de Conducir:</b></p>
+        <img id="imgCarnet" class="foto-legajo" src="">
+        <p><b>Seguro:</b></p>
+        <img id="imgSeguro" class="foto-legajo" src="">
+        <p><b>Tarjeta del Auto:</b></p>
+        <img id="imgTarjeta" class="foto-legajo" src="">
+        <button class="btn-ok" onclick="cerrarPerfil()">CERRAR PERFIL</button>
+    </div>
 </div>
 
 <div id="inicio" class="pantalla activa">
@@ -70,10 +89,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <div id="viajes" class="pantalla">
-    <div class="card">
-        <h3>Historial de Viajes</h3>
-        <p>Registro de rutas en tiempo real.</p>
-    </div>
+    <div class="card"><h3>Historial de Viajes</h3><p>Registro de rutas en tiempo real.</p></div>
 </div>
 
 <div id="pagos" class="pantalla">
@@ -81,7 +97,6 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         <div id="contenedorFicha">
-            <img src="logo.png" style="width:70px; margin-bottom:10px;" onerror="this.style.display='none'">
             <div style="font-weight:bold; color:#333;">Smart Traslados</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
             <div style="font-size: 12px; color:#666;">VÁLIDO POR 24 HORAS</div>
@@ -92,12 +107,12 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="tarifas" class="pantalla">
     <div class="card">
         <h3>Tarifas de la App</h3>
-        <label>Precio base por viaje (Pasajeros)</label>
+        <label>Precio base por viaje</label>
         <input type="number" id="precioBase">
-        <label>Precio por km (Pasajeros)</label>
+        <label>Precio por km</label>
         <input type="number" id="precioKm">
         <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
-        <label>Monto sugerido suscripción 24hs (Info Admin)</label>
+        <label>Monto suscripción 24hs (Info)</label>
         <input type="number" id="montoFijo">
         <button class="btn-ok" onclick="guardarTarifas()">Guardar en servidor</button>
     </div>
@@ -105,29 +120,27 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 
 <div id="mensajes" class="pantalla">
     <div class="card">
-        <h3>Enviar Comunicación Masiva</h3>
-        <select><option>Todos los conductores</option><option>Todos los pasajeros</option></select>
+        <h3>Mensajería</h3>
+        <select><option>Todos los conductores</option></select>
         <input type="text" placeholder="Escribí el mensaje">
-        <button class="btn-ok">Enviar a todos</button>
+        <button class="btn-ok">Enviar</button>
     </div>
 </div>
 
 <div id="config" class="pantalla">
     <div class="card">
-        <h3>Configuración General</h3>
-        <label>Nombre de la app</label>
-        <input id="confApp">
-        <label>Teléfono soporte</label>
-        <input id="confTel">
-        <label>Email soporte</label>
-        <input id="confMail">
-        <label>Alias / CBU para Cobros</label>
-        <input id="confAlias">
+        <h3>Configuración</h3>
+        <label>Nombre App</label><input id="confApp">
+        <label>Teléfono soporte</label><input id="confTel">
+        <label>Email</label><input id="confMail">
+        <label>Alias / CBU</label><input id="confAlias">
         <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
 
 <script>
+let listaUsuariosGlobal = [];
+
 function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
@@ -136,9 +149,10 @@ function mostrar(id){
 async function cargarDatosReales() {
     try {
         const res = await fetch('/obtener-usuarios');
-        const usuarios = await res.json();
-        const conds = usuarios.filter(u => u.rol === 'chofer');
-        const pasas = usuarios.filter(u => u.rol === 'pasajero');
+        listaUsuariosGlobal = await res.json();
+        const conds = listaUsuariosGlobal.filter(u => u.rol === 'chofer');
+        const pasas = listaUsuariosGlobal.filter(u => u.rol === 'pasajero');
+
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
 
@@ -150,18 +164,18 @@ async function cargarDatosReales() {
                 <td>
                     <a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;">
                         <b>${c.nombre || 'S/N'}</b>
-                    </a><br>
-                    <small>${c.telefono}</small>
+                    </a><br><small>${c.telefono}</small>
                 </td>
                 <td class="${activo?'estado-ok':'estado-off'}">${activo?'Al día':'Vencido'}</td>
                 <td>$0</td>
                 <td>
-                    <button class="btn-accion" style="background:#4caf50;" onclick="alert('Activación forzada enviada')">✔</button>
+                    <button class="btn-accion" style="background:#4caf50;">✔</button>
                     <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
-                    <button class="btn-accion" style="background:#f44336;" onclick="alert('Eliminado')">✖</button>
+                    <button class="btn-accion" style="background:#f44336;">✖</button>
                 </td>
             </tr>`;
         });
+        
         let tP = document.getElementById('tablaPasajeros');
         tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th></tr>`;
         pasas.forEach(p => { tP.innerHTML += `<tr><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td></tr>`; });
@@ -169,8 +183,17 @@ async function cargarDatosReales() {
 }
 
 function verPerfilCompleto(tel) {
-    alert("Perfil de: " + tel + "\nPróximamente: Vista con Carnet, Seguro y Tarjeta del Auto.");
+    const usuario = listaUsuariosGlobal.find(u => u.telefono === tel);
+    if(usuario) {
+        document.getElementById('nomPerfil').innerText = "Perfil: " + (usuario.nombre || 'S/N');
+        document.getElementById('imgCarnet').src = usuario.fotoCarnet || 'https://via.placeholder.com/300?text=Sin+Foto';
+        document.getElementById('imgSeguro').src = usuario.fotoSeguro || 'https://via.placeholder.com/300?text=Sin+Foto';
+        document.getElementById('imgTarjeta').src = usuario.fotoTarjeta || 'https://via.placeholder.com/300?text=Sin+Foto';
+        document.getElementById('modalPerfil').style.display = 'block';
+    }
 }
+
+function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
 
 async function cargarTarifas() {
     try {
@@ -191,7 +214,7 @@ async function guardarTarifas() {
             localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
             alert('Tarifas guardadas en el servidor');
         }
-    } catch (e) { alert('Error de conexión'); }
+    } catch (e) { alert('Error'); }
 }
 
 function guardarConfiguracion() {
@@ -215,14 +238,10 @@ async function generarNuevoCodigo() {
     try {
         const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
         if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
-    } catch (e) { alert("Error al conectar con Render"); }
+    } catch (e) { alert("Error"); }
 }
 
-window.onload = () => {
-    cargarTarifas();
-    cargarDatosReales();
-    cargarConfiguracion();
-};
+window.onload = () => { cargarTarifas(); cargarDatosReales(); cargarConfiguracion(); };
 </script>
 </body>
 </html>
