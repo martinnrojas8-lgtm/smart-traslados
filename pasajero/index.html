@@ -116,18 +116,36 @@ function pedirViaje() {
 }
 
 function iniciarModoSeguimiento() {
-    document.getElementById("modalConfirmacion").style.display="none"; document.getElementById("estadoEspera").style.display="none"; document.getElementById("panelSeguimiento").style.display="block";
-    document.getElementById("txtC").innerText = viajeInfo.chofer; document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
+    document.getElementById("modalConfirmacion").style.display="none"; 
+    document.getElementById("estadoEspera").style.display="none"; 
+    document.getElementById("panelSeguimiento").style.display="block";
+    
+    // Asegurar que el mapa sea visible después del cambio de UI
+    google.maps.event.trigger(map, "resize");
+
+    document.getElementById("txtC").innerText = viajeInfo.chofer; 
+    document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
     document.getElementById("btnLlamar").onclick = () => window.open(`tel:${viajeInfo.choferTel}`);
+    
     setInterval(async () => {
-        const r = await fetch("/obtener-choferes-activos"); const choferes = await r.json();
-        const c = choferes.find(x => x.telefono === viajeInfo.choferTel);
-        if(c) {
-            const p = { lat: c.lat, lng: c.lng };
-            if(!markerC) markerC = new google.maps.Marker({ position: p, map, icon:{path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:7, fillColor:"#0c5", fillOpacity:1, strokeColor:"#fff", strokeWeight:2} });
-            else markerC.setPosition(p);
-            map.panTo(p);
-        }
+        try {
+            const r = await fetch("/obtener-choferes-activos"); 
+            const choferes = await r.json();
+            const c = choferes.find(x => x.telefono === viajeInfo.choferTel);
+            if(c) {
+                const p = { lat: parseFloat(c.lat), lng: parseFloat(c.lng) };
+                if(!markerC) {
+                    markerC = new google.maps.Marker({ 
+                        position: p, 
+                        map, 
+                        icon:{path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:7, fillColor:"#00c853", fillOpacity:1, strokeColor:"#fff", strokeWeight:2} 
+                    });
+                } else {
+                    markerC.setPosition(p);
+                }
+                map.panTo(p);
+            }
+        } catch(e) { console.error("Error GPS:", e); }
     }, 5000);
 }
 
