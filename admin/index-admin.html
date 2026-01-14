@@ -124,7 +124,6 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
     if(id === 'tarifas') cargarTarifas();
-    if(id === 'conductores' || id === 'pasajeros') cargarDatosReales();
 }
 
 async function cargarDatosReales() {
@@ -146,7 +145,7 @@ function actualizarTablaConductores(conds) {
     conds.forEach(c => {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:${docOk ? '#f44336' : '#4caf50'};" onclick="aprobarDocumentacion('${c.telefono}', ${docOk})">${docOk ? '✕' : '✔'}</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">🗑</button></td></tr>`;
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
     });
 }
 
@@ -155,8 +154,7 @@ function actualizarTablaPasajeros(pasas) {
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
         const estaBloqueado = p.bloqueado === true;
-        // BOTÓN PASAJEROS: ROJO si está bloqueado, VERDE si está libre.
-        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#4caf50'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">${estaBloqueado ? '🔒' : '🔓'}</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
+        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#ff9800'};" onclick="bloquearPasajero('${p.telefono}')">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">✖</button></td></tr>`; 
     });
 }
 
@@ -175,43 +173,26 @@ async function cargarViajesReales() {
     } catch (e) { console.error("Error viajes"); }
 }
 
-async function bloquearPasajero(tel, actualmenteBloqueado) {
-    const texto = actualmenteBloqueado ? "desbloquear" : "bloquear";
-    if(confirm(`¿Desea ${texto} a este pasajero?`)) {
-        try {
-            const respuesta = await fetch('/bloquear-usuario', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telefono: tel, bloqueado: !actualmenteBloqueado }) 
-            });
-            if(respuesta.ok) {
-                // Al recargar datos, el servidor devuelve el nuevo estado y el botón cambia de color solo.
-                await cargarDatosReales();
-            }
-        } catch (e) { alert("Error al conectar con el servidor"); }
+async function bloquearPasajero(tel) {
+    if(confirm("¿Bloquear permanentemente?")) {
+        const btn = document.getElementById(`btnLock-${tel}`);
+        if(btn) btn.style.background = "#f44336";
+        await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
     }
 }
 
 async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar definitivamente?")) {
-        try {
-            const res = await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
-            if(res.ok) await cargarDatosReales();
-        } catch (e) { alert("Error al eliminar"); }
+        const fila = document.getElementById(`fila-${tel}`);
+        if(fila) fila.remove();
+        await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
     }
 }
 
-async function aprobarDocumentacion(tel, actualmenteAprobado) {
-    const accion = actualmenteAprobado ? "desaprobar" : "aprobar";
-    if(confirm(`¿Desea ${accion} la documentación?`)) {
-        try {
-            const res = await fetch('/aprobar-chofer', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telefono: tel, aprobado: !actualmenteAprobado }) 
-            });
-            if(res.ok) await cargarDatosReales();
-        } catch (e) { alert("Error en el servidor"); }
+async function aprobarDocumentacion(tel) {
+    if(confirm("¿Aprobar documentación?")) {
+        await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+        cargarDatosReales();
     }
 }
 
