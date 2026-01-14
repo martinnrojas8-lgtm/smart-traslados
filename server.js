@@ -43,6 +43,10 @@ const ViajeSchema = new mongoose.Schema({
     hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
     chofer: { type: String, default: "Pendiente" },
     choferTel: { type: String, default: null },
+    // NUEVOS CAMPOS PARA SEGUIMIENTO
+    autoModelo: String,
+    autoPatente: String,
+    autoColor: String,
     pasajero: String,
     pasajeroTel: String,
     origen: String,
@@ -68,6 +72,16 @@ const TarifaSchema = new mongoose.Schema({
     precioKm: { type: Number, default: 900 }
 });
 const Tarifa = mongoose.model('Tarifa', TarifaSchema);
+
+// ESQUEMA PARA GPS EN VIVO
+const UbicacionSchema = new mongoose.Schema({
+    telefono: { type: String, unique: true },
+    lat: Number,
+    lng: Number,
+    estado: String,
+    ultimaAct: { type: Date, default: Date.now }
+});
+const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
 // --- RUTAS ---
 app.use(express.static(path.join(__dirname, 'Public')));
@@ -101,10 +115,13 @@ app.get('/viajes-pendientes', async (req, res) => {
 
 app.post('/aceptar-viaje', async (req, res) => {
     try {
-        const { viajeId, choferNombre, choferTel } = req.body;
+        const { viajeId, choferNombre, choferTel, autoModelo, autoPatente, autoColor } = req.body;
         const viaje = await Viaje.findByIdAndUpdate(viajeId, {
             chofer: choferNombre,
             choferTel: choferTel,
+            autoModelo: autoModelo,
+            autoPatente: autoPatente,
+            autoColor: autoColor,
             estado: "aceptado"
         }, { new: true });
         res.json({ mensaje: "Viaje aceptado", viaje });
@@ -244,9 +261,22 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
 
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
-        const choferes = await Usuario.find({ rol: "chofer", aprobado: true, vencimientoPago: { $gt: new Date() } });
+        const choferes = await Ubicacion.find({ ultimaAct: { $gt: new Date(Date.now() - 5 * 60 * 1000) } });
         res.json(choferes);
     } catch (e) { res.status(500).send(); }
+});
+
+// NUEVA RUTA PARA GPS
+app.post('/actualizar-ubicacion-chofer', async (req, res) => {
+    try {
+        const { telefono, lat, lng, estado } = req.body;
+        await Ubicacion.findOneAndUpdate(
+            { telefono }, 
+            { lat, lng, estado, ultimaAct: new Date() }, 
+            { upsert: true }
+        );
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error GPS" }); }
 });
 
 app.get('/admin-panel', (req, res) => { res.sendFile(path.join(__dirname, 'admin', 'index-admin.html')); });
