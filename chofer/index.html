@@ -259,6 +259,29 @@ function cerrarSesion() {
     }
 }
 
+// === VINCULACIÓN: BUSCAR VIAJES DEL PASAJERO ===
+setInterval(async () => {
+    if (estadoActual !== "disponible" || !pagoConfirmado) return;
+    try {
+        const res = await fetch('/obtener-viajes-pendientes');
+        const viajes = await res.json();
+        if (viajes && viajes.length > 0) {
+            const v = viajes[viajes.length - 1];
+            document.getElementById("datosViaje").innerHTML = `
+                <b>PASAJERO:</b> ${v.pasajeroNombre}<br>
+                <b>DESTINO:</b> ${v.destino}<br>
+                <b>${v.precio}</b>
+            `;
+            document.getElementById("modalViaje").style.display = "block";
+        }
+    } catch (e) { console.log("Error buscando viajes"); }
+}, 5000);
+
+function aceptarViaje() {
+    document.getElementById("modalViaje").style.display = "none";
+    alert("Viaje aceptado. Iniciando navegación...");
+}
+
 window.onload = initApp;
 </script>
 </body>
