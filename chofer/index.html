@@ -37,7 +37,7 @@
   #seccionActivacion { background: #1a1a1a; border: 1px solid #ffb300; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
   #inputToken { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff; }
 
-  #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; }
+  #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,200,83,0.5); }
 
   /* BOTON INSTALACION */
   #btnInstalarChofer { display: none; background: #fff; color: #000; padding: 15px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 15px; cursor: pointer; border: 2px solid #00c853; width: 100%; font-size: 14px; }
@@ -58,7 +58,7 @@
 <div id="modalViaje">
     <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
     <p id="datosViaje" style="font-weight:bold">Cargando...</p>
-    <button onclick="aceptarViaje()" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
+    <button id="btnAceptar" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
 </div>
 
 <div class="screen">
@@ -99,8 +99,8 @@ let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, estadoActual = "disponible", pagoConfirmado = false;
 let intervaloReloj;
 let deitPrompt; 
+let idViajeActual = null;
 
-// Lógica de instalación para chofer
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deitPrompt = e;
@@ -186,17 +186,14 @@ function iniciarReloj(fechaVencimiento) {
     intervaloReloj = setInterval(() => {
         const ahora = new Date().getTime();
         const diff = destino - ahora;
-
         if (diff <= 0) {
             clearInterval(intervaloReloj);
             desactivarModoTrabajo();
             return;
         }
-
         const horas = Math.floor(diff / (1000 * 60 * 60));
         const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const segundos = Math.floor((diff % (1000 * 60)) / 1000);
-
         document.getElementById('reloj').innerText = 
             `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
     }, 1000);
@@ -205,7 +202,6 @@ function iniciarReloj(fechaVencimiento) {
 async function validarCodigo() {
     const cod = document.getElementById('inputToken').value.trim();
     if(cod.length < 6) return alert("Ingresá el código.");
-
     try {
         const res = await fetch('/validar-token', {
             method: 'POST',
@@ -213,11 +209,8 @@ async function validarCodigo() {
             body: JSON.stringify({ codigo: cod, telefono: sesion.telefono })
         });
         const data = await res.json();
-        if(data.ok) {
-            location.reload();
-        } else {
-            alert(data.mensaje || "Código inválido");
-        }
+        if(data.ok) location.reload();
+        else alert(data.mensaje || "Código inválido");
     } catch (e) { alert("Error de conexión"); }
 }
 
@@ -259,27 +252,35 @@ function cerrarSesion() {
     }
 }
 
-// === VINCULACIÓN: BUSCAR VIAJES DEL PASAJERO ===
+// === ESCUCHA DE VIAJES REALES ===
 setInterval(async () => {
-    if (estadoActual !== "disponible" || !pagoConfirmado) return;
+    if (estadoActual !== "disponible" || !pagoConfirmado || idViajeActual) return;
     try {
-        const res = await fetch('/obtener-viajes-pendientes');
+        const res = await fetch('/obtener-viajes');
         const viajes = await res.json();
-        if (viajes && viajes.length > 0) {
-            const v = viajes[viajes.length - 1];
+        const pendiente = viajes.find(v => v.estado === "pendiente");
+        if (pendiente) {
+            idViajeActual = pendiente._id;
             document.getElementById("datosViaje").innerHTML = `
-                <b>PASAJERO:</b> ${v.pasajeroNombre}<br>
-                <b>DESTINO:</b> ${v.destino}<br>
-                <b>${v.precio}</b>
+                <b>PASAJERO:</b> ${pendiente.pasajero}<br>
+                <b>ORIGEN:</b> ${pendiente.origen}<br>
+                <b>DESTINO:</b> ${pendiente.destino}<br>
+                <b>PRECIO:</b> ${pendiente.precio}
             `;
             document.getElementById("modalViaje").style.display = "block";
+            document.getElementById("btnAceptar").onclick = () => aceptarViaje(pendiente._id);
         }
     } catch (e) { console.log("Error buscando viajes"); }
-}, 5000);
+}, 4000);
 
-function aceptarViaje() {
-    document.getElementById("modalViaje").style.display = "none";
-    alert("Viaje aceptado. Iniciando navegación...");
+async function aceptarViaje(id) {
+    try {
+        // En una app real, aquí harías un fetch para marcar el viaje como 'aceptado'
+        document.getElementById("modalViaje").style.display = "none";
+        alert("¡Viaje aceptado! Iniciando navegación al origen...");
+        // Aquí podrías redirigir a Google Maps con el origen
+        idViajeActual = null; 
+    } catch (e) { alert("Error al aceptar viaje"); }
 }
 
 window.onload = initApp;
