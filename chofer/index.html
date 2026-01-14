@@ -21,6 +21,7 @@
   .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 15px; }
   #seccionActivacion { background: #1a1a1a; border: 1px solid #ffb300; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
   #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,200,83,0.5); }
+  #controlesViaje { display: none; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -53,10 +54,18 @@
       </div>
       <div class="status-bar"><span class="badge" id="badgeSistema">INACTIVO</span><span id="txtNombreChofer">Chofer</span></div>
       <div class="card" style="padding: 5px;"><div id="map"></div></div>
-      <div class="card" style="text-align:center;">
-          <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px;">ESTADO: BLOQUEADO</h3>
-          <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
-          <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
+      
+      <div id="controlesViaje" class="card">
+          <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853;"></p>
+          <button onclick="finalizarViaje()" style="background:#ff5252; color:#fff;">FINALIZAR VIAJE</button>
+      </div>
+
+      <div id="controlesEstandar">
+          <div class="card" style="text-align:center;">
+              <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px;">ESTADO: BLOQUEADO</h3>
+              <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
+              <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
+          </div>
       </div>
   </div>
 </div>
@@ -64,7 +73,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-let map, marker, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", intervaloReloj;
+let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", intervaloReloj;
 let datosAuto = { modelo: "", patente: "", color: "" };
 
 async function initApp() {
@@ -133,6 +142,9 @@ function initMap() {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
         marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 6, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+        
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
     });
 }
 
@@ -141,6 +153,7 @@ function transmitirUbicacion() {
     navigator.geolocation.getCurrentPosition(pos => {
         fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ telefono: sesion.telefono, lat: pos.coords.latitude, lng: pos.coords.longitude, estado: estadoActual }) });
         if(marker) marker.setPosition({lat: pos.coords.latitude, lng: pos.coords.longitude});
+        if(viajeActualId) map.setCenter({lat: pos.coords.latitude, lng: pos.coords.longitude});
     });
 }
 
@@ -159,7 +172,8 @@ setInterval(async () => {
         const viajes = await res.json();
         if (viajes.length > 0) {
             const v = viajes[0];
-            viajeActualId = v._id; direccionOrigenViaje = v.origen;
+            viajeActualId = v._id; 
+            direccionOrigenViaje = v.origen;
             document.getElementById("datosViaje").innerHTML = `<b>${v.pasajero}</b><br>${v.origen}<br>-> ${v.destino}<br><b>${v.precio}</b>`;
             document.getElementById("modalViaje").style.display = "block";
         }
@@ -172,11 +186,40 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             viajeId: viajeActualId, choferNombre: sesion.nombre, choferTel: sesion.telefono,
             autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color
         }) });
+        
         document.getElementById("modalViaje").style.display = "none";
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(direccionOrigenViaje)}`, '_blank');
-        viajeActualId = null;
-    } catch (e) { alert("Error"); }
+        document.getElementById("controlesEstandar").style.display = "none";
+        document.getElementById("controlesViaje").style.display = "block";
+        document.getElementById("destinoActual").innerText = "Pasajero en: " + direccionOrigenViaje;
+        
+        // Trazar ruta dentro del mapa de la app
+        trazarRuta(direccionOrigenViaje);
+        estadoActual = "en viaje";
+
+    } catch (e) { alert("Error al aceptar"); }
 };
+
+function trazarRuta(destino) {
+    navigator.geolocation.getCurrentPosition(pos => {
+        const request = {
+            origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            destination: destino,
+            travelMode: 'DRIVING'
+        };
+        directionsService.route(request, (result, status) => {
+            if (status === 'OK') directionsRenderer.setDirections(result);
+        });
+    });
+}
+
+function finalizarViaje() {
+    viajeActualId = null;
+    estadoActual = "disponible";
+    directionsRenderer.setDirections({routes: []});
+    document.getElementById("controlesViaje").style.display = "none";
+    document.getElementById("controlesEstandar").style.display = "block";
+    toggleEstado(); // Lo pone disponible de nuevo
+}
 
 async function rechazarViaje() {
     await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) });
