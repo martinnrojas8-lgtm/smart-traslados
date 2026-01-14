@@ -24,8 +24,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 #modalPerfil { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; overflow-y:auto; padding:20px; }
 .modal-contenido { background:#111; padding:20px; border-radius:10px; border:1px solid #4caf50; max-width:500px; margin:auto; }
 .foto-legajo { width:100%; border-radius:8px; margin-bottom:15px; border:1px solid #333; }
-#contenedorFicha { display: none; flex-direction: column; align-items: center; background: #fff; padding: 20px; border-radius: 15px; max-width: 280px; margin: 20px auto; color: #000; text-align: center; border: 2px solid #4caf50; }
-.ficha-codigo { font-size: 32px; font-weight: bold; color: #4caf50; letter-spacing: 4px; margin: 10px 0; }
+.ficha-codigo { font-size: 42px; font-weight: bold; color: #4caf50; letter-spacing: 5px; margin: 5px 0; }
 </style>
 </head>
 <body>
@@ -62,7 +61,20 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <div id="pagos" class="pantalla">
-    <div class="card" style="text-align:center;"><h3>Generar Pin de Activación 24hs</h3><button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button><div id="contenedorFicha"><div id="txtFichaCodigo" class="ficha-codigo">000000</div><div style="font-size: 12px; color:#666;">VÁLIDO POR 24 HORAS</div></div></div>
+    <div class="card" style="text-align:center;">
+        <h3>Generar Pin de Activación 24hs</h3>
+        <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
+        
+        <div id="contenedorFicha" style="display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+            <div style="font-size: 22px; font-weight: bold; color: #111; margin-bottom: 5px;">🚕 SMART TRASLADOS</div>
+            <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
+            <div style="font-size: 11px; color: #333; margin-bottom: 5px;">CÓDIGO DE ACCESO:</div>
+            <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
+            <div style="font-size: 12px; color: #000; font-weight: bold; margin-top: 15px; background: #e8f5e9; padding: 5px 10px; border-radius: 5px;">VÁLIDO POR 24 HORAS</div>
+            <div style="font-size: 10px; color: #999; margin-top: 15px;">Smart Traslados - El control en tus manos.</div>
+        </div>
+        <p style="font-size: 12px; color: #888;">Sacale una captura de pantalla para enviársela al chofer.</p>
+    </div>
 </div>
 
 <div id="tarifas" class="pantalla">
