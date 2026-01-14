@@ -25,13 +25,11 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 .estado-off{ color:#f44336; font-weight: bold; }
 .estado-pendiente { color: #ff9800; font-weight: bold; }
 .btn-ok{ background:#4caf50; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-.btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; }
+.btn-accion{ padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: #fff; margin-right: 2px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
 #modalPerfil { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; overflow-y:auto; padding:20px; }
 .modal-contenido { background:#111; padding:20px; border-radius:10px; border:1px solid #4caf50; max-width:500px; margin:auto; }
 .foto-legajo { width:100%; border-radius:8px; margin-bottom:15px; border:1px solid #333; }
 .ficha-codigo { font-size: 42px; font-weight: bold; color: #4caf50; letter-spacing: 5px; margin: 5px 0; }
-
-/* Estilo para el botón compartir */
 .btn-compartir { background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
 .btn-compartir:active { transform: scale(0.9); }
 </style>
@@ -78,13 +76,11 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         
         <div id="contenedorFicha" style="position: relative; display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-            
             <div style="position: absolute; top: 10px; right: 10px;">
                 <button class="btn-compartir" onclick="compartirCodigo()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 </button>
             </div>
-
             <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;">
             <div style="font-size: 20px; font-weight: bold; color: #111; margin-bottom: 5px;">SMART TRASLADOS</div>
             <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
@@ -156,7 +152,12 @@ function actualizarTablaConductores(conds) {
     conds.forEach(c => {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
+        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        
+        // El botón cambia de color según el estado docOk
+        const colorBotonTilde = docOk ? '#4caf50' : '#f44336';
+
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:${colorBotonTilde};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button></td></tr>`;
     });
 }
 
@@ -165,7 +166,8 @@ function actualizarTablaPasajeros(pasas) {
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
         const estaBloqueado = p.bloqueado === true;
-        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#ff9800'};" onclick="bloquearPasajero('${p.telefono}')">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">✖</button></td></tr>`; 
+        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#ff9800'};" onclick="bloquearPasajero('${p.telefono}')">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">${iconTrash}</button></td></tr>`; 
     });
 }
 
@@ -200,9 +202,14 @@ async function eliminarUsuario(tel) {
     }
 }
 
-async function aprobarDocumentacion(tel) {
-    if(confirm("¿Aprobar documentación?")) {
-        await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+async function toggleDocumentacion(tel, estadoActual) {
+    const accion = estadoActual ? "INHABILITAR" : "APROBAR";
+    if(confirm(`¿Desea ${accion} la documentación de este chofer?`)) {
+        await fetch('/aprobar-chofer', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ telefono: tel, aprobado: !estadoActual }) 
+        });
         cargarDatosReales();
     }
 }
@@ -251,18 +258,13 @@ async function generarNuevoCodigo() {
     } catch (e) { alert("Error al generar código"); }
 }
 
-// NUEVA FUNCIÓN PARA COMPARTIR POR WHATSAPP O SISTEMA
 async function compartirCodigo() {
     const codigo = document.getElementById('txtFichaCodigo').innerText;
     const texto = `🚗 *SMART TRASLADOS*\n\nHola! Tu código de acceso es: *${codigo}*\n\nVálido por 24 horas.`;
-    
     if (navigator.share) {
-        try {
-            await navigator.share({ title: 'Código Smart Traslados', text: texto });
-        } catch (e) { console.log("Compartir cancelado"); }
+        try { await navigator.share({ title: 'Código Smart Traslados', text: texto }); } catch (e) {}
     } else {
-        const urlWa = `https://wa.me/?text=${encodeURIComponent(texto)}`;
-        window.open(urlWa, '_blank');
+        window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
     }
 }
 
