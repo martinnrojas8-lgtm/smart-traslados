@@ -58,17 +58,18 @@
 <div id="modalViaje">
     <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
     <p id="datosViaje" style="font-weight:bold">Cargando...</p>
-    <button id="btnAceptar" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
+    <button onclick="aceptarViaje()" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
 </div>
 
 <div class="screen">
-  <button id="btnInstalarChofer" onclick="instalarApp()">📲 DESCARGAR APP CHOFER</button>
+  <button id="btnInstalarChofer" onclick="instalarApp()">📲 DESCARGAR APP CHOFER (Icono en Escritorio)</button>
 
   <div id="seccionActivacion" style="display: none;">
       <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
-      <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos que te envió el administrador.</p>
+      <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos que te envió el administrador para comenzar a trabajar.</p>
       <input type="text" id="inputToken" placeholder="000000" maxlength="6">
       <button onclick="validarCodigo()" style="background: #ffb300;">ACTIVAR AHORA</button>
+      <p style="font-size: 10px; color: #888; margin-top: 10px;">¿No tenés un código? Contactá a soporte.</p>
   </div>
 
   <div id="areaTrabajo">
@@ -97,7 +98,27 @@
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, estadoActual = "disponible", pagoConfirmado = false;
 let intervaloReloj;
-let idViajeActual = null;
+let deitPrompt; 
+let direccionOrigenViaje = ""; // Para guardar el origen del pasajero
+
+// Lógica de instalación para chofer
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deitPrompt = e;
+    document.getElementById('btnInstalarChofer').style.display = 'block';
+});
+
+function instalarApp() {
+    if (deitPrompt) {
+        deitPrompt.prompt();
+        deitPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                document.getElementById('btnInstalarChofer').style.display = 'none';
+            }
+            deitPrompt = null;
+        });
+    }
+}
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
@@ -106,24 +127,15 @@ async function initApp() {
     setInterval(transmitirUbicacion, 7000);
 }
 
-function initMap() {
-    navigator.geolocation.getCurrentPosition(pos => {
-        const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
-        marker = new google.maps.Marker({ 
-            position: myPos, map: map, 
-            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
-        });
-    });
-}
-
 async function cargarDatosChofer() {
     try {
         const res = await fetch(`/estado-suscripcion/${sesion.telefono}`);
         const data = await res.json();
+
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
+
         if (yo) {
             document.getElementById('txtNombreChofer').innerText = yo.nombre || sesion.telefono;
             if (yo.foto) {
@@ -132,8 +144,12 @@ async function cargarDatosChofer() {
                 document.getElementById('iconoDefault').style.display = 'none';
             }
         }
-        if (data.pagoActivo) activarModoTrabajo(data.vencimiento);
-        else desactivarModoTrabajo();
+
+        if (data.pagoActivo) {
+            activarModoTrabajo(data.vencimiento);
+        } else {
+            desactivarModoTrabajo();
+        }
     } catch (e) { console.log("Error cargando perfil"); }
 }
 
@@ -143,11 +159,13 @@ function activarModoTrabajo(vencimiento) {
     document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO";
     document.getElementById('badgeSistema').style.background = "#00c853";
+    
     document.getElementById('btnToggle').disabled = false;
     document.getElementById('btnToggle').innerText = "PONERME COMO OCUPADO";
     document.getElementById('btnToggle').style.background = "#00c853";
     document.getElementById('txtEstado').innerText = "ESTADO: DISPONIBLE";
     document.getElementById('txtEstado').style.color = "#00c853";
+
     iniciarReloj(vencimiento);
 }
 
@@ -165,15 +183,54 @@ function desactivarModoTrabajo() {
 function iniciarReloj(fechaVencimiento) {
     if(intervaloReloj) clearInterval(intervaloReloj);
     const destino = new Date(fechaVencimiento).getTime();
+
     intervaloReloj = setInterval(() => {
         const ahora = new Date().getTime();
         const diff = destino - ahora;
-        if (diff <= 0) { clearInterval(intervaloReloj); desactivarModoTrabajo(); return; }
-        const h = Math.floor(diff / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-        document.getElementById('reloj').innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+        if (diff <= 0) {
+            clearInterval(intervaloReloj);
+            desactivarModoTrabajo();
+            return;
+        }
+
+        const horas = Math.floor(diff / (1000 * 60 * 60));
+        const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById('reloj').innerText = 
+            `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
     }, 1000);
+}
+
+async function validarCodigo() {
+    const cod = document.getElementById('inputToken').value.trim();
+    if(cod.length < 6) return alert("Ingresá el código.");
+
+    try {
+        const res = await fetch('/validar-token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ codigo: cod, telefono: sesion.telefono })
+        });
+        const data = await res.json();
+        if(data.ok) {
+            location.reload();
+        } else {
+            alert(data.mensaje || "Código inválido");
+        }
+    } catch (e) { alert("Error de conexión"); }
+}
+
+function initMap() {
+    navigator.geolocation.getCurrentPosition(pos => {
+        const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
+        marker = new google.maps.Marker({ 
+            position: myPos, map: map, 
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
+        });
+    });
 }
 
 function transmitirUbicacion() {
@@ -193,37 +250,44 @@ function toggleEstado() {
     txt.innerText = "ESTADO: " + estadoActual.toUpperCase();
     txt.style.color = (estadoActual === "disponible") ? "#00c853" : "#ff5252";
     btn.innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
+    btn.className = (estadoActual === "disponible") ? "" : "btn-ocupado";
 }
 
 function cerrarSesion() {
-    localStorage.removeItem("sesion");
-    location.href = "/";
+    if(confirm("¿Deseas desconectarte?")) {
+        localStorage.removeItem("sesion");
+        location.href = "/";
+    }
 }
 
-// === BUSCADOR DE VIAJES (SIN ALERTAS DE GPS) ===
+// === VINCULACIÓN: BUSCAR VIAJES DEL PASAJERO ===
 setInterval(async () => {
-    if (estadoActual !== "disponible" || !pagoConfirmado || idViajeActual) return;
+    if (estadoActual !== "disponible" || !pagoConfirmado) return;
     try {
-        const res = await fetch('/obtener-viajes');
+        const res = await fetch('/obtener-viajes-pendientes');
         const viajes = await res.json();
-        const pendiente = viajes.find(v => v.estado === "pendiente");
-        if (pendiente) {
-            idViajeActual = pendiente._id;
+        if (viajes && viajes.length > 0) {
+            const v = viajes[viajes.length - 1];
+            direccionOrigenViaje = v.origen; // Guardamos el origen
             document.getElementById("datosViaje").innerHTML = `
-                PASAJERO: ${pendiente.pasajero}<br>
-                ORIGEN: ${pendiente.origen}<br>
-                DESTINO: ${pendiente.destino}<br>
-                ${pendiente.precio}
+                <b>PASAJERO:</b> ${v.pasajeroNombre}<br>
+                <b>ORIGEN:</b> ${v.origen}<br>
+                <b>DESTINO:</b> ${v.destino}<br>
+                <b>${v.precio}</b>
             `;
             document.getElementById("modalViaje").style.display = "block";
-            document.getElementById("btnAceptar").onclick = () => {
-                document.getElementById("modalViaje").style.display = "none";
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pendiente.origen)}&travelmode=driving`, '_blank');
-                idViajeActual = null;
-            };
         }
-    } catch (e) {}
-}, 4000);
+    } catch (e) { console.log("Error buscando viajes"); }
+}, 5000);
+
+function aceptarViaje() {
+    document.getElementById("modalViaje").style.display = "none";
+    if (direccionOrigenViaje) {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(direccionOrigenViaje)}&travelmode=driving`, '_blank');
+    } else {
+        alert("Viaje aceptado. Iniciando navegación...");
+    }
+}
 
 window.onload = initApp;
 </script>
