@@ -57,6 +57,7 @@
       
       <div id="controlesViaje" class="card">
           <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 14px;"></p>
+          <button id="btnSiguienteFase" onclick="irADestinoFinal()" style="background:#00c853; color:#000;">INICIAR RECORRIDO AL DESTINO</button>
           <button onclick="finalizarViaje()" style="background:#ff5252; color:#fff;">FINALIZAR VIAJE</button>
       </div>
 
@@ -73,7 +74,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", intervaloReloj;
+let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", direccionDestinoViaje = "", intervaloReloj;
 let datosAuto = { modelo: "", patente: "", color: "" };
 
 async function initApp() {
@@ -164,7 +165,6 @@ function transmitirUbicacion() {
         fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, estado: estadoActual }) });
         
         if(marker) marker.setPosition(coords);
-        // Ajuste: El mapa sigue al chofer pero con suavidad
         if(viajeActualId) map.panTo(coords);
     });
 }
@@ -186,6 +186,7 @@ setInterval(async () => {
             const v = viajes[0];
             viajeActualId = v._id; 
             direccionOrigenViaje = v.origen;
+            direccionDestinoViaje = v.destino; // Guardamos el destino final
             document.getElementById("datosViaje").innerHTML = `<b>${v.pasajero}</b><br>${v.origen}<br>-> ${v.destino}<br><b>${v.precio}</b>`;
             document.getElementById("modalViaje").style.display = "block";
         }
@@ -202,13 +203,20 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
         document.getElementById("modalViaje").style.display = "none";
         document.getElementById("controlesEstandar").style.display = "none";
         document.getElementById("controlesViaje").style.display = "block";
-        document.getElementById("destinoActual").innerText = "Pasajero en: " + direccionOrigenViaje;
+        document.getElementById("btnSiguienteFase").style.display = "block";
+        document.getElementById("destinoActual").innerText = "Buscando a: " + direccionOrigenViaje;
         
         trazarRuta(direccionOrigenViaje);
         estadoActual = "en viaje";
 
     } catch (e) { alert("Error al aceptar"); }
 };
+
+function irADestinoFinal() {
+    document.getElementById("destinoActual").innerText = "Yendo a: " + direccionDestinoViaje;
+    document.getElementById("btnSiguienteFase").style.display = "none"; // Ocultar para que solo quede Finalizar
+    trazarRuta(direccionDestinoViaje);
+}
 
 function trazarRuta(destino) {
     navigator.geolocation.getCurrentPosition(pos => {
@@ -220,7 +228,6 @@ function trazarRuta(destino) {
         directionsService.route(request, (result, status) => {
             if (status === 'OK') {
                 directionsRenderer.setDirections(result);
-                // Ajuste automático para que se vea toda la ruta inicialmente
                 map.setZoom(16);
             }
         });
@@ -234,7 +241,6 @@ function finalizarViaje() {
     document.getElementById("controlesViaje").style.display = "none";
     document.getElementById("controlesEstandar").style.display = "block";
     
-    // Resetear mapa a vista normal
     navigator.geolocation.getCurrentPosition(pos => {
         map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         map.setZoom(17);
