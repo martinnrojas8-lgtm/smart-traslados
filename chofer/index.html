@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Smart Traslados – Chofer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
 <style>
   body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
   header{ background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
@@ -37,6 +38,9 @@
   #inputToken { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff; }
 
   #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; }
+
+  /* BOTON INSTALACION */
+  #btnInstalarChofer { display: none; background: #fff; color: #000; padding: 15px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 15px; cursor: pointer; border: 2px solid #00c853; width: 100%; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -58,6 +62,8 @@
 </div>
 
 <div class="screen">
+  <button id="btnInstalarChofer" onclick="instalarApp()">📲 DESCARGAR APP CHOFER (Icono en Escritorio)</button>
+
   <div id="seccionActivacion" style="display: none;">
       <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
       <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos que te envió el administrador para comenzar a trabajar.</p>
@@ -92,6 +98,26 @@
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, estadoActual = "disponible", pagoConfirmado = false;
 let intervaloReloj;
+let deitPrompt; 
+
+// Lógica de instalación para chofer
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deitPrompt = e;
+    document.getElementById('btnInstalarChofer').style.display = 'block';
+});
+
+function instalarApp() {
+    if (deitPrompt) {
+        deitPrompt.prompt();
+        deitPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                document.getElementById('btnInstalarChofer').style.display = 'none';
+            }
+            deitPrompt = null;
+        });
+    }
+}
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
@@ -105,7 +131,6 @@ async function cargarDatosChofer() {
         const res = await fetch(`/estado-suscripcion/${sesion.telefono}`);
         const data = await res.json();
 
-        // Obtener datos básicos de usuario (nombre/foto)
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
