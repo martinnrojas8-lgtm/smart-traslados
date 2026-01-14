@@ -154,8 +154,9 @@ function actualizarTablaPasajeros(pasas) {
     let tP = document.getElementById('tablaPasajeros');
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
-        const estaBloqueado = (p.bloqueado === true);
-        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#4caf50'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">${estaBloqueado ? '🔓' : '🔒'}</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
+        const estaBloqueado = p.bloqueado === true;
+        // BOTÓN PASAJEROS: ROJO si está bloqueado, VERDE si está libre.
+        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#4caf50'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">${estaBloqueado ? '🔒' : '🔓'}</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
     });
 }
 
@@ -175,16 +176,19 @@ async function cargarViajesReales() {
 }
 
 async function bloquearPasajero(tel, actualmenteBloqueado) {
-    const nuevaAccion = actualmenteBloqueado ? "desbloquear" : "bloquear";
-    if(confirm(`¿Desea ${nuevaAccion} a este pasajero?`)) {
+    const texto = actualmenteBloqueado ? "desbloquear" : "bloquear";
+    if(confirm(`¿Desea ${texto} a este pasajero?`)) {
         try {
-            const res = await fetch('/bloquear-usuario', { 
+            const respuesta = await fetch('/bloquear-usuario', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ telefono: tel, estado: !actualmenteBloqueado }) 
+                body: JSON.stringify({ telefono: tel, bloqueado: !actualmenteBloqueado }) 
             });
-            await cargarDatosReales();
-        } catch (e) { alert("Error de conexión"); }
+            if(respuesta.ok) {
+                // Al recargar datos, el servidor devuelve el nuevo estado y el botón cambia de color solo.
+                await cargarDatosReales();
+            }
+        } catch (e) { alert("Error al conectar con el servidor"); }
     }
 }
 
@@ -192,22 +196,22 @@ async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar definitivamente?")) {
         try {
             const res = await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
-            await cargarDatosReales();
+            if(res.ok) await cargarDatosReales();
         } catch (e) { alert("Error al eliminar"); }
     }
 }
 
 async function aprobarDocumentacion(tel, actualmenteAprobado) {
-    const nuevaAccion = actualmenteAprobado ? "desaprobar" : "aprobar";
-    if(confirm(`¿Desea ${nuevaAccion} la documentación?`)) {
+    const accion = actualmenteAprobado ? "desaprobar" : "aprobar";
+    if(confirm(`¿Desea ${accion} la documentación?`)) {
         try {
             const res = await fetch('/aprobar-chofer', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ telefono: tel, aprobado: !actualmenteAprobado }) 
             });
-            await cargarDatosReales();
-        } catch (e) { alert("Error de conexión"); }
+            if(res.ok) await cargarDatosReales();
+        } catch (e) { alert("Error en el servidor"); }
     }
 }
 
