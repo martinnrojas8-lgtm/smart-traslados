@@ -16,7 +16,19 @@
   body { margin:0; font-family: 'Segoe UI', sans-serif; background:#121921; color:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; }
   
   .logo-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; }
-  .logo-img { width: 160px; height: auto; border-radius: 20px; display: block; }
+  
+  /* EFECTO DE APARICIÓN LENTA (7 SEGUNDOS) */
+  @keyframes fadeInLogo {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .logo-img { 
+    width: 160px; 
+    height: auto; 
+    border-radius: 20px; 
+    display: block; 
+    animation: fadeInLogo 7s ease-in-out; 
+  }
   
   .card { background:#1e2630; padding:35px 25px; border-radius:25px; width:90%; max-width:360px; text-align:center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
   h2 { margin: 0 0 25px 0; font-weight: 400; color: #f0f0f0; font-size: 28px; }
@@ -32,7 +44,7 @@
   .btn-download { background: transparent; border: 1px solid #2ecc71; color: #2ecc71; font-size: 14px; margin-top: 5px; display: none; }
   .btn:active { transform: scale(0.96); }
 
-  /* MEJORA DEL CHECKBOX */
+  /* MEJORA DEL CHECKBOX (MÁS DELGADO) */
   .terminos-wrapper {
     display: flex;
     align-items: center;
@@ -49,7 +61,7 @@
     height: 16px;
     margin: 0;
     cursor: pointer;
-    accent-color: #2ecc71; /* Esto hace que el check sea verde como tu app */
+    accent-color: #2ecc71;
   }
 </style>
 </head>
