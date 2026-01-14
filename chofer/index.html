@@ -26,6 +26,7 @@
   .status-bar{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
   .badge{ padding: 4px 8px; border-radius: 4px; font-weight: bold; background: #00c853; color: #000; }
   
+  /* ESTILO RELOJ COUNTDOWN */
   #timerContenedor { background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid #00c853; margin-bottom: 10px; text-align: center; display: none; }
   #reloj { font-family: monospace; font-size: 20px; color: #00c853; font-weight: bold; }
 
@@ -36,8 +37,9 @@
   #seccionActivacion { background: #1a1a1a; border: 1px solid #ffb300; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
   #inputToken { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff; }
 
-  #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+  #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; }
 
+  /* BOTON INSTALACION */
   #btnInstalarChofer { display: none; background: #fff; color: #000; padding: 15px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 15px; cursor: pointer; border: 2px solid #00c853; width: 100%; font-size: 14px; }
 </style>
 </head>
@@ -55,7 +57,7 @@
 
 <div id="modalViaje">
     <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
-    <div id="datosViaje" style="font-weight:bold; margin: 10px 0;"></div>
+    <p id="datosViaje" style="font-weight:bold">Cargando...</p>
     <button id="btnAceptar" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
 </div>
 
@@ -64,29 +66,33 @@
 
   <div id="seccionActivacion" style="display: none;">
       <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
+      <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos que te envió el administrador.</p>
       <input type="text" id="inputToken" placeholder="000000" maxlength="6">
       <button onclick="validarCodigo()" style="background: #ffb300;">ACTIVAR AHORA</button>
   </div>
 
   <div id="areaTrabajo">
       <div id="timerContenedor">
+          <div style="font-size: 10px; color: #888; margin-bottom: 4px;">TIEMPO DE CONEXIÓN RESTANTE</div>
           <div id="reloj">00:00:00</div>
       </div>
 
       <div class="status-bar">
           <span class="badge" id="badgeSistema">SISTEMA INACTIVO</span>
-          <span id="txtNombreChofer">Cargando...</span>
+          <span id="txtNombreChofer" style="color:#888">Cargando...</span>
       </div>
       <div class="card" style="padding: 5px;"><div id="map"></div></div>
       <div class="card" style="text-align:center;">
           <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom: 10px;">ESTADO: BLOQUEADO</h3>
-          <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
+          <div id="contenedorBotones">
+              <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
+          </div>
           <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
       </div>
   </div>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, estadoActual = "disponible", pagoConfirmado = false;
@@ -101,22 +107,14 @@ async function initApp() {
 }
 
 function initMap() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: myPos,
-                zoom: 16,
-                disableDefaultUI: true,
-                styles: [{ "elementType": "geometry", "stylers": [{ "color": "#212121" }] }, { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] }]
-            });
-            marker = new google.maps.Marker({ 
-                position: myPos, 
-                map: map, 
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
-            });
-        }, () => { alert("Error: El GPS está desactivado."); });
-    }
+    navigator.geolocation.getCurrentPosition(pos => {
+        const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 16, disableDefaultUI: true });
+        marker = new google.maps.Marker({ 
+            position: myPos, map: map, 
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } 
+        });
+    });
 }
 
 async function cargarDatosChofer() {
@@ -126,7 +124,6 @@ async function cargarDatosChofer() {
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
-
         if (yo) {
             document.getElementById('txtNombreChofer').innerText = yo.nombre || sesion.telefono;
             if (yo.foto) {
@@ -137,7 +134,7 @@ async function cargarDatosChofer() {
         }
         if (data.pagoActivo) activarModoTrabajo(data.vencimiento);
         else desactivarModoTrabajo();
-    } catch (e) { console.log("Error de red"); }
+    } catch (e) { console.log("Error cargando perfil"); }
 }
 
 function activarModoTrabajo(vencimiento) {
@@ -145,8 +142,10 @@ function activarModoTrabajo(vencimiento) {
     document.getElementById('seccionActivacion').style.display = 'none';
     document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO";
+    document.getElementById('badgeSistema').style.background = "#00c853";
     document.getElementById('btnToggle').disabled = false;
     document.getElementById('btnToggle').innerText = "PONERME COMO OCUPADO";
+    document.getElementById('btnToggle').style.background = "#00c853";
     document.getElementById('txtEstado').innerText = "ESTADO: DISPONIBLE";
     document.getElementById('txtEstado').style.color = "#00c853";
     iniciarReloj(vencimiento);
@@ -157,7 +156,10 @@ function desactivarModoTrabajo() {
     document.getElementById('seccionActivacion').style.display = 'block';
     document.getElementById('timerContenedor').style.display = 'none';
     document.getElementById('btnToggle').disabled = true;
+    document.getElementById('btnToggle').innerText = "ESPERANDO ACTIVACIÓN";
+    document.getElementById('btnToggle').style.background = "#444";
     document.getElementById('txtEstado').innerText = "ESTADO: BLOQUEADO";
+    document.getElementById('txtEstado').style.color = "#ff5252";
 }
 
 function iniciarReloj(fechaVencimiento) {
@@ -170,20 +172,21 @@ function iniciarReloj(fechaVencimiento) {
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
-        document.getElementById('reloj').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        document.getElementById('reloj').innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }, 1000);
 }
 
 function transmitirUbicacion() {
     if(!pagoConfirmado) return; 
     navigator.geolocation.getCurrentPosition(pos => {
-        const d = { telefono: sesion.telefono, lat: pos.coords.latitude, lng: pos.coords.longitude, estado: estadoActual };
-        fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(d) });
+        const datos = { telefono: sesion.telefono, lat: pos.coords.latitude, lng: pos.coords.longitude, estado: estadoActual };
+        fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(datos) });
         if(marker) marker.setPosition({lat: pos.coords.latitude, lng: pos.coords.longitude});
     });
 }
 
 function toggleEstado() {
+    if(!pagoConfirmado) return;
     const btn = document.getElementById("btnToggle");
     const txt = document.getElementById("txtEstado");
     estadoActual = (estadoActual === "disponible") ? "ocupado" : "disponible";
@@ -197,6 +200,7 @@ function cerrarSesion() {
     location.href = "/";
 }
 
+// === BUSCADOR DE VIAJES (SIN ALERTAS DE GPS) ===
 setInterval(async () => {
     if (estadoActual !== "disponible" || !pagoConfirmado || idViajeActual) return;
     try {
@@ -212,17 +216,14 @@ setInterval(async () => {
                 ${pendiente.precio}
             `;
             document.getElementById("modalViaje").style.display = "block";
-            document.getElementById("btnAceptar").onclick = () => aceptarViaje(pendiente.origen);
+            document.getElementById("btnAceptar").onclick = () => {
+                document.getElementById("modalViaje").style.display = "none";
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pendiente.origen)}&travelmode=driving`, '_blank');
+                idViajeActual = null;
+            };
         }
     } catch (e) {}
 }, 4000);
-
-function aceptarViaje(origen) {
-    document.getElementById("modalViaje").style.display = "none";
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(origen)}&travelmode=driving`;
-    window.open(url, '_blank');
-    idViajeActual = null;
-}
 
 window.onload = initApp;
 </script>
