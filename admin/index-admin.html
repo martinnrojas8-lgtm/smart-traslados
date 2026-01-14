@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Traslados – Panel Propietario</title>
 
-<link rel="icon" type="image/png" href="Public/IMG_20260103_200424.jpg">
-<link rel="apple-touch-icon" href="Public/IMG_20260103_200424.jpg">
+<link rel="icon" type="image/png" href="../Public/logo.png">
+<link rel="apple-touch-icon" href="../Public/logo.png">
 
 <style>
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
 header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #4caf50; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.logo-header { height: 35px; width: auto; border-radius: 5px; }
+.logo-header { height: 30px; width: auto; }
 .menu{ display:flex; overflow-x: auto; background:#1a1a1a; white-space: nowrap; border-bottom: 1px solid #333; }
 .menu button{ padding:15px 20px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; flex-shrink: 0; }
 .menu button:hover{ background:#333; }
@@ -35,7 +35,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <body>
 
 <header>
-    <img src="Public/IMG_20260103_200424.jpg" class="logo-header" alt="logo">
+    <img src="../Public/logo.png" class="logo-header" alt="logo">
     <span>Smart Traslados – Admin</span>
 </header>
 
@@ -72,12 +72,15 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card" style="text-align:center;">
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
+        
         <div id="contenedorFicha" style="display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-            <img src="Public/IMG_20260103_200424.jpg" style="height: 60px; border-radius: 5px; margin-bottom: 10px;">
+            <img src="../Public/logo.png" style="height: 50px; margin-bottom: 10px;">
             <div style="font-size: 20px; font-weight: bold; color: #111; margin-bottom: 5px;">SMART TRASLADOS</div>
             <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
+            <div style="font-size: 11px; color: #333; margin-bottom: 5px;">CÓDIGO DE ACCESO:</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
             <div style="font-size: 12px; color: #000; font-weight: bold; margin-top: 15px; background: #e8f5e9; padding: 5px 10px; border-radius: 5px;">VÁLIDO POR 24 HORAS</div>
+            <div style="font-size: 10px; color: #999; margin-top: 15px;">Smart Traslados - El control en tus manos.</div>
         </div>
     </div>
 </div>
@@ -87,6 +90,8 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Tarifas de la App</h3>
         <label>Precio base por viaje</label><input type="number" id="precioBase">
         <label>Precio por km</label><input type="number" id="precioKm">
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+        <label>Monto suscripción 24hs (Info)</label><input type="number" id="montoFijo">
         <button class="btn-ok" onclick="guardarTarifas()">Guardar en servidor</button>
     </div>
 </div>
@@ -131,7 +136,7 @@ async function cargarDatosReales() {
         document.getElementById('pTotal').innerText = pasas.length;
         actualizarTablaConductores(conds);
         actualizarTablaPasajeros(pasas);
-    } catch (e) { console.error("Error usuarios"); }
+    } catch (e) { console.error("Error cargando usuarios"); }
 }
 
 function actualizarTablaConductores(conds) {
@@ -140,7 +145,7 @@ function actualizarTablaConductores(conds) {
     conds.forEach(c => {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
     });
 }
 
@@ -170,13 +175,16 @@ async function cargarViajesReales() {
 
 async function bloquearPasajero(tel) {
     if(confirm("¿Bloquear permanentemente?")) {
+        const btn = document.getElementById(`btnLock-${tel}`);
+        if(btn) btn.style.background = "#f44336";
         await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
     }
 }
 
 async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar definitivamente?")) {
-        document.getElementById(`fila-${tel}`).remove();
+        const fila = document.getElementById(`fila-${tel}`);
+        if(fila) fila.remove();
         await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
     }
 }
@@ -198,7 +206,6 @@ function verPerfilCompleto(tel) {
         document.getElementById('modalPerfil').style.display = 'block';
     }
 }
-
 function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
 
 async function cargarTarifas() {
@@ -207,6 +214,7 @@ async function cargarTarifas() {
         const data = await res.json();
         document.getElementById('precioBase').value = data.precioBase || "";
         document.getElementById('precioKm').value = data.precioKm || "";
+        document.getElementById('montoFijo').value = localStorage.getItem('montoFijoInfo') || "";
     } catch (e) {}
 }
 
@@ -214,6 +222,7 @@ async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
     await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm }) });
+    localStorage.setItem('montoFijoInfo', document.getElementById('montoFijo').value);
     alert('Tarifas guardadas');
 }
 
@@ -228,7 +237,7 @@ async function generarNuevoCodigo() {
     try {
         const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
         if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
-    } catch (e) { alert("Error"); }
+    } catch (e) { alert("Error al generar código"); }
 }
 
 window.onload = () => {
