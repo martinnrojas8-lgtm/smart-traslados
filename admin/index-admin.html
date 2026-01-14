@@ -145,7 +145,7 @@ function actualizarTablaConductores(conds) {
     conds.forEach(c => {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:#4caf50;" onclick="aprobarDocumentacion('${c.telefono}')">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:${docOk ? '#f44336' : '#4caf50'};" onclick="aprobarDocumentacion('${c.telefono}', ${docOk})">${docOk ? '✕' : '✔'}</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">✖</button></td></tr>`;
     });
 }
 
@@ -154,7 +154,7 @@ function actualizarTablaPasajeros(pasas) {
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
         const estaBloqueado = p.bloqueado === true;
-        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#ff9800'};" onclick="bloquearPasajero('${p.telefono}')">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">✖</button></td></tr>`; 
+        tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#4caf50' : '#ff9800'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">${estaBloqueado ? '🔓' : '🔒'}</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">✖</button></td></tr>`; 
     });
 }
 
@@ -173,11 +173,16 @@ async function cargarViajesReales() {
     } catch (e) { console.error("Error viajes"); }
 }
 
-async function bloquearPasajero(tel) {
-    if(confirm("¿Bloquear permanentemente?")) {
-        const btn = document.getElementById(`btnLock-${tel}`);
-        if(btn) btn.style.background = "#f44336";
-        await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+async function bloquearPasajero(tel, estaBloqueado) {
+    const accion = estaBloqueado ? "desbloquear" : "bloquear";
+    if(confirm(`¿Desea ${accion} a este pasajero?`)) {
+        // Utilizamos la misma ruta, el servidor debería manejar el cambio de estado basándose en el booleano
+        await fetch('/bloquear-usuario', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ telefono: tel, estado: !estaBloqueado }) 
+        });
+        cargarDatosReales();
     }
 }
 
@@ -189,9 +194,14 @@ async function eliminarUsuario(tel) {
     }
 }
 
-async function aprobarDocumentacion(tel) {
-    if(confirm("¿Aprobar documentación?")) {
-        await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+async function aprobarDocumentacion(tel, estaAprobado) {
+    const accion = estaAprobado ? "desaprobar" : "aprobar";
+    if(confirm(`¿Desea ${accion} la documentación?`)) {
+        await fetch('/aprobar-chofer', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ telefono: tel, aprobado: !estaAprobado }) 
+        });
         cargarDatosReales();
     }
 }
