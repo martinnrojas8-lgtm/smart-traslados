@@ -41,8 +41,13 @@ const Usuario = mongoose.model('Usuario', UsuarioSchema);
 const ViajeSchema = new mongoose.Schema({
     fecha: { type: String, default: () => new Date().toLocaleDateString() },
     hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
-    chofer: String,
+    chofer: { type: String, default: "Pendiente" },
     pasajero: String,
+    pasajeroTel: String,
+    origen: String,
+    destino: String,
+    precio: String,
+    distancia: String,
     estado: { type: String, default: "pendiente" }, 
     timestamp: { type: Date, default: Date.now }
 });
@@ -69,6 +74,26 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
+// NUEVA RUTA: SOLICITAR VIAJE
+app.post('/solicitar-viaje', async (req, res) => {
+    try {
+        const d = req.body;
+        const nuevoViaje = new Viaje({
+            pasajero: d.pasajeroNombre,
+            pasajeroTel: d.pasajeroTel,
+            origen: d.origen,
+            destino: d.destino,
+            precio: d.precio,
+            distancia: d.distancia,
+            estado: "pendiente"
+        });
+        await nuevoViaje.save();
+        res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
+    } catch (e) {
+        res.status(500).json({ error: "Error al solicitar viaje" });
+    }
+});
+
 app.get('/obtener-viajes', async (req, res) => {
     try {
         const viajes = await Viaje.find().sort({ timestamp: -1 }).limit(50);
@@ -92,7 +117,8 @@ app.post('/eliminar-usuario', async (req, res) => {
 
 app.post('/bloquear-usuario', async (req, res) => {
     try {
-        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { bloqueado: true });
+        const { telefono, bloqueado } = req.body;
+        await Usuario.findOneAndUpdate({ telefono: telefono }, { bloqueado: bloqueado });
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
@@ -186,6 +212,19 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
         const u = await Usuario.findOne({ telefono: req.params.telefono });
         if (!u) return res.status(404).send();
         res.json({ pagoActivo: u.vencimientoPago > new Date(), vencimiento: u.vencimientoPago });
+    } catch (e) { res.status(500).send(); }
+});
+
+// NUEVA RUTA: OBTENER CHOFERES ACTIVOS (Para que el mapa del pasajero funcione)
+app.get('/obtener-choferes-activos', async (req, res) => {
+    try {
+        // Buscamos choferes que estén aprobados y tengan el pago al día
+        const choferes = await Usuario.find({ 
+            rol: "chofer", 
+            aprobado: true, 
+            vencimientoPago: { $gt: new Date() } 
+        });
+        res.json(choferes);
     } catch (e) { res.status(500).send(); }
 });
 
