@@ -153,8 +153,6 @@ function actualizarTablaConductores(conds) {
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
         const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
-        
-        // El botón cambia de color según el estado docOk
         const colorBotonTilde = docOk ? '#4caf50' : '#f44336';
 
         tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button class="btn-accion" style="background:${colorBotonTilde};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button></td></tr>`;
@@ -188,29 +186,33 @@ async function cargarViajesReales() {
 
 async function bloquearPasajero(tel) {
     if(confirm("¿Bloquear permanentemente?")) {
-        const btn = document.getElementById(`btnLock-${tel}`);
-        if(btn) btn.style.background = "#f44336";
         await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+        cargarDatosReales();
     }
 }
 
 async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar definitivamente?")) {
-        const fila = document.getElementById(`fila-${tel}`);
-        if(fila) fila.remove();
         await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+        cargarDatosReales();
     }
 }
 
 async function toggleDocumentacion(tel, estadoActual) {
     const accion = estadoActual ? "INHABILITAR" : "APROBAR";
-    if(confirm(`¿Desea ${accion} la documentación de este chofer?`)) {
-        await fetch('/aprobar-chofer', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, aprobado: !estadoActual }) 
-        });
-        cargarDatosReales();
+    if(confirm(`¿Desea ${accion} la documentación?`)) {
+        try {
+            const res = await fetch('/aprobar-chofer', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ telefono: tel, aprobado: !estadoActual }) 
+            });
+            if(res.ok) {
+                await cargarDatosReales(); // Esto refresca toda la tabla y colores
+            } else {
+                alert("Error en el servidor");
+            }
+        } catch(e) { alert("Error de conexión"); }
     }
 }
 
