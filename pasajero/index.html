@@ -197,19 +197,36 @@ function pedirViaje() {
     const distancia = document.getElementById("infoDistancia").innerText;
     
     if(!destino) return alert("Ingresá un destino");
+
+    const paradas = [];
+    document.querySelectorAll(".input-parada").forEach(inp => { 
+        if(inp.value) paradas.push(inp.value); 
+    });
     
     const pedido = { 
         pasajeroTel: sesion.telefono, 
         pasajeroNombre: sesion.nombre || "Pasajero", 
         origen, 
         destino, 
+        paradas,
         precio, 
         distancia,
         timestamp: Date.now() 
     };
     
-    fetch("/solicitar-viaje", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(pedido) })
-    .then(() => alert("Buscando chofer..."));
+    fetch("/solicitar-viaje", { 
+        method: "POST", 
+        headers: {"Content-Type": "application/json"}, 
+        body: JSON.stringify(pedido) 
+    })
+    .then(res => {
+        if(res.ok) {
+            alert("Buscando chofer...");
+        } else {
+            alert("Error al solicitar viaje. Intente nuevamente.");
+        }
+    })
+    .catch(err => alert("Error de conexión con el servidor."));
 }
 
 function agregarParada() {
