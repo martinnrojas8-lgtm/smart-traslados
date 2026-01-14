@@ -42,7 +42,7 @@ const ViajeSchema = new mongoose.Schema({
     fecha: { type: String, default: () => new Date().toLocaleDateString() },
     hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
     chofer: { type: String, default: "Pendiente" },
-    choferTel: { type: String, default: null }, // Nuevo campo para vincular
+    choferTel: { type: String, default: null },
     pasajero: String,
     pasajeroTel: String,
     origen: String,
@@ -75,7 +75,6 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// NUEVA RUTA: SOLICITAR VIAJE
 app.post('/solicitar-viaje', async (req, res) => {
     try {
         const d = req.body;
@@ -90,21 +89,16 @@ app.post('/solicitar-viaje', async (req, res) => {
         });
         await nuevoViaje.save();
         res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
-    } catch (e) {
-        res.status(500).json({ error: "Error al solicitar viaje" });
-    }
+    } catch (e) { res.status(500).json({ error: "Error al solicitar viaje" }); }
 });
 
-// NUEVA RUTA: CHOFER BUSCA VIAJES PENDIENTES
 app.get('/viajes-pendientes', async (req, res) => {
     try {
-        // Buscamos viajes que aún no tengan chofer
         const viajes = await Viaje.find({ estado: "pendiente" }).sort({ timestamp: -1 });
         res.json(viajes);
-    } catch (e) { res.status(500).json({ error: "Error al obtener viajes" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-// NUEVA RUTA: CHOFER ACEPTA EL VIAJE
 app.post('/aceptar-viaje', async (req, res) => {
     try {
         const { viajeId, choferNombre, choferTel } = req.body;
@@ -114,7 +108,16 @@ app.post('/aceptar-viaje', async (req, res) => {
             estado: "aceptado"
         }, { new: true });
         res.json({ mensaje: "Viaje aceptado", viaje });
-    } catch (e) { res.status(500).json({ error: "Error al aceptar viaje" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+// NUEVA RUTA PARA RECHAZAR / LIMPIAR PENDIENTES
+app.post('/rechazar-viaje', async (req, res) => {
+    try {
+        const { viajeId } = req.body;
+        await Viaje.findByIdAndUpdate(viajeId, { estado: "cancelado" });
+        res.json({ mensaje: "Viaje rechazado" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 app.get('/obtener-viajes', async (req, res) => {
@@ -126,12 +129,8 @@ app.get('/obtener-viajes', async (req, res) => {
 
 app.post('/aprobar-chofer', async (req, res) => {
     try {
-        // Corregido: Ahora soporta el toggle del Admin si mandas el campo "aprobado"
         const nuevoEstado = req.body.aprobado !== undefined ? req.body.aprobado : true;
-        await Usuario.findOneAndUpdate(
-            { telefono: req.body.telefono }, 
-            { aprobado: nuevoEstado, estadoRevision: nuevoEstado ? "aprobado" : "pendiente" }
-        );
+        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { aprobado: nuevoEstado, estadoRevision: nuevoEstado ? "aprobado" : "pendiente" });
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
@@ -156,14 +155,14 @@ app.post('/actualizar-tarifas', async (req, res) => {
         const { precioBase, precioKm } = req.body;
         await Tarifa.findOneAndUpdate({}, { precioBase, precioKm }, { upsert: true });
         res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error al guardar" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 app.get('/obtener-tarifas', async (req, res) => {
     try {
         const tarifas = await Tarifa.findOne();
         res.json(tarifas || { precioBase: 3500, precioKm: 900 });
-    } catch (e) { res.status(500).json({ error: "Error al leer" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 app.post('/login', async (req, res) => {
@@ -218,7 +217,7 @@ app.post('/crear-token', async (req, res) => {
         const nuevoToken = new Token({ codigo: req.body.codigo });
         await nuevoToken.save();
         res.json({ mensaje: "Token creado" });
-    } catch (e) { res.status(500).json({ error: "Error al crear token" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 app.post('/validar-token', async (req, res) => {
@@ -243,14 +242,9 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
     } catch (e) { res.status(500).send(); }
 });
 
-// NUEVA RUTA: OBTENER CHOFERES ACTIVOS (Para que el mapa del pasajero funcione)
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
-        const choferes = await Usuario.find({ 
-            rol: "chofer", 
-            aprobado: true, 
-            vencimientoPago: { $gt: new Date() } 
-        });
+        const choferes = await Usuario.find({ rol: "chofer", aprobado: true, vencimientoPago: { $gt: new Date() } });
         res.json(choferes);
     } catch (e) { res.status(500).send(); }
 });
