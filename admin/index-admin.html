@@ -124,6 +124,7 @@ function mostrar(id){
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
     if(id === 'tarifas') cargarTarifas();
+    if(id === 'conductores' || id === 'pasajeros') cargarDatosReales();
 }
 
 async function cargarDatosReales() {
@@ -153,7 +154,7 @@ function actualizarTablaPasajeros(pasas) {
     let tP = document.getElementById('tablaPasajeros');
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
-        const estaBloqueado = p.bloqueado === true;
+        const estaBloqueado = (p.bloqueado === true);
         tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${estaBloqueado ? '#f44336' : '#4caf50'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">${estaBloqueado ? '🔓' : '🔒'}</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
     });
 }
@@ -173,41 +174,40 @@ async function cargarViajesReales() {
     } catch (e) { console.error("Error viajes"); }
 }
 
-async function bloquearPasajero(tel, estaBloqueado) {
-    const accion = estaBloqueado ? "desbloquear" : "bloquear";
-    if(confirm(`¿Desea ${accion} a este pasajero?`)) {
-        const res = await fetch('/bloquear-usuario', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, estado: !estaBloqueado }) 
-        });
-        if(res.ok) {
-            cargarDatosReales(); 
-        }
+async function bloquearPasajero(tel, actualmenteBloqueado) {
+    const nuevaAccion = actualmenteBloqueado ? "desbloquear" : "bloquear";
+    if(confirm(`¿Desea ${nuevaAccion} a este pasajero?`)) {
+        try {
+            const res = await fetch('/bloquear-usuario', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ telefono: tel, estado: !actualmenteBloqueado }) 
+            });
+            await cargarDatosReales();
+        } catch (e) { alert("Error de conexión"); }
     }
 }
 
 async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar definitivamente?")) {
-        const res = await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
-        if(res.ok) {
-            const fila = document.getElementById(`fila-${tel}`);
-            if(fila) fila.remove();
-        }
+        try {
+            const res = await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+            await cargarDatosReales();
+        } catch (e) { alert("Error al eliminar"); }
     }
 }
 
-async function aprobarDocumentacion(tel, estaAprobado) {
-    const accion = estaAprobado ? "desaprobar" : "aprobar";
-    if(confirm(`¿Desea ${accion} la documentación?`)) {
-        const res = await fetch('/aprobar-chofer', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, aprobado: !estaAprobado }) 
-        });
-        if(res.ok) {
-            cargarDatosReales();
-        }
+async function aprobarDocumentacion(tel, actualmenteAprobado) {
+    const nuevaAccion = actualmenteAprobado ? "desaprobar" : "aprobar";
+    if(confirm(`¿Desea ${nuevaAccion} la documentación?`)) {
+        try {
+            const res = await fetch('/aprobar-chofer', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ telefono: tel, aprobado: !actualmenteAprobado }) 
+            });
+            await cargarDatosReales();
+        } catch (e) { alert("Error de conexión"); }
     }
 }
 
