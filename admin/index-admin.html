@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Traslados – Panel Propietario</title>
 
-<link rel="icon" type="image/png" href="../Public/IMG_20260103_204207.png">
-<link rel="apple-touch-icon" href="../Public/IMG_20260103_204207.png">
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png">
 
 <style>
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
 header{ background:#111; padding:15px; text-align:center; font-size:22px; font-weight:bold; border-bottom: 2px solid #4caf50; display: flex; align-items: center; justify-content: center; gap: 10px; }
-.logo-header { height: 30px; width: auto; }
+.logo-header { height: 35px; width: auto; border-radius: 5px; }
 .menu{ display:flex; overflow-x: auto; background:#1a1a1a; white-space: nowrap; border-bottom: 1px solid #333; }
 .menu button{ padding:15px 20px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; font-size:14px; flex-shrink: 0; }
 .menu button:hover{ background:#333; }
@@ -35,7 +35,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <body>
 
 <header>
-    <img src="../Public/IMG_20260103_204207.png" class="logo-header" alt="logo">
+    <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" class="logo-header" alt="logo">
     <span>Smart Traslados – Admin</span>
 </header>
 
@@ -74,7 +74,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         
         <div id="contenedorFicha" style="display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
-            <img src="../Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;">
+            <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;">
             <div style="font-size: 20px; font-weight: bold; color: #111; margin-bottom: 5px;">SMART TRASLADOS</div>
             <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
             <div style="font-size: 11px; color: #333; margin-bottom: 5px;">CÓDIGO DE ACCESO:</div>
@@ -117,7 +117,6 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <script>
-/* TODA TU LÓGICA DE JAVASCRIPT SE MANTIENE 100% IGUAL E INTACTA */
 let listaUsuariosGlobal = [];
 
 function mostrar(id){
