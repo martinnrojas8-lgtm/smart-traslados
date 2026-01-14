@@ -1,27 +1,28 @@
 const express = require('express');
-const path = require('path');
 const mongoose = require('mongoose');
-const cors = require('cors'); 
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const path = require('path');
+
 const app = express();
 
+// Configuración para permitir imágenes pesadas (Base64)
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Configuración para recibir fotos pesadas
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// CONEXIÓN A MONGODB
+mongoose.connect('mongodb+srv://traslados:traslados@cluster0.z5i6p.mongodb.net/smart-traslados?retryWrites=true&w=majority')
+    .then(() => console.log("✅ MongoDB Conectado"))
+    .catch(err => console.error("❌ Error Mongo:", err));
 
-// --- CONEXIÓN A MONGODB ---
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://martinnrojas8:martin123@cluster0.v7z8x.mongodb.net/smart-traslados?retryWrites=true&w=majority';
+// --- MODELOS DE DATOS ---
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("Conectado a MongoDB ✅"))
-  .catch(err => console.error("Error Mongo ❌:", err));
-
-// --- ESQUEMAS ---
 const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
-    rol: String,
     nombre: String,
+    rol: String, // 'pasajero' o 'chofer'
     foto: String,
     autoModelo: String,
     autoPatente: String,
@@ -29,228 +30,182 @@ const UsuarioSchema = new mongoose.Schema({
     fotoCarnet: String,
     fotoSeguro: String,
     fotoTarjeta: String,
-    pagoActivo: { type: Boolean, default: false }, 
-    vencimientoPago: { type: Date, default: null },
-    estadoRevision: { type: String, default: "pendiente" },
-    aprobado: { type: Boolean, default: false },
-    bloqueado: { type: Boolean, default: false },
     fechaRegistro: { type: Date, default: Date.now }
 });
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
 const ViajeSchema = new mongoose.Schema({
-    fecha: { type: String, default: () => new Date().toLocaleDateString() },
-    hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
-    chofer: { type: String, default: "Pendiente" },
-    choferTel: { type: String, default: null },
     pasajero: String,
     pasajeroTel: String,
     origen: String,
     destino: String,
+    paradas: Array,
     precio: String,
     distancia: String,
-    estado: { type: String, default: "pendiente" }, 
+    estado: { type: String, default: "pendiente" }, // pendiente, aceptado, terminado
+    chofer: String,
+    choferTel: String,
+    autoModelo: String,
+    autoPatente: String,
+    autoColor: String,
     timestamp: { type: Date, default: Date.now }
 });
 const Viaje = mongoose.model('Viaje', ViajeSchema);
 
-const TokenSchema = new mongoose.Schema({
-    codigo: { type: String, unique: true },
-    usado: { type: Boolean, default: false },
-    usadoPor: { type: String, default: null },
-    fechaUso: { type: Date, default: null },
-    fechaCreacion: { type: Date, default: Date.now }
+const UbicacionSchema = new mongoose.Schema({
+    telefono: { type: String, unique: true },
+    lat: Number,
+    lng: Number,
+    estado: String, // disponible u ocupado
+    ultimaAct: { type: Date, default: Date.now }
 });
-const Token = mongoose.model('Token', TokenSchema);
+const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
-const TarifaSchema = new mongoose.Schema({
-    precioBase: { type: Number, default: 3500 },
-    precioKm: { type: Number, default: 900 }
+const SuscripcionSchema = new mongoose.Schema({
+    telefono: { type: String, unique: true },
+    pagoActivo: { type: Boolean, default: false },
+    vencimiento: Date
 });
-const Tarifa = mongoose.model('Tarifa', TarifaSchema);
+const Suscripcion = mongoose.model('Suscripcion', SuscripcionSchema);
 
-// --- RUTAS ---
-app.use(express.static(path.join(__dirname, 'Public')));
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
-app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
-app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
-
-app.post('/solicitar-viaje', async (req, res) => {
-    try {
-        const d = req.body;
-        const nuevoViaje = new Viaje({
-            pasajero: d.pasajeroNombre,
-            pasajeroTel: d.pasajeroTel,
-            origen: d.origen,
-            destino: d.destino,
-            precio: d.precio,
-            distancia: d.distancia,
-            estado: "pendiente"
-        });
-        await nuevoViaje.save();
-        res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
-    } catch (e) { res.status(500).json({ error: "Error al solicitar viaje" }); }
-});
-
-app.get('/viajes-pendientes', async (req, res) => {
-    try {
-        const viajes = await Viaje.find({ estado: "pendiente" }).sort({ timestamp: -1 });
-        res.json(viajes);
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/aceptar-viaje', async (req, res) => {
-    try {
-        const { viajeId, choferNombre, choferTel } = req.body;
-        const viaje = await Viaje.findByIdAndUpdate(viajeId, {
-            chofer: choferNombre,
-            choferTel: choferTel,
-            estado: "aceptado"
-        }, { new: true });
-        res.json({ mensaje: "Viaje aceptado", viaje });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-// NUEVA RUTA PARA RECHAZAR / LIMPIAR PENDIENTES
-app.post('/rechazar-viaje', async (req, res) => {
-    try {
-        const { viajeId } = req.body;
-        await Viaje.findByIdAndUpdate(viajeId, { estado: "cancelado" });
-        res.json({ mensaje: "Viaje rechazado" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.get('/obtener-viajes', async (req, res) => {
-    try {
-        const viajes = await Viaje.find().sort({ timestamp: -1 }).limit(50);
-        res.json(viajes);
-    } catch (e) { res.status(500).send(e); }
-});
-
-app.post('/aprobar-chofer', async (req, res) => {
-    try {
-        const nuevoEstado = req.body.aprobado !== undefined ? req.body.aprobado : true;
-        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { aprobado: nuevoEstado, estadoRevision: nuevoEstado ? "aprobado" : "pendiente" });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/eliminar-usuario', async (req, res) => {
-    try {
-        await Usuario.findOneAndDelete({ telefono: req.body.telefono });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/bloquear-usuario', async (req, res) => {
-    try {
-        const { telefono, bloqueado } = req.body;
-        await Usuario.findOneAndUpdate({ telefono: telefono }, { bloqueado: bloqueado });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/actualizar-tarifas', async (req, res) => {
-    try {
-        const { precioBase, precioKm } = req.body;
-        await Tarifa.findOneAndUpdate({}, { precioBase, precioKm }, { upsert: true });
-        res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.get('/obtener-tarifas', async (req, res) => {
-    try {
-        const tarifas = await Tarifa.findOne();
-        res.json(tarifas || { precioBase: 3500, precioKm: 900 });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
+// --- RUTAS DE USUARIOS Y LOGIN ---
 
 app.post('/login', async (req, res) => {
+    const { telefono } = req.body;
     try {
-        const tel = req.body.telefono.trim();
-        const rolElegido = req.body.rol.toLowerCase().trim();
-        const usuario = await Usuario.findOne({ telefono: tel, rol: rolElegido });
-        if (usuario) {
-            if (usuario.bloqueado) return res.status(403).json({ mensaje: "Usuario bloqueado" });
-            usuario.pagoActivo = usuario.vencimientoPago && usuario.vencimientoPago > new Date();
-            await usuario.save();
-            res.json({ mensaje: "Ok", usuario: usuario });
-        } else { res.status(404).json({ mensaje: "Usuario no encontrado" }); }
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.post('/register', async (req, res) => {
-    try {
-        const { telefono, rol } = req.body;
-        const existe = await Usuario.findOne({ telefono });
-        if(existe) {
-            if (existe.bloqueado) return res.status(403).json({ mensaje: "Número bloqueado" });
-            return res.json({ mensaje: "Ok", usuario: existe });
+        let user = await Usuario.findOne({ telefono });
+        if (!user) {
+            user = new Usuario({ telefono, rol: 'pasajero' });
+            await user.save();
         }
-        const nuevo = new Usuario({ telefono, rol: rol.toLowerCase() });
-        await nuevo.save();
-        res.json({ mensaje: "Ok", usuario: nuevo });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
-
-app.get('/obtener-usuarios', async (req, res) => {
-    try {
-        const usuarios = await Usuario.find().sort({ fechaRegistro: -1 });
-        res.json(usuarios);
-    } catch (e) { res.status(500).send(e); }
+        res.json(user);
+    } catch (e) { res.status(500).json({ error: "Error en login" }); }
 });
 
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
-        const d = req.body;
-        await Usuario.findOneAndUpdate({ telefono: d.telefono }, { 
-            nombre: d.nombre, autoModelo: d.modelo, autoPatente: d.patente, 
-            autoColor: d.color, foto: d.fotoPerfil, fotoCarnet: d.fotoCarnet,
-            fotoSeguro: d.fotoSeguro, fotoTarjeta: d.fotoTarjeta 
+        const { telefono, nombre, modelo, patente, color, fotoPerfil, fotoCarnet, fotoSeguro, fotoTarjeta } = req.body;
+        await Usuario.findOneAndUpdate({ telefono }, {
+            nombre,
+            autoModelo: modelo,
+            autoPatente: patente,
+            autoColor: color,
+            foto: fotoPerfil,
+            fotoCarnet,
+            fotoSeguro,
+            fotoTarjeta,
+            rol: "chofer"
+        }, { upsert: true });
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error al actualizar perfil" }); }
+});
+
+app.get('/obtener-usuarios', async (req, res) => {
+    try {
+        const u = await Usuario.find();
+        res.json(u);
+    } catch (e) { res.status(500).send(e); }
+});
+
+// --- RUTAS DE VIAJES ---
+
+app.post('/solicitar-viaje', async (req, res) => {
+    try {
+        const v = new Viaje(req.body);
+        await v.save();
+        res.json({ id: v._id });
+    } catch (e) { res.status(500).json({ error: "Error al solicitar" }); }
+});
+
+app.get('/viajes-pendientes', async (req, res) => {
+    try {
+        const v = await Viaje.find({ estado: "pendiente" }).sort({ timestamp: -1 });
+        res.json(v);
+    } catch (e) { res.status(500).send(e); }
+});
+
+app.get('/obtener-viajes', async (req, res) => {
+    try {
+        const v = await Viaje.find();
+        res.json(v);
+    } catch (e) { res.status(500).send(e); }
+});
+
+app.post('/aceptar-viaje', async (req, res) => {
+    try {
+        const { viajeId, choferNombre, choferTel, autoModelo, autoPatente, autoColor } = req.body;
+        await Viaje.findByIdAndUpdate(viajeId, {
+            chofer: choferNombre,
+            choferTel: choferTel,
+            autoModelo: autoModelo,
+            autoPatente: autoPatente,
+            autoColor: autoColor,
+            estado: "aceptado"
         });
         res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
+    } catch (e) { res.status(500).json({ error: "Error al aceptar viaje" }); }
 });
 
-app.post('/crear-token', async (req, res) => {
+app.post('/rechazar-viaje', async (req, res) => {
     try {
-        const nuevoToken = new Token({ codigo: req.body.codigo });
-        await nuevoToken.save();
-        res.json({ mensaje: "Token creado" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
+        await Viaje.findByIdAndDelete(req.body.viajeId);
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error al rechazar" }); }
 });
 
-app.post('/validar-token', async (req, res) => {
-    try {
-        const { codigo, telefono } = req.body;
-        const t = await Token.findOne({ codigo: codigo.trim(), usado: false });
-        if (t) {
-            const vencimiento = new Date(Date.now() + (24 * 60 * 60 * 1000));
-            t.usado = true; t.usadoPor = telefono; t.fechaUso = new Date();
-            await t.save();
-            await Usuario.findOneAndUpdate({ telefono }, { pagoActivo: true, vencimientoPago: vencimiento });
-            res.json({ ok: true, vencimiento: vencimiento });
-        } else { res.status(400).json({ ok: false, mensaje: "Inválido" }); }
-    } catch (e) { res.status(500).json({ error: "Error" }); }
-});
+// --- RUTAS DE UBICACIÓN Y MAPA ---
 
-app.get('/estado-suscripcion/:telefono', async (req, res) => {
+app.post('/actualizar-ubicacion-chofer', async (req, res) => {
+    const { telefono, lat, lng, estado } = req.body;
     try {
-        const u = await Usuario.findOne({ telefono: req.params.telefono });
-        if (!u) return res.status(404).send();
-        res.json({ pagoActivo: u.vencimientoPago > new Date(), vencimiento: u.vencimientoPago });
-    } catch (e) { res.status(500).send(); }
+        await Ubicacion.findOneAndUpdate(
+            { telefono }, 
+            { lat, lng, estado, ultimaAct: Date.now() }, 
+            { upsert: true }
+        );
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).send(e); }
 });
 
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
-        const choferes = await Usuario.find({ rol: "chofer", aprobado: true, vencimientoPago: { $gt: new Date() } });
-        res.json(choferes);
-    } catch (e) { res.status(500).send(); }
+        const cincoMin = new Date(Date.now() - 5 * 60 * 1000);
+        const c = await Ubicacion.find({ ultimaAct: { $gt: cincoMin } });
+        res.json(c);
+    } catch (e) { res.status(500).send(e); }
 });
 
-app.get('/admin-panel', (req, res) => { res.sendFile(path.join(__dirname, 'admin', 'index-admin.html')); });
-app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'Public', 'login.html')); });
+// --- RUTAS DE ADMINISTRACIÓN Y PAGOS ---
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor Smart Online en puerto ${PORT} 🚀`));
+app.get('/estado-suscripcion/:tel', async (req, res) => {
+    try {
+        const s = await Suscripcion.findOne({ telefono: req.params.tel });
+        if (s && s.vencimiento > new Date()) {
+            res.json({ pagoActivo: true, vencimiento: s.vencimiento });
+        } else {
+            res.json({ pagoActivo: false });
+        }
+    } catch (e) { res.status(500).send(e); }
+});
+
+// Ruta para que el Admin active choferes manualmente o por sistema
+app.post('/activar-chofer', async (req, res) => {
+    const { telefono, dias } = req.body;
+    const vencimiento = new Date();
+    vencimiento.setDate(vencimiento.getDate() + parseInt(dias));
+    try {
+        await Suscripcion.findOneAndUpdate(
+            { telefono }, 
+            { pagoActivo: true, vencimiento }, 
+            { upsert: true }
+        );
+        res.json({ mensaje: "Chofer activado correctamente" });
+    } catch (e) { res.status(500).send(e); }
+});
+
+// --- INICIO DEL SERVIDOR ---
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Smart Traslados corriendo en puerto ${PORT}`);
+});
