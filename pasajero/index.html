@@ -6,29 +6,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.json">
 <style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; overflow-x: hidden; }
   header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #00c853; }
   .screen{ padding:15px; }
-  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; box-sizing: border-box; }
+  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
   input{ width:100%; padding:12px; margin:5px 0; border-radius:8px; border:none; background:#222; color:#fff; box-sizing:border-box; }
   button{ padding:12px; width:100%; margin-top:10px; border:none; border-radius:8px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; }
   .price-box{ font-size:24px; color:#00c853; font-weight:bold; text-align:center; margin-bottom:15px; border: 1px dashed #00c853; padding: 10px; border-radius: 8px; }
   #map{ width:100%; height:300px; border-radius:10px; margin-bottom:10px; }
   .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; background:#333; display:flex; align-items:center; justify-content:center; }
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
-  .stop-item{ display:flex; gap:5px; align-items:center; margin-top:5px; }
-  .btn-del{ background:#ff5252; width:45px; flex-shrink:0; }
-  .distancia-info { text-align: center; color: #aaa; font-size: 14px; margin-top: 10px; margin-bottom: 5px; }
-  
-  /* Estilo para el banner de instalación */
-  #bannerInstalar { display: none; background: #00c853; color: #000; padding: 10px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; cursor: pointer; border: none; width: 100%; }
-
-  /* Estilo para Modal de Chofer Encontrado */
-  #modalConfirmacion { 
-    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center;
-  }
-  .card-confirmacion { background: #111; border: 2px solid #00c853; padding: 30px; border-radius: 20px; width: 90%; }
+  #modalConfirmacion { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; }
+  #panelSeguimiento { display: none; background: #111; border-top: 2px solid #00c853; padding: 20px; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; z-index: 100; border-radius: 20px 20px 0 0; }
 </style>
 </head>
 <body>
@@ -42,249 +31,104 @@
 </header>
 
 <div id="modalConfirmacion">
-    <div class="card-confirmacion">
+    <div style="background: #111; border: 2px solid #00c853; padding: 30px; border-radius: 20px; width: 90%;">
         <h2 style="color:#00c853;">¡CHOFER EN CAMINO!</h2>
-        <div style="font-size: 50px; margin: 20px 0;">🚕</div>
-        <p id="infoChofer" style="font-size: 18px; font-weight: bold;">Buscando datos...</p>
-        <p style="color: #888;">Tu chofer ya aceptó el viaje y se dirige a tu ubicación.</p>
-        <button onclick="location.reload()" style="background: #222; color: #fff; margin-top: 20px;">ENTENDIDO</button>
+        <div style="font-size: 50px; margin: 10px 0;">🚕</div>
+        <p id="infoChoferM" style="font-size: 18px; font-weight: bold;"></p>
+        <p id="infoAutoM" style="color: #aaa; margin-bottom: 20px;"></p>
+        <button onclick="iniciarModoSeguimiento()">VER EN EL MAPA</button>
     </div>
 </div>
 
 <div class="screen">
-  <button id="bannerInstalar" onclick="instalarApp()">📲 DESCARGAR APP SMART</button>
-
   <div class="card" id="cardPedido">
     <div id="map"></div>
     <input type="text" id="origen" placeholder="Cargando ubicación...">
     <input type="text" id="destino" placeholder="¿A dónde vas?">
-    <div id="contenedorParadas"></div>
-    <button style="background:#333; color:#fff; font-size:12px;" onclick="agregarParada()">+ Agregar Parada</button>
-    
-    <div class="distancia-info" id="infoDistancia">Distancia: 0 km</div>
-    
+    <div id="infoDistancia" style="text-align:center; color:#aaa; margin-top:10px;">Distancia: 0 km</div>
     <div class="price-box" id="cuadroPrecio">Total: $0</div>
     <button id="btnPedir" onclick="pedirViaje()">SOLICITAR AHORA</button>
   </div>
 
-  <div id="estadoEspera" style="display:none; text-align: center; padding: 20px;">
+  <div id="estadoEspera" style="display:none; text-align: center;">
       <div class="price-box">BUSCANDO CHOFER...</div>
-      <p>Estamos notificando a los conductores cercanos.</p>
       <div style="width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid #00c853; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;"></div>
   </div>
 </div>
 
-<style>
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>
+<div id="panelSeguimiento">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="font-size: 30px;">🚕</div>
+        <div style="flex-grow: 1;">
+            <div id="txtC" style="font-weight: bold; color: #00c853;"></div>
+            <div id="txtA" style="font-size: 14px; color: #ccc;"></div>
+        </div>
+        <button id="btnLlamar" style="width:auto; padding:8px 12px; background:#222; color:#fff; border:1px solid #444;">📞</button>
+    </div>
+    <button onclick="location.reload()" style="background:#ff5252; color:#fff; margin-top:10px; font-size:12px;">FINALIZAR</button>
+</div>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCeXV1ZmTBpGBIE6MwG8HvIAXziKUPK1d8&libraries=places"></script>
 <script>
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-let map, directionsService, directionsRenderer;
-let marcadoresChoferes = {};
-let deitPrompt; 
-let idViajeActual = null;
-let intervaloSeguimiento = null;
-
-let TARIFA_BASE_4KM = 3500; 
-let PRECIO_POR_KM = 900;
-const LIMITE_KM_BASE = 4;
-
-const SALADILLO_COORD = { lat: -35.6380, lng: -59.7793 };
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deitPrompt = e;
-    document.getElementById('bannerInstalar').style.display = 'block';
-});
-
-function instalarApp() {
-    if (deitPrompt) {
-        deitPrompt.prompt();
-        deitPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                document.getElementById('bannerInstalar').style.display = 'none';
-            }
-            deitPrompt = null;
-        });
-    }
-}
+let map, directionsService, directionsRenderer, markerC, idViaje, viajeInfo;
 
 async function initApp() {
     if (!sesion.telefono) return location.href = "/";
-    
-    if(sesion.foto) {
-        document.getElementById("fotoHeader").src = sesion.foto;
-        document.getElementById("fotoHeader").style.display = "block";
-        document.getElementById("iconoUser").style.display = "none";
-    }
-
-    map = new google.maps.Map(document.getElementById("map"), {
-        center: SALADILLO_COORD, 
-        zoom: 14, 
-        disableDefaultUI: true
-    });
-
+    if(sesion.foto) { document.getElementById("fotoHeader").src = sesion.foto; document.getElementById("fotoHeader").style.display = "block"; }
+    map = new google.maps.Map(document.getElementById("map"), { center: {lat:-35.638, lng:-59.779}, zoom: 14, disableDefaultUI: true });
     directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
-
-    const setupAuto = (id) => {
-        const auto = new google.maps.places.Autocomplete(document.getElementById(id), {
-            componentRestrictions: { country: "ar" },
-            fields: ["formatted_address", "geometry"]
-        });
-        auto.addListener("place_changed", calcularRuta);
-    };
-    
-    setupAuto("origen"); 
-    setupAuto("destino");
-
-    if(navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(p => {
-            const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
-            map.setCenter(pos);
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: pos }, (results, status) => {
-                if (status === "OK" && results[0]) {
-                    document.getElementById("origen").value = results[0].formatted_address;
-                    calcularRuta();
-                } else {
-                    document.getElementById("origen").placeholder = "No se pudo obtener la dirección";
-                }
-            });
-        }, () => {
-            document.getElementById("origen").placeholder = "Activa el GPS para el origen";
-        });
-    }
-    
-    setInterval(obtenerChoferesCercanos, 5000);
+    directionsRenderer = new google.maps.DirectionsRenderer({ map });
+    const autoO = new google.maps.places.Autocomplete(document.getElementById("origen"), { componentRestrictions:{country:"ar"} });
+    const autoD = new google.maps.places.Autocomplete(document.getElementById("destino"), { componentRestrictions:{country:"ar"} });
+    autoO.addListener("place_changed", calcularRuta); autoD.addListener("place_changed", calcularRuta);
+    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p => {
+        const pos = { lat: p.coords.latitude, lng: p.coords.longitude }; map.setCenter(pos);
+        new google.maps.Geocoder().geocode({location:pos}, r => { if(r[0]) document.getElementById("origen").value=r[0].formatted_address; calcularRuta(); });
+    });
 }
 
-async function calcularRuta() {
-    const origen = document.getElementById("origen").value;
-    const destino = document.getElementById("destino").value;
-    if(!origen || !destino) return;
-
-    try {
-        const res = await fetch('/obtener-tarifas');
-        const data = await res.json();
-        if (data.precioBase) TARIFA_BASE_4KM = parseFloat(data.precioBase);
-        if (data.precioKm) PRECIO_POR_KM = parseFloat(data.precioKm);
-    } catch (e) { console.log("Error tarifas"); }
-
-    const waypoints = [];
-    document.querySelectorAll(".input-parada").forEach(inp => { 
-        if(inp.value) waypoints.push({location: inp.value, stopover: true}); 
-    });
-
-    directionsService.route({ origin: origen, destination: destino, waypoints: waypoints, travelMode: 'DRIVING' }, (res, stat) => {
-        if (stat === "OK") {
+function calcularRuta() {
+    const o = document.getElementById("origen").value, d = document.getElementById("destino").value;
+    if(!o || !d) return;
+    directionsService.route({ origin:o, destination:d, travelMode:'DRIVING' }, (res, stat) => {
+        if(stat === 'OK') {
             directionsRenderer.setDirections(res);
-            let distMetros = 0; 
-            res.routes[0].legs.forEach(l => distMetros += l.distance.value);
-            let distKm = distMetros / 1000;
-            let precioFinal = (distKm <= LIMITE_KM_BASE) ? TARIFA_BASE_4KM : distKm * PRECIO_POR_KM;
-
-            document.getElementById("infoDistancia").innerText = "Distancia: " + distKm.toFixed(1) + " km";
-            document.getElementById("cuadroPrecio").innerText = "Total: $" + Math.round(precioFinal);
+            let dist = res.routes[0].legs[0].distance.value / 1000;
+            let precio = dist <= 4 ? 3500 : dist * 900;
+            document.getElementById("infoDistancia").innerText = "Distancia: " + dist.toFixed(1) + " km";
+            document.getElementById("cuadroPrecio").innerText = "Total: $" + Math.round(precio);
         }
-    });
-}
-
-function obtenerChoferesCercanos() {
-    fetch("/obtener-choferes-activos")
-    .then(r => r.json())
-    .then(choferes => {
-        const idsRecibidos = choferes.map(c => c.telefono);
-        for (let id in marcadoresChoferes) {
-            if (!idsRecibidos.includes(id)) {
-                marcadoresChoferes[id].setMap(null);
-                delete marcadoresChoferes[id];
-            }
-        }
-        choferes.forEach(chofer => {
-            const pos = { lat: chofer.lat, lng: chofer.lng };
-            const color = (chofer.estado === "ocupado") ? "#ff5252" : "#00c853";
-            if (marcadoresChoferes[chofer.telefono]) {
-                marcadoresChoferes[chofer.telefono].setPosition(pos);
-            } else {
-                marcadoresChoferes[chofer.telefono] = new google.maps.Marker({
-                    position: pos, map: map,
-                    icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, fillColor: color, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 1 }
-                });
-            }
-        });
     });
 }
 
 function pedirViaje() {
-    const origen = document.getElementById("origen").value;
-    const destino = document.getElementById("destino").value;
-    const precio = document.getElementById("cuadroPrecio").innerText;
-    const distancia = document.getElementById("infoDistancia").innerText;
-    
-    if(!destino) return alert("Ingresá un destino");
+    const pedido = { pasajeroTel: sesion.telefono, pasajeroNombre: sesion.nombre, origen: document.getElementById("origen").value, destino: document.getElementById("destino").value, precio: document.getElementById("cuadroPrecio").innerText };
+    fetch("/solicitar-viaje", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(pedido) })
+    .then(r => r.json()).then(data => {
+        idViaje = data.id; document.getElementById("cardPedido").style.display="none"; document.getElementById("estadoEspera").style.display="block";
+        const mon = setInterval(async () => {
+            const resV = await fetch('/obtener-viajes'); const viajes = await resV.json();
+            const miV = viajes.find(v => v._id === idViaje);
+            if(miV && miV.estado === "aceptado") { clearInterval(mon); viajeInfo = miV; document.getElementById("infoChoferM").innerText = miV.chofer; document.getElementById("infoAutoM").innerText = `${miV.autoModelo} - ${miV.autoPatente}`; document.getElementById("modalConfirmacion").style.display="flex"; }
+        }, 3000);
+    });
+}
 
-    const paradas = [];
-    document.querySelectorAll(".input-parada").forEach(inp => { if(inp.value) paradas.push(inp.value); });
-    
-    const pedido = { 
-        pasajeroTel: sesion.telefono, 
-        pasajeroNombre: sesion.nombre || "Pasajero", 
-        origen, destino, paradas, precio, distancia, timestamp: Date.now() 
-    };
-    
-    fetch("/solicitar-viaje", { 
-        method: "POST", 
-        headers: {"Content-Type": "application/json"}, 
-        body: JSON.stringify(pedido) 
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.id) {
-            idViajeActual = data.id;
-            document.getElementById("cardPedido").style.display = "none";
-            document.getElementById("estadoEspera").style.display = "block";
-            iniciarSeguimientoViaje();
+function iniciarModoSeguimiento() {
+    document.getElementById("modalConfirmacion").style.display="none"; document.getElementById("estadoEspera").style.display="none"; document.getElementById("panelSeguimiento").style.display="block";
+    document.getElementById("txtC").innerText = viajeInfo.chofer; document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
+    document.getElementById("btnLlamar").onclick = () => window.open(`tel:${viajeInfo.choferTel}`);
+    setInterval(async () => {
+        const r = await fetch("/obtener-choferes-activos"); const choferes = await r.json();
+        const c = choferes.find(x => x.telefono === viajeInfo.choferTel);
+        if(c) {
+            const p = { lat: c.lat, lng: c.lng };
+            if(!markerC) markerC = new google.maps.Marker({ position: p, map, icon:{path:google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale:7, fillColor:"#0c5", fillOpacity:1, strokeColor:"#fff", strokeWeight:2} });
+            else markerC.setPosition(p);
+            map.panTo(p);
         }
-    })
-    .catch(err => alert("Error de conexión."));
-}
-
-function iniciarSeguimientoViaje() {
-    if(intervaloSeguimiento) clearInterval(intervaloSeguimiento);
-    intervaloSeguimiento = setInterval(async () => {
-        try {
-            const res = await fetch('/obtener-viajes'); // Usamos la ruta que ya tenés para ver el estado
-            const viajes = await res.json();
-            const miViaje = viajes.find(v => v._id === idViajeActual);
-
-            if (miViaje && miViaje.estado === "aceptado") {
-                clearInterval(intervaloSeguimiento);
-                mostrarChoferEncontrado(miViaje);
-            }
-        } catch (e) { console.log("Error siguiendo viaje"); }
-    }, 3000);
-}
-
-function mostrarChoferEncontrado(viaje) {
-    document.getElementById("estadoEspera").style.display = "none";
-    document.getElementById("infoChofer").innerHTML = `
-        ${viaje.chofer}<br>
-        <span style="font-size:14px; color:#00c853;">📞 ${viaje.choferTel}</span>
-    `;
-    document.getElementById("modalConfirmacion").style.display = "flex";
-}
-
-function agregarParada() {
-    const id = "parada-" + Date.now();
-    const div = document.createElement("div");
-    div.className = "stop-item";
-    div.id = id;
-    div.innerHTML = `<input type="text" placeholder="Parada" class="input-parada"><button class="btn-del" onclick="document.getElementById('${id}').remove(); calcularRuta();">X</button>`;
-    document.getElementById("contenedorParadas").appendChild(div);
-    new google.maps.places.Autocomplete(div.querySelector("input"), { componentRestrictions: { country: "ar" } }).addListener("place_changed", calcularRuta);
+    }, 5000);
 }
 
 window.onload = initApp;
