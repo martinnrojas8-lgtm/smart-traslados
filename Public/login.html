@@ -17,17 +17,18 @@
   
   .logo-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; }
   
-  /* EFECTO DE APARICIÓN LENTA (7 SEGUNDOS) */
+  /* ANIMACIÓN FLUIDA DEL LOGO */
   @keyframes fadeInLogo {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    0% { opacity: 0; }
+    100% { opacity: 1; }
   }
   .logo-img { 
     width: 160px; 
     height: auto; 
     border-radius: 20px; 
     display: block; 
-    animation: fadeInLogo 7s ease-in-out; 
+    opacity: 0; /* Asegura que empiece invisible */
+    animation: fadeInLogo 7s ease-in-out forwards; /* 7 segundos y queda visible */
   }
   
   .card { background:#1e2630; padding:35px 25px; border-radius:25px; width:90%; max-width:360px; text-align:center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
@@ -44,7 +45,7 @@
   .btn-download { background: transparent; border: 1px solid #2ecc71; color: #2ecc71; font-size: 14px; margin-top: 5px; display: none; }
   .btn:active { transform: scale(0.96); }
 
-  /* MEJORA DEL CHECKBOX (MÁS DELGADO) */
+  /* CHECKBOX ESTILIZADO */
   .terminos-wrapper {
     display: flex;
     align-items: center;
