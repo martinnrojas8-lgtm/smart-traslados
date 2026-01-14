@@ -42,6 +42,7 @@ const ViajeSchema = new mongoose.Schema({
     fecha: { type: String, default: () => new Date().toLocaleDateString() },
     hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
     chofer: { type: String, default: "Pendiente" },
+    choferTel: { type: String, default: null }, // Nuevo campo para vincular
     pasajero: String,
     pasajeroTel: String,
     origen: String,
@@ -94,6 +95,28 @@ app.post('/solicitar-viaje', async (req, res) => {
     }
 });
 
+// NUEVA RUTA: CHOFER BUSCA VIAJES PENDIENTES
+app.get('/viajes-pendientes', async (req, res) => {
+    try {
+        // Buscamos viajes que aún no tengan chofer
+        const viajes = await Viaje.find({ estado: "pendiente" }).sort({ timestamp: -1 });
+        res.json(viajes);
+    } catch (e) { res.status(500).json({ error: "Error al obtener viajes" }); }
+});
+
+// NUEVA RUTA: CHOFER ACEPTA EL VIAJE
+app.post('/aceptar-viaje', async (req, res) => {
+    try {
+        const { viajeId, choferNombre, choferTel } = req.body;
+        const viaje = await Viaje.findByIdAndUpdate(viajeId, {
+            chofer: choferNombre,
+            choferTel: choferTel,
+            estado: "aceptado"
+        }, { new: true });
+        res.json({ mensaje: "Viaje aceptado", viaje });
+    } catch (e) { res.status(500).json({ error: "Error al aceptar viaje" }); }
+});
+
 app.get('/obtener-viajes', async (req, res) => {
     try {
         const viajes = await Viaje.find().sort({ timestamp: -1 }).limit(50);
@@ -103,7 +126,12 @@ app.get('/obtener-viajes', async (req, res) => {
 
 app.post('/aprobar-chofer', async (req, res) => {
     try {
-        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { aprobado: true, estadoRevision: "aprobado" });
+        // Corregido: Ahora soporta el toggle del Admin si mandas el campo "aprobado"
+        const nuevoEstado = req.body.aprobado !== undefined ? req.body.aprobado : true;
+        await Usuario.findOneAndUpdate(
+            { telefono: req.body.telefono }, 
+            { aprobado: nuevoEstado, estadoRevision: nuevoEstado ? "aprobado" : "pendiente" }
+        );
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
@@ -218,7 +246,6 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
 // NUEVA RUTA: OBTENER CHOFERES ACTIVOS (Para que el mapa del pasajero funcione)
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
-        // Buscamos choferes que estén aprobados y tengan el pago al día
         const choferes = await Usuario.find({ 
             rol: "chofer", 
             aprobado: true, 
