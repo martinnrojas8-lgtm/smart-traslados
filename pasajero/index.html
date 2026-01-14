@@ -18,9 +18,10 @@
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
   .stop-item{ display:flex; gap:5px; align-items:center; margin-top:5px; }
   .btn-del{ background:#ff5252; width:45px; flex-shrink:0; }
-  
-  /* Nuevo estilo para la distancia */
   .distancia-info { text-align: center; color: #aaa; font-size: 14px; margin-top: 10px; margin-bottom: 5px; }
+  
+  /* Estilo para el banner de instalación */
+  #bannerInstalar { display: none; background: #00c853; color: #000; padding: 10px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; cursor: pointer; border: none; width: 100%; }
 </style>
 </head>
 <body>
@@ -34,6 +35,8 @@
 </header>
 
 <div class="screen">
+  <button id="bannerInstalar" onclick="instalarApp()">📲 DESCARGAR APP SMART</button>
+
   <div class="card">
     <div id="map"></div>
     <input type="text" id="origen" placeholder="Cargando ubicación...">
@@ -53,12 +56,32 @@
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, directionsService, directionsRenderer;
 let marcadoresChoferes = {};
+let deitPrompt; // Captura el evento de instalación
 
 let TARIFA_BASE_4KM = 3500; 
 let PRECIO_POR_KM = 900;
 const LIMITE_KM_BASE = 4;
 
 const SALADILLO_COORD = { lat: -35.6380, lng: -59.7793 };
+
+// Lógica para detectar si se puede instalar la App
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deitPrompt = e;
+    document.getElementById('bannerInstalar').style.display = 'block';
+});
+
+function instalarApp() {
+    if (deitPrompt) {
+        deitPrompt.prompt();
+        deitPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                document.getElementById('bannerInstalar').style.display = 'none';
+            }
+            deitPrompt = null;
+        });
+    }
+}
 
 async function initApp() {
     if (!sesion.telefono) return location.href = "/";
@@ -135,7 +158,6 @@ async function calcularRuta() {
                 precioFinal = distKm * PRECIO_POR_KM;
             }
 
-            // ACTUALIZAR DISTANCIA Y PRECIO EN PANTALLA
             document.getElementById("infoDistancia").innerText = "Distancia: " + distKm.toFixed(1) + " km";
             document.getElementById("cuadroPrecio").innerText = "Total: $" + Math.round(precioFinal);
         }
@@ -172,11 +194,10 @@ function pedirViaje() {
     const origen = document.getElementById("origen").value;
     const destino = document.getElementById("destino").value;
     const precio = document.getElementById("cuadroPrecio").innerText;
-    const distancia = document.getElementById("infoDistancia").innerText; // Agregamos la distancia al pedido
+    const distancia = document.getElementById("infoDistancia").innerText;
     
     if(!destino) return alert("Ingresá un destino");
     
-    // Enviamos distancia y precio al servidor
     const pedido = { 
         pasajeroTel: sesion.telefono, 
         pasajeroNombre: sesion.nombre || "Pasajero", 
