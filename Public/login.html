@@ -130,6 +130,22 @@
 let deferredPrompt;
 const btnInstalar = document.getElementById('btnInstalar');
 
+// Detección de iPhone para el cartel de ayuda
+const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const esSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/);
+
+if (esIOS && esSafari) {
+    const avisoIOS = document.createElement('div');
+    avisoIOS.innerHTML = `
+        <div id="guiaIOS" style="position:fixed; bottom:20px; left:5%; width:90%; background:#2ecc71; color:#000; padding:15px; border-radius:15px; z-index:4000; font-size:13px; font-weight:bold; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+            PARA INSTALAR EN IPHONE: <br>
+            Tocá el botón "Compartir" (el cuadrado con la flecha) y luego elegí "Agregar a inicio".
+            <button onclick="this.parentElement.style.display='none'" style="display:block; margin:10px auto 0; background:#000; color:#fff; border:none; padding:5px 10px; border-radius:5px; font-size:10px;">CERRAR</button>
+        </div>
+    `;
+    document.body.appendChild(avisoIOS);
+}
+
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
