@@ -74,7 +74,8 @@
       <div id="seccionActivacion" style="display: none;">
           <div class="card" style="border-color: #ffb300; text-align: center;">
             <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
-            <p style="font-size: 12px;">Contacte a soporte para activar su tiempo.</p>
+            <p style="font-size: 12px; margin-bottom: 15px;">Contacte a soporte para activar su tiempo.</p>
+            <button onclick="cargarPinActivacion()" style="background: #ffb300; color: #000; width: 90%; margin: 0 auto;">INGRESAR PIN DE ACTIVACIÓN</button>
           </div>
       </div>
 
@@ -319,6 +320,26 @@ async function rechazarViaje() {
     await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) });
     document.getElementById("modalViaje").style.display = "none";
     viajeActualId = null;
+}
+
+async function cargarPinActivacion() {
+    const pin = prompt("Ingresá el PIN de activación:");
+    if (pin) {
+        try {
+            const res = await fetch('/activar-cuenta', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono: sesion.telefono, pin: pin })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("¡Cuenta activada!");
+                cargarDatosChofer();
+            } else {
+                alert(data.mensaje || "PIN incorrecto");
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
 }
 
 function cerrarSesion() { if(confirm("¿Cerrar?")) { localStorage.clear(); location.href = "/"; } }
