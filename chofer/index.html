@@ -90,9 +90,8 @@
           </div>
           
           <div id="controlesViaje" class="card" style="display: none;">
-              <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 13px;"></p>
-              <button id="btnSiguienteFase" onclick="irADestinoFinal()" style="background:#00c853; color:#000;">INICIAR RECORRIDO AL DESTINO</button>
-              <button onclick="finalizarViaje()" style="background:#ff5252; color:#fff;">FINALIZAR VIAJE</button>
+              <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 13px; margin-bottom: 8px;"></p>
+              <button id="btnAccionViaje" onclick="gestionarFaseViaje()">CARGANDO...</button>
           </div>
 
           <div id="controlesEstandar">
@@ -111,7 +110,8 @@
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", direccionDestinoViaje = "", intervaloReloj;
 let datosAuto = { modelo: "", patente: "", color: "" };
-let ultimaRutaDestino = ""; // Variable para el recálculo
+let ultimaRutaDestino = ""; 
+let faseViaje = 1; // 1: Buscar, 2: Ir al destino, 3: Finalizar
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
@@ -239,23 +239,44 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
         document.getElementById("modalViaje").style.display = "none";
         document.getElementById("controlesEstandar").style.display = "none";
         document.getElementById("controlesViaje").style.display = "block";
-        document.getElementById("btnSiguienteFase").style.display = "block";
-        document.getElementById("destinoActual").innerText = "Buscando a: " + direccionOrigenViaje;
         
+        // FASE 1: BUSCAR PASAJERO
+        faseViaje = 1;
+        document.getElementById("destinoActual").innerText = "BUSCANDO A: " + direccionOrigenViaje;
+        document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO";
+        document.getElementById("btnAccionViaje").style.background = "#ffb300";
+        document.getElementById("btnAccionViaje").style.color = "#000";
+
         trazarRuta(direccionOrigenViaje);
         estadoActual = "en viaje";
 
     } catch (e) { alert("Error al aceptar"); }
 };
 
-function irADestinoFinal() {
-    document.getElementById("destinoActual").innerText = "Yendo a: " + direccionDestinoViaje;
-    document.getElementById("btnSiguienteFase").style.display = "none"; 
-    trazarRuta(direccionDestinoViaje);
+function gestionarFaseViaje() {
+    if (faseViaje === 1) {
+        // FASE 2: IR AL DESTINO
+        faseViaje = 2;
+        document.getElementById("destinoActual").innerText = "YENDO A: " + direccionDestinoViaje;
+        document.getElementById("btnAccionViaje").innerText = "IR AL DESTINO";
+        document.getElementById("btnAccionViaje").style.background = "#00c853";
+        trazarRuta(direccionDestinoViaje);
+    } 
+    else if (faseViaje === 2) {
+        // FASE 3: FINALIZAR
+        faseViaje = 3;
+        document.getElementById("destinoActual").innerText = "LLEGADA AL DESTINO";
+        document.getElementById("btnAccionViaje").innerText = "FINALIZAR VIAJE";
+        document.getElementById("btnAccionViaje").style.background = "#ff5252";
+        document.getElementById("btnAccionViaje").style.color = "#fff";
+    }
+    else if (faseViaje === 3) {
+        finalizarViaje();
+    }
 }
 
 function trazarRuta(destino) {
-    ultimaRutaDestino = destino; // Guardamos para el recálculo
+    ultimaRutaDestino = destino; 
     navigator.geolocation.getCurrentPosition(pos => {
         const request = {
             origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
@@ -265,13 +286,12 @@ function trazarRuta(destino) {
         directionsService.route(request, (result, status) => {
             if (status === 'OK') {
                 directionsRenderer.setDirections(result);
-                map.setZoom(16);
             }
         });
     });
 }
 
-// Bucle de recálculo cada 20 segundos
+// Recálculo cada 20 segundos
 setInterval(() => {
     if (viajeActualId && estadoActual === "en viaje" && ultimaRutaDestino) {
         trazarRuta(ultimaRutaDestino);
@@ -282,6 +302,7 @@ function finalizarViaje() {
     viajeActualId = null;
     estadoActual = "disponible";
     ultimaRutaDestino = "";
+    faseViaje = 1;
     directionsRenderer.setDirections({routes: []});
     document.getElementById("controlesViaje").style.display = "none";
     document.getElementById("controlesEstandar").style.display = "block";
