@@ -6,39 +6,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="manifest" href="/manifest.json">
 <style>
-  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; overflow-x: hidden; }
-  header{ background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; transition: all 0.3s; }
+  body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  header{ background:#111; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; flex-shrink: 0; }
   .perfil-header { display: flex; align-items: center; gap: 10px; cursor: pointer; background: #222; padding: 5px 12px; border-radius: 20px; border: 1px solid #444; }
-  #imgMiniaturaHeader { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #00c853; background: #333; display: none; }
-  .screen{ padding:15px; }
-  .card{ background:#111; border-radius:12px; padding:15px; margin-bottom:15px; border:1px solid #333; }
-  #map{ width:100%; height:400px; border-radius:10px; background:#222; transition: height 0.3s ease; }
+  #imgMiniaturaHeader { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #00c853; background: #333; display: none; }
+  
+  .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .screen{ padding:10px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+  
+  .card{ background:#111; border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid #333; }
+  #map-container { width:100%; height:350px; min-height: 300px; border-radius:10px; overflow: hidden; position: relative; margin-bottom: 10px; flex-shrink: 0; }
+  #map{ width:100%; height:100%; background:#222; }
+  
   .status-bar{ display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 12px; }
   .badge{ padding: 4px 8px; border-radius: 4px; font-weight: bold; background: #00c853; color: #000; }
   #timerContenedor { background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid #00c853; margin-bottom: 10px; text-align: center; display: none; }
   #reloj { font-family: monospace; font-size: 20px; color: #00c853; font-weight: bold; }
-  button{ padding:15px; width:100%; margin-top:10px; border:none; border-radius:10px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size: 14px; }
-  .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 15px; }
-  #seccionActivacion { background: #1a1a1a; border: 1px solid #ffb300; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px; }
-  #modalViaje { display: none; position: fixed; bottom: 20px; left: 5%; width: 90%; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 1000; text-align: center; box-shadow: 0 0 20px rgba(0,200,83,0.5); }
-  #controlesViaje { display: none; margin-top: 10px; }
+  
+  button{ padding:15px; width:100%; margin-top:8px; border:none; border-radius:10px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size: 14px; }
+  .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 10px; }
+  
+  #modalViaje { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 400px; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 2000; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
 
-  /* ADAPTACIÓN PARA MODO HORIZONTAL (SOPORTE AUTO) */
+  /* --- MODO HORIZONTAL (SOPORTE AUTO) --- */
   @media screen and (orientation: landscape) {
     header { padding: 5px 15px; }
-    header h2 { font-size: 14px !important; }
-    .perfil-header { padding: 2px 10px; }
-    .screen { padding: 10px; display: flex; gap: 10px; align-items: flex-start; }
-    #areaTrabajo { display: flex; width: 100%; gap: 10px; }
-    .card-mapa-container { flex: 2; margin-bottom: 0 !important; }
-    #map { height: 70vh !important; }
-    .col-controles { flex: 1; display: flex; flex-direction: column; }
-    #timerContenedor { padding: 5px; margin-bottom: 5px; }
-    #reloj { font-size: 16px; }
-    .card { margin-bottom: 8px; padding: 10px; }
-    button { padding: 10px; margin-top: 5px; font-size: 12px; }
-    #modalViaje { width: 50%; left: 25%; bottom: 10px; padding: 10px; }
-    #modalViaje h2 { font-size: 16px; }
+    .main-content { flex-direction: row; } /* El mapa y los controles se ponen uno al lado del otro */
+    
+    #map-container { 
+      flex: 1.5; /* El mapa toma más espacio */
+      height: 100% !important; 
+      margin-bottom: 0;
+      border-radius: 0;
+    }
+    
+    .screen { 
+      flex: 1; /* Los controles a la derecha */
+      padding: 10px;
+      overflow-y: auto;
+    }
+    
+    #timerContenedor { padding: 5px; }
+    #reloj { font-size: 18px; }
+    button { padding: 10px; font-size: 12px; }
+    .card { padding: 8px; }
   }
 </style>
 </head>
@@ -48,9 +59,9 @@
   <div class="perfil-header" onclick="location.href='perfil.html'">
     <img id="imgMiniaturaHeader" src="">
     <span id="iconoDefault">👤</span>
-    <span style="font-size: 14px; font-weight: bold;">Mi Perfil</span>
+    <span style="font-size: 13px; font-weight: bold;">Mi Perfil</span>
   </div>
-  <h2 style="margin:0; font-size:18px; color: #00c853;">Smart Chofer</h2>
+  <h2 style="margin:0; font-size:16px; color: #00c853;">Smart Chofer</h2>
 </header>
 
 <div id="modalViaje">
@@ -60,36 +71,43 @@
     <button onclick="rechazarViaje()" style="background:#ff5252; color:#fff; margin-top:8px;">RECHAZAR</button>
 </div>
 
-<div class="screen">
-  <div id="seccionActivacion" style="display: none; width: 100%;">
-      <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
-      <p>Contacte a soporte para activar su tiempo.</p>
+<div class="main-content">
+  <div id="map-container">
+      <div id="map"></div>
   </div>
-  <div id="areaTrabajo">
-      <div class="col-controles">
+
+  <div class="screen">
+      <div id="seccionActivacion" style="display: none;">
+          <div class="card" style="border-color: #ffb300; text-align: center;">
+            <h3 style="color: #ffb300; margin-top: 0;">Cuenta No Activa</h3>
+            <p style="font-size: 12px;">Contacte a soporte para activar su tiempo.</p>
+          </div>
+      </div>
+
+      <div id="areaTrabajo">
           <div id="timerContenedor">
-              <div style="font-size: 10px; color: #888; margin-bottom: 4px;">CONEXIÓN RESTANTE</div>
+              <div style="font-size: 9px; color: #888; margin-bottom: 2px;">CONEXIÓN RESTANTE</div>
               <div id="reloj">00:00:00</div>
           </div>
-          <div class="status-bar"><span class="badge" id="badgeSistema">INACTIVO</span><span id="txtNombreChofer">Chofer</span></div>
+
+          <div class="status-bar">
+            <span class="badge" id="badgeSistema">INACTIVO</span>
+            <span id="txtNombreChofer" style="font-weight: bold;">Chofer</span>
+          </div>
           
-          <div id="controlesViaje" class="card">
-              <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 14px;"></p>
+          <div id="controlesViaje" class="card" style="display: none;">
+              <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 13px;"></p>
               <button id="btnSiguienteFase" onclick="irADestinoFinal()" style="background:#00c853; color:#000;">INICIAR RECORRIDO AL DESTINO</button>
               <button onclick="finalizarViaje()" style="background:#ff5252; color:#fff;">FINALIZAR VIAJE</button>
           </div>
 
           <div id="controlesEstandar">
               <div class="card" style="text-align:center;">
-                  <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px;">ESTADO: BLOQUEADO</h3>
+                  <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px; font-size: 14px;">ESTADO: BLOQUEADO</h3>
                   <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
                   <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
               </div>
           </div>
-      </div>
-
-      <div class="card card-mapa-container" style="padding: 5px; width: 100%;">
-          <div id="map"></div>
       </div>
   </div>
 </div>
