@@ -122,17 +122,14 @@ let infoPrecioFinal = "";
 let infoDistanciaFinal = "";
 let wakeLock = null;
 
-// Estilo Nocturno Profesional para el Mapa
 const darkMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#212121" }] },
   { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
   { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
-  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
   { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
   { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#3c3c3c" }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
 ];
 
@@ -141,7 +138,7 @@ async function initApp() {
     await cargarDatosChofer();
     initMap();
     setInterval(transmitirUbicacion, 7000);
-    solicitarWakeLock(); // Mantener pantalla encendida
+    solicitarWakeLock();
 }
 
 async function solicitarWakeLock() {
@@ -245,7 +242,8 @@ function initMap() {
             icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } 
         });
         directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false });
+        // CORRECCIÓN: preserveViewport evita que el zoom cambie solo al trazar ruta
+        directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
     });
 }
 
@@ -257,7 +255,6 @@ function transmitirUbicacion() {
         
         if(marker) marker.setPosition(coords);
         
-        // AUTO-CENTRADO Y ZOOM FIJO DURANTE EL VIAJE
         if(viajeActualId) {
             map.panTo(coords);
             if(map.getZoom() !== 17) map.setZoom(17);
@@ -337,7 +334,12 @@ function trazarRuta(destino) {
         directionsService.route({
             origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
             destination: destino, travelMode: 'DRIVING'
-        }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
+        }, (result, status) => { 
+            if (status === 'OK') {
+                // Al trazar, respetamos el zoom que ya tenemos
+                directionsRenderer.setDirections(result); 
+            }
+        });
     });
 }
 
@@ -352,7 +354,10 @@ function finalizarViaje() {
     directionsRenderer.setDirections({routes: []});
     document.getElementById("controlesViaje").style.display = "none";
     document.getElementById("controlesEstandar").style.display = "block";
-    navigator.geolocation.getCurrentPosition(pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(18); });
+    navigator.geolocation.getCurrentPosition(pos => { 
+        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); 
+        map.setZoom(18); 
+    });
     toggleEstado(); 
 }
 
