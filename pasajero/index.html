@@ -18,6 +18,7 @@
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
   #modalConfirmacion { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; }
   #panelSeguimiento { display: none; background: #111; border-top: 2px solid #00c853; padding: 20px; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; z-index: 100; border-radius: 20px 20px 0 0; }
+  .info-resumen { display: flex; justify-content: space-around; background: #222; padding: 10px; border-radius: 10px; margin: 10px 0; border: 1px solid #333; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
@@ -67,6 +68,18 @@
         </div>
         <button id="btnLlamar" style="width:auto; padding:8px 12px; background:#222; color:#fff; border:1px solid #444;">📞</button>
     </div>
+
+    <div class="info-resumen">
+        <div style="text-align: center;">
+            <div style="color: #00c853; font-weight: bold; font-size: 18px;" id="seguimientoPrecio">--</div>
+            <div style="font-size: 10px; color: #aaa;">A PAGAR</div>
+        </div>
+        <div style="text-align: center; border-left: 1px solid #333; padding-left: 15px;">
+            <div style="color: #fff; font-weight: bold; font-size: 18px;" id="seguimientoDistancia">--</div>
+            <div style="font-size: 10px; color: #aaa;">RECORRIDO</div>
+        </div>
+    </div>
+
     <button onclick="location.reload()" style="background:#ff5252; color:#fff; margin-top:10px; font-size:12px;">CANCELAR VIAJE</button>
 </div>
 
@@ -150,6 +163,11 @@ function iniciarModoSeguimiento() {
     document.getElementById("txtC").innerText = viajeInfo.chofer; 
     document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
     document.getElementById("btnLlamar").onclick = () => window.open(`tel:${viajeInfo.choferTel}`);
+
+    // Cargamos precio y distancia guardada del viaje
+    document.getElementById("seguimientoPrecio").innerText = viajeInfo.precio;
+    // Si el objeto viajeInfo tiene la distancia guardada la ponemos, sino usamos la del input original
+    document.getElementById("seguimientoDistancia").innerText = document.getElementById("infoDistancia").innerText.replace("Distancia: ","");
 
     setInterval(async () => {
         try {
