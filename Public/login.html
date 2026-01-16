@@ -9,16 +9,16 @@
 <link rel="apple-touch-icon" href="file_000000008fd0720eb71af76359ccb359.png">
 <meta name="theme-color" content="#121921">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Smart Traslados">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
   * { box-sizing: border-box; }
   body { margin:0; font-family: 'Segoe UI', sans-serif; background:#121921; color:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; }
   
-  /* CONTENEDOR FIJO PARA QUE NADA SE MUEVA */
   .logo-container { 
     width: 100%; 
-    height: 160px; /* Altura fija del logo */
+    height: 160px; 
     display: flex; 
     justify-content: center; 
     align-items: center; 
@@ -38,7 +38,7 @@
     display: block; 
     opacity: 0; 
     animation: fadeInLogo 7s ease-in-out forwards;
-    position: absolute; /* Para que no empuje el contenido al cargar */
+    position: absolute;
   }
   
   .card { background:#1e2630; padding:35px 25px; border-radius:25px; width:90%; max-width:360px; text-align:center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
@@ -55,7 +55,6 @@
   .btn-download { background: transparent; border: 1px solid #2ecc71; color: #2ecc71; font-size: 14px; margin-top: 5px; display: none; }
   .btn:active { transform: scale(0.96); }
 
-  /* CHECKBOX ESTILIZADO */
   .terminos-wrapper {
     display: flex;
     align-items: center;
@@ -74,9 +73,38 @@
     cursor: pointer;
     accent-color: #2ecc71;
   }
+
+  /* ESTILO PARA EL ASISTENTE DE IPHONE */
+  #guiaIOS {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: #fff;
+    color: #333;
+    padding: 20px;
+    border-radius: 20px;
+    z-index: 9999;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    display: none;
+    border: 3px solid #2ecc71;
+  }
 </style>
 </head>
 <body>
+
+  <div id="guiaIOS">
+    <div style="font-size: 30px; margin-bottom: 10px;">📲</div>
+    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #000;">INSTALÁ LA APP EN TU IPHONE</div>
+    <div style="font-size: 14px; line-height: 1.4;">
+      1. Tocá el botón <b>"Compartir"</b> abajo en tu navegador (el cuadrado con la flecha hacia arriba).<br>
+      2. Deslizá y elegí <b>"Agregar al inicio"</b> ➕.
+    </div>
+    <button onclick="document.getElementById('guiaIOS').style.display='none'" style="margin-top: 15px; background: #2ecc71; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; width: 100%;">ENTENDIDO</button>
+  </div>
 
   <div class="card">
     <div class="logo-container">
@@ -114,13 +142,9 @@
   <h2 style="color:#2ecc71; margin-top:0;">Términos y Condiciones</h2>
   <div style="font-size:13px; line-height:1.6; color:#ccc; text-align:left;">
     <p><strong>1. NATURALEZA DEL SERVICIO:</strong> Smart Traslados es una plataforma tecnológica que facilita el contacto entre conductores independientes y pasajeros. Smart Traslados <strong>NO ES UNA EMPRESA DE TRANSPORTE</strong>, ni de logística ni de delivery.</p>
-    
     <p><strong>2. MODELO DE NEGOCIO:</strong> A diferencia de otras plataformas, Smart Traslados no percibe comisiones sobre los viajes. El Chofer abona una cuota fija por el uso del software. El Chofer es dueño del 100% de lo recaudado y Smart Traslados no interviene en el cobro al pasajero.</p>
-    
     <p><strong>3. RESPONSABILIDAD:</strong> El Chofer declara contar con licencia profesional, VTV y <strong>Seguro de Responsabilidad Civil hacia Terceros y Personas Transportadas</strong> vigente. Smart Traslados queda exenta de toda responsabilidad por siniestros, daños, accidentes o conflictos entre las partes.</p>
-    
     <p><strong>4. INDEPENDENCIA:</strong> No existe relación de dependencia ni vínculo laboral. El Chofer es un usuario independiente que decide libremente sus horarios y servicios.</p>
-    
     <p><strong>5. PRIVACIDAD:</strong> Se utilizarán datos de geolocalización para el correcto funcionamiento del servicio y seguridad de los usuarios durante el traslado.</p>
   </div>
   <button class="btn btn-verde" onclick="cerrarTerms()" style="margin-top:20px;">ENTENDIDO Y CERRAR</button>
@@ -130,21 +154,19 @@
 let deferredPrompt;
 const btnInstalar = document.getElementById('btnInstalar');
 
-// Detección de iPhone para el cartel de ayuda
-const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const esSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/);
+// Lógica de detección iPhone / iOS mejorada
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-if (esIOS && esSafari) {
-    const avisoIOS = document.createElement('div');
-    avisoIOS.innerHTML = `
-        <div id="guiaIOS" style="position:fixed; bottom:20px; left:5%; width:90%; background:#2ecc71; color:#000; padding:15px; border-radius:15px; z-index:4000; font-size:13px; font-weight:bold; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-            PARA INSTALAR EN IPHONE: <br>
-            Tocá el botón "Compartir" (el cuadrado con la flecha) y luego elegí "Agregar a inicio".
-            <button onclick="this.parentElement.style.display='none'" style="display:block; margin:10px auto 0; background:#000; color:#fff; border:none; padding:5px 10px; border-radius:5px; font-size:10px;">CERRAR</button>
-        </div>
-    `;
-    document.body.appendChild(avisoIOS);
-}
+window.onload = () => {
+    verificarSesion();
+    toggleNombre();
+
+    // Si es iPhone y NO está instalada, mostramos el cartel guía
+    if (isIOS && !isStandalone) {
+        document.getElementById('guiaIOS').style.display = 'block';
+    }
+};
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -177,17 +199,8 @@ function toggleNombre() {
     document.getElementById("campoNombre").style.display = (rol === "pasajero") ? "block" : "none";
 }
 
-window.onload = () => {
-    verificarSesion();
-    toggleNombre();
-};
-
-function mostrarTerms() {
-    document.getElementById("modalTerms").style.display = "block";
-}
-function cerrarTerms() {
-    document.getElementById("modalTerms").style.display = "none";
-}
+function mostrarTerms() { document.getElementById("modalTerms").style.display = "block"; }
+function cerrarTerms() { document.getElementById("modalTerms").style.display = "none"; }
 function validarTerms() {
     if (!document.getElementById("chkTerms").checked) {
         alert("Debés aceptar los Términos y Condiciones para continuar.");
