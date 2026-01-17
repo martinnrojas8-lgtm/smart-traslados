@@ -68,16 +68,16 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <div id="viajes" class="pantalla">
-    <div class="card"><h3>Historial de Viajes Reales</h3><div style="overflow-x:auto;"><table id="tablaViajes"><tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th></tr></table></div></div>
+    <div class="card"><h3>Historial de Viajes Reales</h3><div style="overflow-x:auto;"><table id="tablaViajes"><tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th><th>Acción</th></tr></table></div></div>
 </div>
 
 <div id="estadisticas" class="pantalla">
     <div class="card">
-        <h3>Movimiento por Horario (Hoy)</h3>
-        <p style="font-size: 12px; color: #aaa;">Viajes solicitados agrupados por hora de inicio.</p>
+        <h3>Movimiento por Horario</h3>
+        <p style="font-size: 11px; color: #aaa; margin-bottom: 15px;">Viajes realizados hoy agrupados por hora de inicio.</p>
         <div style="overflow-x:auto;">
             <table id="tablaEstadisticas">
-                <tr><th>Franja Horaria</th><th>Viajes</th></tr>
+                <tr><th>Hora</th><th>Viajes</th><th>Choferes</th><th>Pasajeros</th></tr>
             </table>
         </div>
     </div>
@@ -158,6 +158,7 @@ async function cargarDatosReales() {
         document.getElementById('pTotal').innerText = pasas.length;
         actualizarTablaConductores(conds);
         actualizarTablaPasajeros(pasas);
+        registrarActividadAhora(conds.length, pasas.length);
     } catch (e) { console.error("Error cargando usuarios"); }
 }
 
@@ -169,7 +170,6 @@ function actualizarTablaConductores(conds) {
         const docOk = c.aprobado === true;
         const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         const colorBotonTilde = docOk ? '#4caf50' : '#f44336';
-
         tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button id="btnTilde-${c.telefono}" class="btn-accion" style="background:${colorBotonTilde};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button></td></tr>`;
     });
 }
@@ -181,7 +181,6 @@ function actualizarTablaPasajeros(pasas) {
         const estaBloqueado = p.bloqueado === true;
         const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         const colorLock = estaBloqueado ? '#f44336' : '#ff9800';
-        
         tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${colorLock};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">${iconTrash}</button></td></tr>`; 
     });
 }
@@ -191,66 +190,77 @@ async function cargarViajesReales() {
         const res = await fetch('/obtener-viajes');
         const viajes = await res.json();
         let tV = document.getElementById('tablaViajes');
-        tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th></tr>`;
+        tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th><th>Acción</th></tr>`;
         viajes.forEach(v => {
             let color = "#ff9800";
             if(v.estado === "finalizado") color = "#4caf50";
             if(v.estado === "cancelado") color = "#f44336";
-            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td></tr>`;
+            const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+            const idViaje = v._id || v.id;
+            
+            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td><button class="btn-accion" style="background:#f44336;" onclick="eliminarViaje('${idViaje}')">${iconTrash}</button></td></tr>`;
         });
     } catch (e) { console.error("Error viajes"); }
+}
+
+async function eliminarViaje(id) {
+    if(confirm("¿Eliminar este registro de viaje?")) {
+        await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+        cargarViajesReales();
+    }
+}
+
+function registrarActividadAhora(cCount, pCount) {
+    let hist = JSON.parse(localStorage.getItem('historialActividad') || "[]");
+    const ahora = new Date();
+    const horaKey = ahora.getHours().toString().padStart(2, '0') + ":00";
+    const fechaKey = ahora.toISOString().split('T')[0];
+    const existe = hist.find(h => h.fecha === fechaKey && h.hora === horaKey);
+    if (!existe) hist.push({ fecha: fechaKey, hora: horaKey, choferes: cCount, pasajeros: pCount, ts: ahora.getTime() });
+    else { existe.choferes = cCount; existe.pasajeros = pCount; }
+    hist = hist.filter(h => ahora.getTime() - h.ts < 604800000);
+    localStorage.setItem('historialActividad', JSON.stringify(hist));
 }
 
 async function generarEstadisticas() {
     try {
         const res = await fetch('/obtener-viajes');
         const viajes = await res.json();
+        const histActividad = JSON.parse(localStorage.getItem('historialActividad') || "[]");
         let tE = document.getElementById('tablaEstadisticas');
-        tE.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes</th></tr>`;
-        
+        tE.innerHTML = `<tr><th>Hora</th><th>Viajes</th><th>Choferes</th><th>Pasajeros</th></tr>`;
         let horasMap = {};
         for(let i=0; i<24; i++) {
             let h = i.toString().padStart(2, '0') + ":00";
-            horasMap[h] = 0;
+            horasMap[h] = { viajes: 0, choferes: 0, pasajeros: 0 };
         }
-
         viajes.forEach(v => {
             if(v.hora) {
                 let hStr = v.hora.split(":")[0] + ":00";
-                if(horasMap[hStr] !== undefined) horasMap[hStr]++;
+                if(horasMap[hStr]) horasMap[hStr].viajes++;
             }
         });
-
-        Object.keys(horasMap).forEach(h => {
-            let cantidad = horasMap[h];
-            let colorFila = cantidad > 0 ? "color: #4caf50; font-weight: bold;" : "color: #555;";
-            tE.innerHTML += `<tr><td>${h} hs</td><td style="${colorFila}">${cantidad}</td></tr>`;
+        histActividad.forEach(h => {
+            if(horasMap[h.hora]) {
+                horasMap[h.hora].choferes = h.choferes;
+                horasMap[h.hora].pasajeros = h.pasajeros;
+            }
         });
-
-    } catch (e) { console.error("Error en estadísticas", e); }
+        Object.keys(horasMap).forEach(h => {
+            const d = horasMap[h];
+            tE.innerHTML += `<tr><td>${h}</td><td style="color:#4caf50;">${d.viajes}</td><td style="color:#2196f3;">${d.choferes}</td><td style="color:#ff9800;">${d.pasajeros}</td></tr>`;
+        });
+    } catch (e) {}
 }
 
 async function bloquearPasajero(tel, estadoActual) {
     const nuevoEstado = !estadoActual;
     const btn = document.getElementById(`btnLock-${tel}`);
     if(btn) btn.style.background = nuevoEstado ? '#f44336' : '#ff9800';
-
     try {
-        const res = await fetch('/bloquear-usuario', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, bloqueado: nuevoEstado }) 
-        });
-        if(res.ok) {
-            cargarDatosReales();
-        } else {
-            alert("Error al cambiar estado del pasajero");
-            cargarDatosReales();
-        }
-    } catch(e) { 
-        alert("Error de conexión"); 
-        cargarDatosReales();
-    }
+        const res = await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, bloqueado: nuevoEstado }) });
+        if(res.ok) cargarDatosReales();
+    } catch(e) { cargarDatosReales(); }
 }
 
 async function eliminarUsuario(tel) {
@@ -262,31 +272,10 @@ async function eliminarUsuario(tel) {
 
 async function toggleDocumentacion(tel, estadoActual) {
     const nuevoEstado = !estadoActual;
-    const btn = document.getElementById(`btnTilde-${tel}`);
-    const txtDoc = document.getElementById(`doc-${tel}`);
-    
-    if(btn) btn.style.background = nuevoEstado ? '#4caf50' : '#f44336';
-    if(txtDoc) {
-        txtDoc.innerText = nuevoEstado ? 'DOC: OK' : 'DOC: PEND';
-        txtDoc.className = nuevoEstado ? 'estado-ok' : 'estado-pendiente';
-    }
-
     try {
-        const res = await fetch('/aprobar-chofer', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) 
-        });
-        if(res.ok) {
-            cargarDatosReales();
-        } else {
-            alert("Error al actualizar documentación");
-            cargarDatosReales();
-        }
-    } catch(e) { 
-        alert("Error de conexión"); 
-        cargarDatosReales();
-    }
+        const res = await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) });
+        if(res.ok) cargarDatosReales();
+    } catch(e) { cargarDatosReales(); }
 }
 
 function verPerfilCompleto(tel) {
