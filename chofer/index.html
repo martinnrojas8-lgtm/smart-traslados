@@ -133,7 +133,7 @@ let audioInterval;
 let infoPrecioFinal = "";
 let infoDistanciaFinal = "";
 let wakeLock = null;
-let ultimoMsgID = null; // Para no repetir el mismo mensaje
+let ultimoMsgID = null; 
 
 const darkMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#212121" }] },
@@ -151,19 +151,15 @@ async function initApp() {
     await cargarDatosChofer();
     initMap();
     setInterval(transmitirUbicacion, 7000);
-    setInterval(chequearMensajesAdmin, 15000); // REVISAR CADA 15 SEG
+    setInterval(chequearMensajesAdmin, 15000); 
     solicitarWakeLock();
 }
 
-// FUNCIÓN PARA ESCUCHAR AL ADMIN (CON MEMORIA DE LECTURA)
 async function chequearMensajesAdmin() {
     try {
         const res = await fetch('/obtener-ultimo-mensaje/choferes');
         const data = await res.json();
-        
-        // Obtenemos el ID del último mensaje que el chofer ya marcó como "Entendido"
         const mensajeLeidoID = localStorage.getItem('ultimoMensajeLeidoID');
-
         if (data && data.texto && data._id !== ultimoMsgID && data._id !== mensajeLeidoID) {
             ultimoMsgID = data._id;
             document.getElementById('txtNovedad').innerText = data.texto;
@@ -174,7 +170,6 @@ async function chequearMensajesAdmin() {
 
 function marcarMensajeComoLeido() {
     if (ultimoMsgID) {
-        // Guardamos el ID del mensaje actual como "leído" en el teléfono
         localStorage.setItem('ultimoMensajeLeidoID', ultimoMsgID);
     }
     document.getElementById('modalNovedad').style.display = 'none';
@@ -244,17 +239,14 @@ function desactivarModoTrabajo() {
 async function validarCodigo() {
     const cod = document.getElementById('inputToken').value.trim();
     if(cod.length < 6) return alert("Ingresá el código.");
-    
     try {
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
-        
         if (yo && yo.aprobado === false) {
-            alert("ACCESO DENEGADO: Tu cuenta está bloqueada por documentación pendiente. Por favor, contacta al soporte para regularizar tu situación.");
+            alert("ACCESO DENEGADO: Tu cuenta está bloqueada por documentación pendiente.");
             return;
         }
-
         const res = await fetch('/validar-token', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -290,7 +282,6 @@ function initMap() {
             heading: pos.coords.heading || 0,
             tilt: 0
         });
-        
         marker = new google.maps.Marker({ 
             position: myPos, 
             map: map, 
@@ -305,13 +296,8 @@ function initMap() {
             },
             flat: true
         });
-        
         directionsService = new google.maps.DirectionsService();
-        directionsRenderer = new google.maps.DirectionsRenderer({ 
-            map: map, 
-            suppressMarkers: false, 
-            preserveViewport: true 
-        });
+        directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
     });
 }
 
@@ -320,25 +306,17 @@ function transmitirUbicacion() {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         const heading = pos.coords.heading || 0; 
-        
         fetch("/actualizar-ubicacion-chofer", { 
             method: "POST", 
             headers: {"Content-Type": "application/json"}, 
-            body: JSON.stringify({ 
-                telefono: sesion.telefono, 
-                lat: coords.lat, 
-                lng: coords.lng, 
-                estado: estadoActual 
-            }) 
+            body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, estado: estadoActual }) 
         });
-        
         if(marker) {
             marker.setPosition(coords);
             const icon = marker.getIcon();
             icon.rotation = heading;
             marker.setIcon(icon);
         }
-        
         if(viajeActualId) {
             map.panTo(coords);
             if (heading !== 0) map.setHeading(heading);
@@ -419,18 +397,12 @@ function trazarRuta(destino) {
         directionsService.route({
             origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
             destination: destino, travelMode: 'DRIVING'
-        }, (result, status) => { 
-            if (status === 'OK') {
-                directionsRenderer.setDirections(result); 
-            }
-        });
+        }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
     });
 }
 
 setInterval(() => {
-    if (viajeActualId && estadoActual === "en viaje" && ultimaRutaDestino) {
-        trazarRuta(ultimaRutaDestino);
-    }
+    if (viajeActualId && estadoActual === "en viaje" && ultimaRutaDestino) trazarRuta(ultimaRutaDestino);
 }, 20000);
 
 function finalizarViaje() {
