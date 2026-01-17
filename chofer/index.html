@@ -179,20 +179,15 @@ async function mostrarInfoPago(e) {
     if(div.style.display === 'block') { div.style.display = 'none'; return; }
 
     try {
-        // Obtenemos Tarifas reales del servidor
         const resT = await fetch('/obtener-tarifas');
         const tarifas = await resT.json();
-        
-        // Obtenemos Usuarios para buscar al Admin y su Alias/Teléfono
-        const resU = await fetch('/obtener-usuarios');
-        const usuarios = await resU.json();
-        const admin = usuarios.find(u => u.rol === 'admin');
+        const resC = await fetch('/obtener-config-admin');
+        const config = await resC.json();
 
-        // Vinculamos los datos dinámicamente
-        document.getElementById('montoPin').innerText = "$" + (tarifas.precioBase || "3500");
-        document.getElementById('aliasPin').innerText = (admin && admin.autoPatente) ? admin.autoPatente : "Consultar"; // Se usa patente como alias temporal según tu admin
+        document.getElementById('montoPin').innerText = "$" + (tarifas.montoFijoInfo || "Consultar");
+        document.getElementById('aliasPin').innerText = (config.alias) ? config.alias : "Consultar";
         
-        const telAdmin = (admin && admin.telefono) ? admin.telefono : "";
+        const telAdmin = config.tel || "";
         const mensajeWsp = encodeURIComponent("Hola! Envío el comprobante para activar mi PIN de Smart Traslados.");
         document.getElementById('linkWspPin').href = `https://wa.me/${telAdmin}?text=${mensajeWsp}`;
         
