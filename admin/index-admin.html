@@ -7,10 +7,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<link rel="manifest" href="/Public/manifest.json">
-<link rel="icon" type="image/png" href="/Public/IMG_20260103_204207.png">
-<link rel="apple-touch-icon" href="/Public/IMG_20260103_204207.png">
-<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png">
 
 <style>
 body{ margin:0; font-family:Arial, sans-serif; background:#000; color:#fff; }
@@ -42,7 +40,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <body>
 
 <header>
-    <img src="/Public/IMG_20260103_204207.png" class="logo-header" alt="logo">
+    <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" class="logo-header" alt="logo">
     <span>Smart Traslados – Admin</span>
 </header>
 
@@ -103,7 +101,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 </button>
             </div>
-            <img src="/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;" crossorigin="anonymous">
+            <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;" crossorigin="anonymous">
             <div style="font-size: 20px; font-weight: bold; color: #111; margin-bottom: 5px;">SMART TRASLADOS</div>
             <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
             <div style="font-size: 11px; color: #333; margin-bottom: 5px;">CÓDIGO DE ACCESO:</div>
@@ -149,7 +147,6 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 </div>
 
 <script>
-// EL SCRIPT SIGUE EXACTAMENTE IGUAL A TU LÓGICA
 let listaUsuariosGlobal = [];
 let listaViajesGlobal = [];
 
@@ -169,7 +166,9 @@ function mostrar(id){
 async function enviarMensajeMasivo() {
     const destino = document.getElementById('selectDestino').value;
     const texto = document.getElementById('msgMasivo').value;
+
     if(!texto) return alert("Escribí un mensaje primero");
+
     try {
         const res = await fetch('/enviar-mensaje-masivo', {
             method: 'POST',
@@ -177,8 +176,10 @@ async function enviarMensajeMasivo() {
             body: JSON.stringify({ destino, texto })
         });
         if(res.ok) {
-            alert('¡Mensaje enviado a la base de datos!');
+            alert('¡Mensaje enviado a la base de datos para los ' + destino + '!');
             document.getElementById('msgMasivo').value = "";
+        } else {
+            alert("Error al enviar mensaje");
         }
     } catch (e) { alert("Error de conexión"); }
 }
@@ -204,6 +205,7 @@ function actualizarTablaConductores(conds) {
         const docOk = c.aprobado === true;
         const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         const colorBotonTilde = docOk ? '#4caf50' : '#f44336';
+
         tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td>$0</td><td><button id="btnTilde-${c.telefono}" class="btn-accion" style="background:${colorBotonTilde};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button></td></tr>`;
     });
 }
@@ -215,6 +217,7 @@ function actualizarTablaPasajeros(pasas) {
         const estaBloqueado = p.bloqueado === true;
         const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         const colorLock = estaBloqueado ? '#f44336' : '#ff9800';
+        
         tP.innerHTML += `<tr id="fila-${p.telefono}"><td>${p.nombre || 'S/N'}</td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${colorLock};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">${iconTrash}</button></td></tr>`; 
     });
 }
@@ -229,55 +232,93 @@ async function cargarViajesReales() {
             let color = "#ff9800";
             if(v.estado === "finalizado") color = "#4caf50";
             if(v.estado === "cancelado") color = "#f44336";
+            
             const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+
             tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td><button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">${iconTrash}</button></td></tr>`;
         });
     } catch (e) { console.error("Error viajes"); }
 }
 
 async function eliminarViajeHistorial(id) {
-    if(!confirm("¿Eliminar registro?")) return;
+    if(!confirm("¿Deseas eliminar este registro de viaje del historial?")) return;
     try {
-        const res = await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
-        if(res.ok) cargarViajesReales();
-    } catch (e) { console.error("Error", e); }
+        const res = await fetch('/eliminar-viaje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+        if(res.ok) {
+            cargarViajesReales();
+        } else {
+            alert("Error al intentar eliminar el registro");
+        }
+    } catch (e) { console.error("Error eliminando registro", e); }
 }
 
 async function actualizarEstadisticasFecha() {
     const fechaSel = document.getElementById('inputFechaEst').value;
     if(!fechaSel) return;
+
     try {
         const res = await fetch('/obtener-viajes');
         const viajes = await res.json();
+
+        // Convertir fecha de input (YYYY-MM-DD) a formato de base de datos (D/M/YYYY)
         const partes = fechaSel.split('-');
         const fechaFormatoDB = `${parseInt(partes[1])}/${parseInt(partes[2])}/${partes[0]}`; 
+        
         document.getElementById('tituloDia').innerText = `Demanda del día: ${partes[2]}/${partes[1]}/${partes[0]}`;
+
         let horasMap = {};
         for(let i=0; i<24; i++) horasMap[i.toString().padStart(2, '0') + ":00"] = 0;
+
         viajes.forEach(v => {
-            if(v.fecha === fechaFormatoDB && v.hora) {
-                let hStr = v.hora.split(":")[0];
-                if(v.hora.includes("PM") && hStr !== "12") hStr = parseInt(hStr) + 12;
-                if(v.hora.includes("AM") && hStr === "12") hStr = "00";
-                let hFinal = hStr.toString().padStart(2, '0') + ":00";
-                if(horasMap[hFinal] !== undefined) horasMap[hFinal]++;
+            // Comparamos la fecha del viaje con la seleccionada
+            if(v.fecha === fechaFormatoDB) {
+                if(v.hora) {
+                    let hStr = v.hora.split(":")[0];
+                    // Manejo de formatos 12hs si existen (AM/PM)
+                    if(v.hora.includes("PM") && hStr !== "12") hStr = parseInt(hStr) + 12;
+                    if(v.hora.includes("AM") && hStr === "12") hStr = "00";
+                    
+                    let hFinal = hStr.toString().padStart(2, '0') + ":00";
+                    if(horasMap[hFinal] !== undefined) horasMap[hFinal]++;
+                }
             }
         });
+
         let tH = document.getElementById('tablaEstadisticasHoras');
         tH.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>`;
         Object.keys(horasMap).forEach(h => {
             let cant = horasMap[h];
             tH.innerHTML += `<tr><td>${h} hs</td><td style="${cant > 0 ? 'color:#4caf50; font-weight:bold;' : 'color:#555;'}">${cant}</td></tr>`;
         });
+
     } catch (e) { console.error("Error stats", e); }
 }
 
 async function bloquearPasajero(tel, estadoActual) {
     const nuevoEstado = !estadoActual;
+    const btn = document.getElementById(`btnLock-${tel}`);
+    if(btn) btn.style.background = nuevoEstado ? '#f44336' : '#ff9800';
+
     try {
-        const res = await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, bloqueado: nuevoEstado }) });
-        if(res.ok) cargarDatosReales();
-    } catch(e) { cargarDatosReales(); }
+        const res = await fetch('/bloquear-usuario', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ telefono: tel, bloqueado: nuevoEstado }) 
+        });
+        if(res.ok) {
+            cargarDatosReales();
+        } else {
+            alert("Error al cambiar estado del pasajero");
+            cargarDatosReales();
+        }
+    } catch(e) { 
+        alert("Error de conexión"); 
+        cargarDatosReales();
+    }
 }
 
 async function eliminarUsuario(tel) {
@@ -289,10 +330,31 @@ async function eliminarUsuario(tel) {
 
 async function toggleDocumentacion(tel, estadoActual) {
     const nuevoEstado = !estadoActual;
+    const btn = document.getElementById(`btnTilde-${tel}`);
+    const txtDoc = document.getElementById(`doc-${tel}`);
+    
+    if(btn) btn.style.background = nuevoEstado ? '#4caf50' : '#f44336';
+    if(txtDoc) {
+        txtDoc.innerText = nuevoEstado ? 'DOC: OK' : 'DOC: PEND';
+        txtDoc.className = nuevoEstado ? 'estado-ok' : 'estado-pendiente';
+    }
+
     try {
-        const res = await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) });
-        if(res.ok) cargarDatosReales();
-    } catch(e) { cargarDatosReales(); }
+        const res = await fetch('/aprobar-chofer', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) 
+        });
+        if(res.ok) {
+            cargarDatosReales();
+        } else {
+            alert("Error al actualizar documentación");
+            cargarDatosReales();
+        }
+    } catch(e) { 
+        alert("Error de conexión"); 
+        cargarDatosReales();
+    }
 }
 
 function verPerfilCompleto(tel) {
@@ -343,16 +405,30 @@ async function compartirCodigo() {
     const elemento = document.getElementById('contenedorFicha');
     const btnShare = document.getElementById('botonShareContainer');
     const codigo = document.getElementById('txtFichaCodigo').innerText;
+
     btnShare.classList.add('ignore-capture');
-    html2canvas(elemento, { backgroundColor: null, useCORS: true, scale: 2 }).then(async canvas => {
+
+    html2canvas(elemento, { 
+        backgroundColor: null,
+        useCORS: true, 
+        scale: 2 
+    }).then(async canvas => {
         btnShare.classList.remove('ignore-capture');
+        
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const file = new File([blob], `voucher-${codigo}.png`, { type: 'image/png' });
+
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try { await navigator.share({ files: [file], title: 'Voucher Smart Traslados', text: `🚗 *SMART TRASLADOS*\nCódigo: *${codigo}*` });
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Voucher Smart Traslados',
+                    text: `🚗 *SMART TRASLADOS*\nCódigo: *${codigo}*`
+                });
             } catch (e) { console.error(e); }
         } else {
-            window.open(`https://wa.me/?text=${encodeURIComponent('Código: ' + codigo)}`, '_blank');
+            const texto = `🚗 *SMART TRASLADOS*\n\nHola! Tu código de acceso es: *${codigo}*\n\nVálido por 24 horas.`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
         }
     });
 }
