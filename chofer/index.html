@@ -364,7 +364,6 @@ function transmitirUbicacion() {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         const heading = pos.coords.heading || 0; 
         
-        // Enviamos el rumbo al servidor para que el pasajero vea la flecha rotar
         fetch("/actualizar-ubicacion-chofer", { 
             method: "POST", 
             headers: {"Content-Type": "application/json"}, 
@@ -376,7 +375,6 @@ function transmitirUbicacion() {
             const icon = marker.getIcon(); icon.rotation = heading; marker.setIcon(icon);
         }
 
-        // ROTACIÓN DE MAPA 2D PARA EL CHOFER
         if(viajeActualId) {
             map.setOptions({
                 center: coords,
@@ -448,7 +446,6 @@ function gestionarFaseViaje() {
         document.getElementById("btnAccionViaje").style.background = "#ff5252";
         document.getElementById("btnAccionViaje").style.color = "#fff";
     } else if (faseViaje === 3) {
-        alert(`VIAJE FINALIZADO\n-------------------\nCOBRAR: ${infoPrecioFinal}\nRECORRIDO: ${infoDistanciaFinal}`);
         finalizarViaje();
     }
 }
@@ -465,21 +462,19 @@ function trazarRuta(destino) {
 
 async function finalizarViaje() {
     try {
-        // Cambiamos a la ruta /finalizar-viaje que es la que activa la escucha del pasajero
-        await fetch('/finalizar-viaje', { 
+        const respuesta = await fetch('/finalizar-viaje', { 
             method: 'POST', 
             headers: {'Content-Type': 'application/json'}, 
             body: JSON.stringify({ id: viajeActualId }) 
         });
         
-        viajeActualId = null; 
-        estadoActual = "disponible"; 
-        ultimaRutaDestino = ""; 
-        faseViaje = 1;
-        
-        // Recargamos para limpiar todo y volver al estado inicial
-        location.reload(); 
-    } catch (e) { alert("Error al conectar con el servidor."); }
+        if(respuesta.ok) {
+            alert(`VIAJE FINALIZADO\n-------------------\nCOBRAR: ${infoPrecioFinal}\nRECORRIDO: ${infoDistanciaFinal}`);
+            location.reload(); 
+        } else {
+            alert("Error al finalizar viaje en el servidor.");
+        }
+    } catch (e) { alert("Error de conexión"); }
 }
 
 async function rechazarViaje() {
