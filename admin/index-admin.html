@@ -205,8 +205,22 @@ async function cargarViajesReales() {
 
 async function eliminarViaje(id) {
     if(confirm("¿Eliminar este registro de viaje?")) {
-        await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
-        cargarViajesReales();
+        try {
+            const res = await fetch('/eliminar-viaje', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: id }) 
+            });
+            if(res.ok) {
+                // Forzamos la recarga de la tabla para que la fila desaparezca
+                await cargarViajesReales();
+                alert("Viaje eliminado correctamente.");
+            } else {
+                alert("No se pudo eliminar el viaje en el servidor.");
+            }
+        } catch (e) {
+            alert("Error al intentar conectar con el servidor.");
+        }
     }
 }
 
