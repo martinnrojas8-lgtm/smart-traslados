@@ -76,20 +76,15 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 
 <div id="estadisticas" class="pantalla">
     <div class="card">
-        <h3>Análisis de Demanda Histórica</h3>
-        <p style="font-size: 12px; color: #aaa;">Viajes totales acumulados por día y hora para toma de decisiones.</p>
+        <h3>Consultar Demanda por Fecha</h3>
+        <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Seleccioná un día del calendario para ver el detalle horario.</p>
         
-        <h4 style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px;">Por Día de la Semana</h4>
-        <div style="overflow-x:auto;">
-            <table id="tablaEstadisticasDias">
-                <tr><th>Día</th><th>Viajes Totales</th></tr>
-            </table>
-        </div>
+        <input type="date" id="inputFechaEst" onchange="actualizarEstadisticasFecha()" style="margin-bottom: 20px;">
 
-        <h4 style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 20px;">Picos Horarios (Frecuencia)</h4>
+        <h4 id="tituloDia" style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px;">Seleccione una fecha</h4>
         <div style="overflow-x:auto;">
             <table id="tablaEstadisticasHoras">
-                <tr><th>Franja Horaria</th><th>Viajes Totales</th></tr>
+                <tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>
             </table>
         </div>
     </div>
@@ -150,12 +145,17 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 
 <script>
 let listaUsuariosGlobal = [];
+let listaViajesGlobal = [];
 
 function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
-    if(id === 'estadisticas') generarEstadisticas();
+    if(id === 'estadisticas') { 
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('inputFechaEst').value = hoy;
+        actualizarEstadisticasFecha();
+    }
     if(id === 'tarifas') cargarTarifas();
     if(id === 'conductores' || id === 'pasajeros' || id === 'inicio') cargarDatosReales();
 }
@@ -201,10 +201,10 @@ function actualizarTablaPasajeros(pasas) {
 async function cargarViajesReales() {
     try {
         const res = await fetch('/obtener-viajes');
-        const viajes = await res.json();
+        listaViajesGlobal = await res.json();
         let tV = document.getElementById('tablaViajes');
         tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th><th>Acción</th></tr>`;
-        viajes.forEach(v => {
+        listaViajesGlobal.forEach(v => {
             let color = "#ff9800";
             if(v.estado === "finalizado") color = "#4caf50";
             if(v.estado === "cancelado") color = "#f44336";
@@ -232,49 +232,46 @@ async function eliminarViajeHistorial(id) {
     } catch (e) { console.error("Error eliminando registro", e); }
 }
 
-async function generarEstadisticas() {
+async function actualizarEstadisticasFecha() {
+    const fechaSel = document.getElementById('inputFechaEst').value;
+    if(!fechaSel) return;
+
     try {
         const res = await fetch('/obtener-viajes');
         const viajes = await res.json();
+
+        // Convertir fecha de input (YYYY-MM-DD) a formato de base de datos (D/M/YYYY)
+        const partes = fechaSel.split('-');
+        const fechaFormatoDB = `${parseInt(partes[1])}/${parseInt(partes[2])}/${partes[0]}`; 
         
-        // Mapas de conteo
+        document.getElementById('tituloDia').innerText = `Demanda del día: ${partes[2]}/${partes[1]}/${partes[0]}`;
+
         let horasMap = {};
         for(let i=0; i<24; i++) horasMap[i.toString().padStart(2, '0') + ":00"] = 0;
 
-        let diasMap = { "Lunes":0, "Martes":0, "Miércoles":0, "Jueves":0, "Viernes":0, "Sábado":0, "Domingo":0 };
-        const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
         viajes.forEach(v => {
-            // Conteo por Hora
-            if(v.hora) {
-                let hStr = v.hora.split(":")[0] + ":00";
-                if(horasMap[hStr] !== undefined) horasMap[hStr]++;
-            }
-            // Conteo por Día (usando el campo timestamp de la base de datos)
-            if(v.timestamp) {
-                let fechaObj = new Date(v.timestamp);
-                let nombreDia = diasSemana[fechaObj.getDay()];
-                diasMap[nombreDia]++;
+            // Comparamos la fecha del viaje con la seleccionada
+            if(v.fecha === fechaFormatoDB) {
+                if(v.hora) {
+                    let hStr = v.hora.split(":")[0];
+                    // Manejo de formatos 12hs si existen (AM/PM)
+                    if(v.hora.includes("PM") && hStr !== "12") hStr = parseInt(hStr) + 12;
+                    if(v.hora.includes("AM") && hStr === "12") hStr = "00";
+                    
+                    let hFinal = hStr.toString().padStart(2, '0') + ":00";
+                    if(horasMap[hFinal] !== undefined) horasMap[hFinal]++;
+                }
             }
         });
 
-        // Actualizar Tabla de Días
-        let tD = document.getElementById('tablaEstadisticasDias');
-        tD.innerHTML = `<tr><th>Día</th><th>Viajes Totales</th></tr>`;
-        Object.keys(diasMap).forEach(d => {
-            let cant = diasMap[d];
-            tD.innerHTML += `<tr><td>${d}</td><td style="${cant > 0 ? 'color:#4caf50; font-weight:bold;' : 'color:#555;'}">${cant}</td></tr>`;
-        });
-
-        // Actualizar Tabla de Horas
         let tH = document.getElementById('tablaEstadisticasHoras');
-        tH.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes Totales</th></tr>`;
+        tH.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>`;
         Object.keys(horasMap).forEach(h => {
             let cant = horasMap[h];
             tH.innerHTML += `<tr><td>${h} hs</td><td style="${cant > 0 ? 'color:#4caf50; font-weight:bold;' : 'color:#555;'}">${cant}</td></tr>`;
         });
 
-    } catch (e) { console.error("Error en estadísticas", e); }
+    } catch (e) { console.error("Error stats", e); }
 }
 
 async function bloquearPasajero(tel, estadoActual) {
@@ -322,7 +319,7 @@ async function toggleDocumentacion(tel, estadoActual) {
         const res = await fetch('/aprobar-chofer', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ telefono: tel, aprobación: nuevoEstado }) 
+            body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) 
         });
         if(res.ok) {
             cargarDatosReales();
