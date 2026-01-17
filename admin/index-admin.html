@@ -126,9 +126,12 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="mensajes" class="pantalla">
     <div class="card">
         <h3>Mensajería Masiva</h3>
-        <select id="selectDestino"><option value="choferes">Todos los conductores</option><option value="pasajeros">Todos los pasajeros</option></select>
+        <select id="selectDestino">
+            <option value="choferes">Todos los conductores</option>
+            <option value="pasajeros">Todos los pasajeros</option>
+        </select>
         <input type="text" id="msgMasivo" placeholder="Escribí el mensaje">
-        <button class="btn-ok" onclick="alert('Mensaje enviado')">Enviar a todos</button>
+        <button class="btn-ok" onclick="enviarMensajeMasivo()">Enviar a todos</button>
     </div>
 </div>
 
@@ -158,6 +161,27 @@ function mostrar(id){
     }
     if(id === 'tarifas') cargarTarifas();
     if(id === 'conductores' || id === 'pasajeros' || id === 'inicio') cargarDatosReales();
+}
+
+async function enviarMensajeMasivo() {
+    const destino = document.getElementById('selectDestino').value;
+    const texto = document.getElementById('msgMasivo').value;
+
+    if(!texto) return alert("Escribí un mensaje primero");
+
+    try {
+        const res = await fetch('/enviar-mensaje-masivo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destino, texto })
+        });
+        if(res.ok) {
+            alert('¡Mensaje enviado a la base de datos para los ' + destino + '!');
+            document.getElementById('msgMasivo').value = "";
+        } else {
+            alert("Error al enviar mensaje");
+        }
+    } catch (e) { alert("Error de conexión"); }
 }
 
 async function cargarDatosReales() {
