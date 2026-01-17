@@ -229,22 +229,20 @@ function iniciarModoSeguimiento() {
     document.getElementById("seguimientoPrecio").innerText = viajeInfo.precio;
     document.getElementById("seguimientoDistancia").innerText = document.getElementById("infoDistancia").innerText.replace("Distancia: ","");
 
-    // RADAR DE SEGUIMIENTO EN TIEMPO REAL
     const rastreo = setInterval(async () => {
         try {
-            // 1. CHEQUEO DE FINALIZACIÓN
             const resV = await fetch('/obtener-viajes');
             const viajes = await resV.json();
             const miV = viajes.find(v => v._id === idViaje);
 
-            if (!miV || miV.estado === "finalizado") {
+            // DETECCIÓN DE FINALIZACIÓN: Si el viaje no está o cambió de estado
+            if (!miV || miV.estado === "finalizado" || miV.estado === "terminado") {
                 clearInterval(rastreo);
                 alert("VIAJE FINALIZADO. ¡Gracias por confiar en Smart Traslados!");
                 location.reload();
                 return;
             }
 
-            // 2. ACTUALIZACIÓN DE POSICIÓN DEL CHOFER
             const r = await fetch("/obtener-choferes-activos"); 
             const choferes = await r.json();
             const c = choferes.find(x => x.telefono === viajeInfo.choferTel);
@@ -273,8 +271,6 @@ function iniciarModoSeguimiento() {
                     icon.rotation = rumbo;
                     markerC.setIcon(icon);
                 }
-                
-                // Centrar el mapa en el auto para seguimiento fluido
                 map.panTo(posChofer);
             }
         } catch(e) { console.log("Error Seguimiento", e); }
