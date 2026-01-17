@@ -134,18 +134,32 @@ function pedirViaje() {
         destino: document.getElementById("destino").value, 
         precio: document.getElementById("cuadroPrecio").innerText 
     };
+    
     fetch("/solicitar-viaje", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(pedido) })
     .then(r => r.json()).then(data => {
         idViaje = data.id; 
         document.getElementById("cardPedido").style.display="none"; 
         document.getElementById("estadoEspera").style.display="block";
         
+        let timeoutExpiracion = setTimeout(async () => {
+            const resV = await fetch('/obtener-viajes');
+            const viajes = await resV.json();
+            const miV = viajes.find(v => v._id === idViaje);
+            
+            if(miV && miV.estado !== "aceptado") {
+                if (typeof mon !== 'undefined') clearInterval(mon); 
+                alert("No hay choferes disponibles en este momento. Inténtalo más tarde.");
+                location.reload(); 
+            }
+        }, 300000); // 5 minutos exactos
+
         const mon = setInterval(async () => {
             const resV = await fetch('/obtener-viajes'); 
             const viajes = await resV.json();
             const miV = viajes.find(v => v._id === idViaje);
             if(miV && miV.estado === "aceptado") { 
                 clearInterval(mon); 
+                clearTimeout(timeoutExpiracion); 
                 viajeInfo = miV; 
                 document.getElementById("infoChoferM").innerText = miV.chofer; 
                 document.getElementById("infoAutoM").innerText = `${miV.autoModelo} - ${miV.autoPatente}`; 
@@ -164,9 +178,7 @@ function iniciarModoSeguimiento() {
     document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
     document.getElementById("btnLlamar").onclick = () => window.open(`tel:${viajeInfo.choferTel}`);
 
-    // Cargamos precio y distancia guardada del viaje
     document.getElementById("seguimientoPrecio").innerText = viajeInfo.precio;
-    // Si el objeto viajeInfo tiene la distancia guardada la ponemos, sino usamos la del input original
     document.getElementById("seguimientoDistancia").innerText = document.getElementById("infoDistancia").innerText.replace("Distancia: ","");
 
     setInterval(async () => {
