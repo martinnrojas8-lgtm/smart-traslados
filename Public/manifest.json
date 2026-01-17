@@ -1,21 +1,21 @@
 {
-  "name": "Smart Traslados",
-  "short_name": "Smart",
-  "description": "Tu servicio de traslados inteligentes",
-  "start_url": "login.html",
+  "name": "Smart Traslados Administrador",
+  "short_name": "Smart Admin",
+  "description": "Panel de Control Smart Traslados",
+  "start_url": "/admin.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#121921",
-  "theme_color": "#2ecc71",
+  "background_color": "#000000",
+  "theme_color": "#00c853",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png",
+      "src": "IMG_20260103_204207.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png",
+      "src": "IMG_20260103_204207.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
