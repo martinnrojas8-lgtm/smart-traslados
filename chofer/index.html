@@ -152,22 +152,24 @@ async function initApp() {
     initMap();
     setInterval(transmitirUbicacion, 7000);
     setInterval(chequearMensajesAdmin, 15000); 
+    // Chequeo inmediato al cargar
+    chequearMensajesAdmin();
     solicitarWakeLock();
 }
 
-// FUNCION MEJORADA: Compara el texto exacto para que no se repita
+// LÓGICA REFORZADA: No depende del ID del servidor, sino del contenido del texto
 async function chequearMensajesAdmin() {
     try {
         const res = await fetch('/obtener-ultimo-mensaje/choferes');
         const data = await res.json();
         
-        if (data && data.texto) {
-            // Guardamos el contenido del mensaje como marca de lectura
-            const marcaDeLectura = data._id || data.texto;
-            const yaLeido = localStorage.getItem('visto_' + marcaDeLectura);
+        if (data && data.texto && data.texto.trim() !== "") {
+            // Creamos una "marca" única basada en el texto (sin espacios) para identificar este mensaje
+            const marcaTexto = data.texto.trim().replace(/\s+/g, '');
+            const yaLeido = localStorage.getItem('visto_msg_' + marcaTexto);
             
             if (!yaLeido) {
-                ultimoMsgID = marcaDeLectura;
+                ultimoMsgID = marcaTexto;
                 document.getElementById('txtNovedad').innerText = data.texto;
                 document.getElementById('modalNovedad').style.display = 'flex';
             }
@@ -177,8 +179,8 @@ async function chequearMensajesAdmin() {
 
 function marcarMensajeComoLeido() {
     if (ultimoMsgID) {
-        // Registramos en el teléfono que este mensaje ya se vió
-        localStorage.setItem('visto_' + ultimoMsgID, 'true');
+        // Guardamos en el almacenamiento del celular que este texto ya fue visto
+        localStorage.setItem('visto_msg_' + ultimoMsgID, 'true');
     }
     document.getElementById('modalNovedad').style.display = 'none';
 }
