@@ -43,7 +43,6 @@
 
   #inputToken { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff; }
 
-  /* Estilos para el bloque de solicitud de PIN */
   .info-pago { background: #1a1a1a; border: 1px dashed #ffb300; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; display: none; }
   .info-pago p { margin: 5px 0; font-size: 13px; color: #eee; }
   .info-pago b { color: #ffb300; }
@@ -101,8 +100,8 @@
             <a href="#" onclick="mostrarInfoPago(event)" style="color: #ffb300; font-size: 12px; display: block; margin-top: 15px; text-decoration: underline;">¿No tenés un PIN? Solicitar aquí</a>
             
             <div id="infoPago" class="info-pago">
-                <p><b>1.</b> Realizá el depósito de: <b id="montoPin">$0</b></p>
-                <p><b>2.</b> Alias/CBU: <b id="aliasPin">---</b></p>
+                <p><b>1.</b> Realizá el depósito de: <b id="montoPin">$10.000</b></p>
+                <p><b>2.</b> Alias/CBU: <b id="aliasPin">martin.rojas78</b></p>
                 <p><b>3.</b> Enviá el comprobante por WhatsApp para recibir tu PIN de 24hs.</p>
                 <a id="linkWspPin" href="#" class="btn-wsp">
                     <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.202 0-3.991 1.789-3.991 3.991 0 .644.153 1.254.421 1.791L7.83 14.39l2.502-.656c.523.285 1.122.446 1.76.446 2.201 0 3.99-1.79 3.99-3.991s-1.789-3.99-3.99-3.99zM12.031 0C5.388 0 0 5.388 0 12.031c0 2.115.546 4.103 1.503 5.836L0 24l6.324-1.659c1.701.928 3.652 1.458 5.707 1.458C18.673 23.8 24 18.412 24 11.769 24 5.127 18.673 0 12.031 0z"/></svg>
@@ -178,21 +177,37 @@ async function mostrarInfoPago(e) {
     const div = document.getElementById('infoPago');
     if(div.style.display === 'block') { div.style.display = 'none'; return; }
 
-    try {
-        const resT = await fetch('/obtener-tarifas');
-        const tarifas = await resT.json();
-        const resC = await fetch('/obtener-config-admin');
-        const config = await resC.json();
+    // Datos por defecto por si falla el servidor
+    let monto = "10.000"; 
+    let alias = "martin.rojas78"; 
+    let telAdmin = "";
 
-        document.getElementById('montoPin').innerText = "$" + (tarifas.montoFijoInfo || "Consultar");
-        document.getElementById('aliasPin').innerText = (config.alias) ? config.alias : "Consultar";
+    try {
+        const [resT, resC] = await Promise.allSettled([
+            fetch('/obtener-tarifas'),
+            fetch('/obtener-config-admin')
+        ]);
+
+        if (resT.status === 'fulfilled' && resT.value.ok) {
+            const dataT = await resT.value.json();
+            if (dataT.montoFijoInfo) monto = dataT.montoFijoInfo;
+        }
         
-        const telAdmin = config.tel || "";
-        const mensajeWsp = encodeURIComponent("Hola! Envío el comprobante para activar mi PIN de Smart Traslados.");
-        document.getElementById('linkWspPin').href = `https://wa.me/${telAdmin}?text=${mensajeWsp}`;
-        
-        div.style.display = 'block';
-    } catch (err) { alert("Error al cargar datos de pago"); }
+        if (resC.status === 'fulfilled' && resC.value.ok) {
+            const dataC = await resC.value.json();
+            if (dataC.alias) alias = dataC.alias;
+            if (dataC.tel) telAdmin = dataC.tel;
+        }
+    } catch (err) {
+        console.warn("Usando datos de respaldo.");
+    }
+
+    document.getElementById('montoPin').innerText = "$" + monto;
+    document.getElementById('aliasPin').innerText = alias;
+    const mensajeWsp = encodeURIComponent("Hola! Envío el comprobante para activar mi PIN de Smart Traslados.");
+    document.getElementById('linkWspPin').href = `https://wa.me/${telAdmin}?text=${mensajeWsp}`;
+    
+    div.style.display = 'block';
 }
 
 async function chequearMensajesAdmin() {
@@ -447,10 +462,6 @@ function trazarRuta(destino) {
         }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
     });
 }
-
-setInterval(() => {
-    if (viajeActualId && estadoActual === "en viaje" && ultimaRutaDestino) trazarRuta(ultimaRutaDestino);
-}, 20000);
 
 function finalizarViaje() {
     viajeActualId = null; estadoActual = "disponible"; ultimaRutaDestino = ""; faseViaje = 1;
