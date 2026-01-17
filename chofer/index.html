@@ -155,18 +155,19 @@ async function initApp() {
     solicitarWakeLock();
 }
 
-// LOGICA DE NOVEDADES MEJORADA
+// FUNCION MEJORADA: Compara el texto exacto para que no se repita
 async function chequearMensajesAdmin() {
     try {
         const res = await fetch('/obtener-ultimo-mensaje/choferes');
         const data = await res.json();
         
         if (data && data.texto) {
-            // Usamos una marca única basada en el ID del mensaje para que no se repita
-            const yaLeido = localStorage.getItem('leido_' + data._id);
+            // Guardamos el contenido del mensaje como marca de lectura
+            const marcaDeLectura = data._id || data.texto;
+            const yaLeido = localStorage.getItem('visto_' + marcaDeLectura);
             
             if (!yaLeido) {
-                ultimoMsgID = data._id;
+                ultimoMsgID = marcaDeLectura;
                 document.getElementById('txtNovedad').innerText = data.texto;
                 document.getElementById('modalNovedad').style.display = 'flex';
             }
@@ -176,8 +177,8 @@ async function chequearMensajesAdmin() {
 
 function marcarMensajeComoLeido() {
     if (ultimoMsgID) {
-        // Guardamos que este mensaje específico ya fue aceptado
-        localStorage.setItem('leido_' + ultimoMsgID, 'true');
+        // Registramos en el teléfono que este mensaje ya se vió
+        localStorage.setItem('visto_' + ultimoMsgID, 'true');
     }
     document.getElementById('modalNovedad').style.display = 'none';
 }
