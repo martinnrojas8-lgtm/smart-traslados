@@ -155,22 +155,29 @@ async function initApp() {
     solicitarWakeLock();
 }
 
+// LOGICA DE NOVEDADES MEJORADA
 async function chequearMensajesAdmin() {
     try {
         const res = await fetch('/obtener-ultimo-mensaje/choferes');
         const data = await res.json();
-        const mensajeLeidoID = localStorage.getItem('ultimoMensajeLeidoID');
-        if (data && data.texto && data._id !== ultimoMsgID && data._id !== mensajeLeidoID) {
-            ultimoMsgID = data._id;
-            document.getElementById('txtNovedad').innerText = data.texto;
-            document.getElementById('modalNovedad').style.display = 'flex';
+        
+        if (data && data.texto) {
+            // Usamos una marca única basada en el ID del mensaje para que no se repita
+            const yaLeido = localStorage.getItem('leido_' + data._id);
+            
+            if (!yaLeido) {
+                ultimoMsgID = data._id;
+                document.getElementById('txtNovedad').innerText = data.texto;
+                document.getElementById('modalNovedad').style.display = 'flex';
+            }
         }
     } catch (e) { console.error("Error al recibir mensajes"); }
 }
 
 function marcarMensajeComoLeido() {
     if (ultimoMsgID) {
-        localStorage.setItem('ultimoMensajeLeidoID', ultimoMsgID);
+        // Guardamos que este mensaje específico ya fue aceptado
+        localStorage.setItem('leido_' + ultimoMsgID, 'true');
     }
     document.getElementById('modalNovedad').style.display = 'none';
 }
