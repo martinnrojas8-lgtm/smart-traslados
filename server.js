@@ -95,30 +95,20 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- RUTAS DE MENSAJERÍA (MODIFICADO AQUÍ PARA QUE EL CARTEL SE VAYA) ---
+// --- RUTAS DE MENSAJERÍA ---
 app.post('/enviar-mensaje-masivo', async (req, res) => {
     try {
         const { destino, texto } = req.body;
-        if (!texto) return res.status(400).json({ error: "Falta texto" });
         const nuevoMsg = new Mensaje({ destino, texto });
         await nuevoMsg.save();
-        res.json({ mensaje: "Mensaje guardado", id: nuevoMsg._id });
+        res.json({ mensaje: "Mensaje guardado en base de datos" });
     } catch (e) { res.status(500).json({ error: "Error al guardar mensaje" }); }
 });
 
 app.get('/obtener-ultimo-mensaje/:rol', async (req, res) => {
     try {
-        const msg = await Mensaje.findOne({ destino: req.params.rol }).sort({ fecha: -1 }).lean();
-        if (msg) {
-            // Enviamos el mensaje con su ID convertido a texto para que el celular lo guarde
-            res.json({
-                _id: msg._id.toString(),
-                texto: msg.texto,
-                fecha: msg.fecha
-            });
-        } else {
-            res.json({ texto: "", _id: "sin-mensajes" });
-        }
+        const msg = await Mensaje.findOne({ destino: req.params.rol }).sort({ fecha: -1 });
+        res.json(msg || { texto: "" });
     } catch (e) { res.status(500).json({ error: "Error al obtener mensaje" }); }
 });
 
