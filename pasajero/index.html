@@ -235,7 +235,6 @@ function iniciarModoSeguimiento() {
             const viajes = await resV.json();
             const miV = viajes.find(v => v._id === idViaje);
 
-            // DETECCIÓN DE FINALIZACIÓN: Si el viaje no está o cambió de estado
             if (!miV || miV.estado === "finalizado" || miV.estado === "terminado") {
                 clearInterval(rastreo);
                 alert("VIAJE FINALIZADO. ¡Gracias por confiar en Smart Traslados!");
@@ -271,6 +270,18 @@ function iniciarModoSeguimiento() {
                     icon.rotation = rumbo;
                     markerC.setIcon(icon);
                 }
+
+                // RECALCULO DE RUTA DINÁMICO
+                directionsService.route({
+                    origin: posChofer,
+                    destination: miV.destino,
+                    travelMode: 'DRIVING'
+                }, (res, stat) => {
+                    if(stat === 'OK') {
+                        directionsRenderer.setDirections(res);
+                    }
+                });
+
                 map.panTo(posChofer);
             }
         } catch(e) { console.log("Error Seguimiento", e); }
