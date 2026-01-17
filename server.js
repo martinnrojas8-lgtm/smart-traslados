@@ -81,12 +81,38 @@ const UbicacionSchema = new mongoose.Schema({
 });
 const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
+// --- NUEVO ESQUEMA PARA MENSAJES REALES ---
+const MensajeSchema = new mongoose.Schema({
+    destino: String, // 'choferes' o 'pasajeros'
+    texto: String,
+    fecha: { type: Date, default: Date.now }
+});
+const Mensaje = mongoose.model('Mensaje', MensajeSchema);
+
 // --- RUTAS ---
 app.use(express.static(path.join(__dirname, 'Public')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
+// --- RUTAS DE MENSAJERÍA ---
+app.post('/enviar-mensaje-masivo', async (req, res) => {
+    try {
+        const { destino, texto } = req.body;
+        const nuevoMsg = new Mensaje({ destino, texto });
+        await nuevoMsg.save();
+        res.json({ mensaje: "Mensaje guardado en base de datos" });
+    } catch (e) { res.status(500).json({ error: "Error al guardar mensaje" }); }
+});
+
+app.get('/obtener-ultimo-mensaje/:rol', async (req, res) => {
+    try {
+        const msg = await Mensaje.findOne({ destino: req.params.rol }).sort({ fecha: -1 });
+        res.json(msg || { texto: "" });
+    } catch (e) { res.status(500).json({ error: "Error al obtener mensaje" }); }
+});
+
+// --- EL RESTO DE TUS RUTAS (SIN CAMBIOS) ---
 app.post('/solicitar-viaje', async (req, res) => {
     try {
         const d = req.body;
@@ -134,7 +160,6 @@ app.post('/rechazar-viaje', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-// NUEVA RUTA PARA ELIMINAR REGISTROS DEL HISTORIAL (ADMIN)
 app.post('/eliminar-viaje', async (req, res) => {
     try {
         const { id } = req.body;
