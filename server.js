@@ -43,7 +43,6 @@ const ViajeSchema = new mongoose.Schema({
     hora: { type: String, default: () => new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) },
     chofer: { type: String, default: "Pendiente" },
     choferTel: { type: String, default: null },
-    // NUEVOS CAMPOS PARA SEGUIMIENTO
     autoModelo: String,
     autoPatente: String,
     autoColor: String,
@@ -73,7 +72,6 @@ const TarifaSchema = new mongoose.Schema({
 });
 const Tarifa = mongoose.model('Tarifa', TarifaSchema);
 
-// ESQUEMA PARA GPS EN VIVO
 const UbicacionSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
     lat: Number,
@@ -128,13 +126,21 @@ app.post('/aceptar-viaje', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-// NUEVA RUTA PARA RECHAZAR / LIMPIAR PENDIENTES
 app.post('/rechazar-viaje', async (req, res) => {
     try {
         const { viajeId } = req.body;
         await Viaje.findByIdAndUpdate(viajeId, { estado: "cancelado" });
         res.json({ mensaje: "Viaje rechazado" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+// NUEVA RUTA PARA ELIMINAR REGISTROS DEL HISTORIAL (ADMIN)
+app.post('/eliminar-viaje', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await Viaje.findByIdAndDelete(id);
+        res.json({ mensaje: "Viaje eliminado del historial" });
+    } catch (e) { res.status(500).json({ error: "Error al eliminar registro" }); }
 });
 
 app.get('/obtener-viajes', async (req, res) => {
@@ -259,7 +265,6 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
     } catch (e) { res.status(500).send(); }
 });
 
-// MODIFICADO PARA QUE NO FILTRE POR TIEMPO Y EVITAR ERROR DE ZONA HORARIA
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
         const choferes = await Ubicacion.find({}); 
@@ -267,7 +272,6 @@ app.get('/obtener-choferes-activos', async (req, res) => {
     } catch (e) { res.status(500).send(); }
 });
 
-// NUEVA RUTA PARA GPS (VERIFICADA)
 app.post('/actualizar-ubicacion-chofer', async (req, res) => {
     try {
         const { telefono, lat, lng, estado } = req.body;
