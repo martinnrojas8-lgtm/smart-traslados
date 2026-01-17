@@ -177,7 +177,6 @@ async function mostrarInfoPago(e) {
     const div = document.getElementById('infoPago');
     if(div.style.display === 'block') { div.style.display = 'none'; return; }
 
-    // Datos por defecto por si falla el servidor
     let monto = "10.000"; 
     let alias = "martin.rojas78"; 
     let telAdmin = "";
@@ -198,9 +197,7 @@ async function mostrarInfoPago(e) {
             if (dataC.alias) alias = dataC.alias;
             if (dataC.tel) telAdmin = dataC.tel;
         }
-    } catch (err) {
-        console.warn("Usando datos de respaldo.");
-    }
+    } catch (err) { console.warn("Usando datos de respaldo."); }
 
     document.getElementById('montoPin').innerText = "$" + monto;
     document.getElementById('aliasPin').innerText = alias;
@@ -231,9 +228,7 @@ async function chequearMensajesAdmin() {
 }
 
 function marcarMensajeComoLeido() {
-    if (ultimoMsgID) {
-        localStorage.setItem('visto_msg_' + ultimoMsgID, 'true');
-    }
+    if (ultimoMsgID) { localStorage.setItem('visto_msg_' + ultimoMsgID, 'true'); }
     document.getElementById('modalNovedad').style.display = 'none';
 }
 
@@ -375,9 +370,7 @@ function transmitirUbicacion() {
         });
         if(marker) {
             marker.setPosition(coords);
-            const icon = marker.getIcon();
-            icon.rotation = heading;
-            marker.setIcon(icon);
+            const icon = marker.getIcon(); icon.rotation = heading; marker.setIcon(icon);
         }
         if(viajeActualId) {
             map.panTo(coords);
@@ -463,17 +456,23 @@ function trazarRuta(destino) {
     });
 }
 
-function finalizarViaje() {
-    viajeActualId = null; estadoActual = "disponible"; ultimaRutaDestino = ""; faseViaje = 1;
-    directionsRenderer.setDirections({routes: []});
-    document.getElementById("controlesViaje").style.display = "none";
-    document.getElementById("controlesEstandar").style.display = "block";
-    navigator.geolocation.getCurrentPosition(pos => { 
-        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); 
-        map.setZoom(18); 
-        map.setHeading(0); 
-    });
-    toggleEstado(); 
+async function finalizarViaje() {
+    try {
+        await fetch('/finalizar-viaje-real', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ viajeId: viajeActualId }) 
+        });
+        viajeActualId = null; estadoActual = "disponible"; ultimaRutaDestino = ""; faseViaje = 1;
+        directionsRenderer.setDirections({routes: []});
+        document.getElementById("controlesViaje").style.display = "none";
+        document.getElementById("controlesEstandar").style.display = "block";
+        navigator.geolocation.getCurrentPosition(pos => { 
+            map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); 
+            map.setZoom(18); map.setHeading(0); 
+        });
+        toggleEstado(); 
+    } catch (e) { alert("Error al conectar con el servidor."); }
 }
 
 async function rechazarViaje() {
