@@ -16,6 +16,11 @@
   #map{ width:100%; height:350px; border-radius:10px; margin-bottom:10px; background: #222; }
   .btn-perfil{ width:40px; height:40px; border-radius:50%; border:2px solid #00c853; overflow:hidden; background:#333; display:flex; align-items:center; justify-content:center; }
   .btn-perfil img{ width:100%; height:100%; object-fit:cover; }
+  
+  /* ESTILO PARA EL MODAL DE NOVEDADES DEL ADMIN */
+  #modalNovedad { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
+  .novedad-box { background: #111; border: 2px solid #00c853; padding: 25px; border-radius: 15px; width: 80%; max-width: 400px; text-align: center; }
+
   #modalConfirmacion { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; }
   #panelSeguimiento { display: none; background: #111; border-top: 2px solid #00c853; padding: 20px; position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; z-index: 100; border-radius: 20px 20px 0 0; }
   .info-resumen { display: flex; justify-content: space-around; background: #222; padding: 10px; border-radius: 10px; margin: 10px 0; border: 1px solid #333; }
@@ -31,6 +36,14 @@
       <span id="iconoUser">👤</span>
   </div>
 </header>
+
+<div id="modalNovedad">
+    <div class="novedad-box">
+        <h3 style="color: #00c853; margin-top: 0;">📢 COMUNICADO</h3>
+        <p id="txtNovedad" style="font-size: 16px; line-height: 1.4; margin: 20px 0;"></p>
+        <button onclick="document.getElementById('modalNovedad').style.display='none'" style="background: #00c853; color: #000;">ENTENDIDO</button>
+    </div>
+</div>
 
 <div id="modalConfirmacion">
     <div style="background: #111; border: 2px solid #00c853; padding: 30px; border-radius: 20px; width: 90%;">
@@ -86,7 +99,7 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
 <script>
 const sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
-let map, directionsService, directionsRenderer, markerC, idViaje, viajeInfo;
+let map, directionsService, directionsRenderer, markerC, idViaje, viajeInfo, ultimoMsgID = null;
 
 async function initApp() {
     if (!sesion.telefono) return location.href = "/";
@@ -110,6 +123,22 @@ async function initApp() {
             calcularRuta(); 
         });
     });
+
+    // Iniciar escucha de mensajes del administrador
+    setInterval(chequearMensajesAdmin, 15000);
+}
+
+// FUNCIÓN PARA RECIBIR MENSAJES DEL ADMIN
+async function chequearMensajesAdmin() {
+    try {
+        const res = await fetch('/obtener-ultimo-mensaje/pasajeros');
+        const data = await res.json();
+        if (data && data.texto && data._id !== ultimoMsgID) {
+            ultimoMsgID = data._id;
+            document.getElementById('txtNovedad').innerText = data.texto;
+            document.getElementById('modalNovedad').style.display = 'flex';
+        }
+    } catch (e) { console.error("Error al recibir comunicados"); }
 }
 
 function calcularRuta() {
@@ -127,7 +156,6 @@ function calcularRuta() {
 }
 
 async function pedirViaje() {
-    // --- NUEVO BLOQUE DE SEGURIDAD ---
     try {
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
@@ -138,7 +166,6 @@ async function pedirViaje() {
             return;
         }
     } catch (e) { console.error("Error validando usuario"); }
-    // --- FIN BLOQUE DE SEGURIDAD ---
 
     const pedido = { 
         pasajeroTel: sesion.telefono, 
