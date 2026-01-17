@@ -81,7 +81,6 @@ const UbicacionSchema = new mongoose.Schema({
 });
 const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
-// --- NUEVO ESQUEMA PARA MENSAJES REALES ---
 const MensajeSchema = new mongoose.Schema({
     destino: String, // 'choferes' o 'pasajeros'
     texto: String,
@@ -112,7 +111,7 @@ app.get('/obtener-ultimo-mensaje/:rol', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error al obtener mensaje" }); }
 });
 
-// --- EL RESTO DE TUS RUTAS (SIN CAMBIOS) ---
+// --- RUTAS DE VIAJES ---
 app.post('/solicitar-viaje', async (req, res) => {
     try {
         const d = req.body;
@@ -152,6 +151,15 @@ app.post('/aceptar-viaje', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// NUEVA RUTA: FINALIZAR VIAJE (Para que el pasajero sepa que terminó)
+app.post('/finalizar-viaje', async (req, res) => {
+    try {
+        const { viajeId } = req.body;
+        await Viaje.findByIdAndUpdate(viajeId, { estado: "finalizado" });
+        res.json({ mensaje: "Viaje finalizado correctamente" });
+    } catch (e) { res.status(500).json({ error: "Error al finalizar" }); }
+});
+
 app.post('/rechazar-viaje', async (req, res) => {
     try {
         const { viajeId } = req.body;
@@ -175,6 +183,7 @@ app.get('/obtener-viajes', async (req, res) => {
     } catch (e) { res.status(500).send(e); }
 });
 
+// --- GESTIÓN DE USUARIOS ---
 app.post('/aprobar-chofer', async (req, res) => {
     try {
         const nuevoEstado = req.body.aprobado !== undefined ? req.body.aprobado : true;
@@ -307,6 +316,14 @@ app.post('/actualizar-ubicacion-chofer', async (req, res) => {
         );
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error GPS" }); }
+});
+
+// NUEVA RUTA: LIMPIAR UBICACIÓN (Para cuando el chofer se desconecta o termina viaje)
+app.post('/limpiar-ubicacion', async (req, res) => {
+    try {
+        await Ubicacion.findOneAndDelete({ telefono: req.body.telefono });
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
 app.get('/admin-panel', (req, res) => { res.sendFile(path.join(__dirname, 'admin', 'index-admin.html')); });
