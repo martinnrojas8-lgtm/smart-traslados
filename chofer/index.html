@@ -169,7 +169,6 @@ const darkMapStyle = [
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
-    // PRECARGAMOS LA INFO DEL PIN AL INICIO PARA QUE NO HAYA PARPADEO
     cargarInfoPinSilencioso();
     await cargarDatosChofer();
     initMap();
@@ -179,7 +178,6 @@ async function initApp() {
     solicitarWakeLock();
 }
 
-// NUEVA FUNCIÓN PARA PRECARGAR DATOS DESDE MONGO/RENDER
 async function cargarInfoPinSilencioso() {
     try {
         const [resT, resC] = await Promise.all([
@@ -207,7 +205,6 @@ async function cargarInfoPinSilencioso() {
 async function mostrarInfoPago(e) {
     e.preventDefault();
     const div = document.getElementById('infoPago');
-    // Si ya está cargado, solo toggleamos visibilidad sin hacer fetch de nuevo
     if(div.style.display === 'block') { div.style.display = 'none'; } 
     else { div.style.display = 'block'; }
 }
@@ -382,8 +379,11 @@ function toggleEstado() {
     document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
 }
 
+// BUSCADOR DE VIAJES CORREGIDO PARA EVITAR DUPLICADOS
 setInterval(async () => {
-    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId) return;
+    // Si el modal ya está abierto o ya hay un ID de viaje cargado, NO buscamos más
+    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || document.getElementById("modalViaje").style.display === "block") return;
+    
     try {
         const res = await fetch('/viajes-pendientes');
         const viajes = await res.json();
@@ -399,25 +399,34 @@ setInterval(async () => {
             document.getElementById("modalViaje").style.display = "block";
             sonarAlerta();
         }
-    } catch (e) {}
+    } catch (e) {
+        viajeActualId = null;
+    }
 }, 4000);
 
+// BOTÓN ACEPTAR CORREGIDO
 document.getElementById('btnAceptarViaje').onclick = async function() {
     detenerAlerta();
-    const idViajeLocal = viajeActualId;
-    estadoActual = "en viaje"; 
+    const idParaAceptar = viajeActualId;
     
     try {
         const respuesta = await fetch('/aceptar-viaje', { 
             method: 'POST', 
             headers: {'Content-Type': 'application/json'}, 
             body: JSON.stringify({ 
-                viajeId: idViajeLocal, choferNombre: sesion.nombre, choferTel: sesion.telefono,
-                autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color
+                viajeId: idParaAceptar, 
+                choferNombre: sesion.nombre, 
+                choferTel: sesion.telefono,
+                autoModelo: datosAuto.modelo, 
+                autoPatente: datosAuto.patente, 
+                autoColor: datosAuto.color
             }) 
         });
 
-        if (respuesta.ok) {
+        const data = await respuesta.json();
+
+        if (respuesta.ok && data.viaje) {
+            estadoActual = "en viaje"; 
             document.getElementById("modalViaje").style.display = "none";
             document.getElementById("controlesEstandar").style.display = "none";
             document.getElementById("controlesViaje").style.display = "block";
@@ -427,15 +436,12 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("btnAccionViaje").style.background = "#ffb300";
             trazarRuta(direccionOrigenViaje);
         } else {
-            viajeActualId = null;
-            estadoActual = "disponible";
-            document.getElementById("modalViaje").style.display = "none";
-            alert("El viaje ya no está disponible.");
+            alert("Este viaje ya no está disponible.");
+            location.reload(); 
         }
     } catch (e) { 
-        viajeActualId = null;
-        estadoActual = "disponible";
-        alert("Error al aceptar"); 
+        alert("Error de conexión");
+        location.reload();
     }
 };
 
