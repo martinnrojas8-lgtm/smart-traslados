@@ -368,30 +368,61 @@ function verPerfilCompleto(tel) {
 }
 function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
 
+// --- MODIFICACIÓN DE SEGURIDAD PARA CARGAR TARIFAS ---
 async function cargarTarifas() {
     try {
         const res = await fetch('/obtener-tarifas');
         const data = await res.json();
-        document.getElementById('precioBase').value = data.precioBase || "";
-        document.getElementById('precioKm').value = data.precioKm || "";
-        document.getElementById('montoFijo').value = data.montoFijoInfo || "";
-    } catch (e) {}
+        if(data) {
+            document.getElementById('precioBase').value = data.precioBase || "";
+            document.getElementById('precioKm').value = data.precioKm || "";
+            // Usamos una validación para no pisar con vacío si el dato no llegó
+            if(data.montoFijoInfo) {
+                document.getElementById('montoFijo').value = data.montoFijoInfo;
+                localStorage.setItem('montoFijoInfo', data.montoFijoInfo);
+            }
+        }
+    } catch (e) { console.error("Error cargando tarifas"); }
 }
 
 async function guardarTarifas() {
     const pBase = parseInt(document.getElementById('precioBase').value);
     const pKm = parseInt(document.getElementById('precioKm').value);
     const mFijo = document.getElementById('montoFijo').value;
-    await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm, montoFijoInfo: mFijo }) });
-    localStorage.setItem('montoFijoInfo', mFijo);
-    alert('Tarifas guardadas en servidor');
+    
+    if(!mFijo) return alert("El monto de suscripción no puede estar vacío.");
+
+    try {
+        const res = await fetch('/actualizar-tarifas', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ precioBase: pBase, precioKm: pKm, montoFijoInfo: mFijo }) 
+        });
+        if(res.ok) {
+            localStorage.setItem('montoFijoInfo', mFijo);
+            alert('Tarifas guardadas en servidor (MongoDB)');
+        }
+    } catch(e) { alert("Error al conectar con Render"); }
 }
 
 async function guardarConfiguracion() {
-    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
-    await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-    localStorage.setItem('configAdmin', JSON.stringify(config));
-    alert('Configuración guardada en servidor');
+    const config = { 
+        app: document.getElementById('confApp').value, 
+        tel: document.getElementById('confTel').value, 
+        mail: document.getElementById('confMail').value, 
+        alias: document.getElementById('confAlias').value 
+    };
+    try {
+        const res = await fetch('/actualizar-config-admin', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(config) 
+        });
+        if(res.ok) {
+            localStorage.setItem('configAdmin', JSON.stringify(config));
+            alert('Configuración guardada en servidor (MongoDB)');
+        }
+    } catch(e) { alert("Error de red"); }
 }
 
 async function generarNuevoCodigo() {
@@ -434,9 +465,12 @@ async function compartirCodigo() {
     });
 }
 
+// --- MODIFICACIÓN DE SEGURIDAD EN EL ONLOAD ---
 window.onload = () => {
     cargarDatosReales();
     cargarTarifas();
+    
+    // Recuperar configuración de backup local por si Mongo tarda
     const config = JSON.parse(localStorage.getItem('configAdmin'));
     if(config) {
         document.getElementById('confApp').value = config.app || "";
@@ -444,6 +478,10 @@ window.onload = () => {
         document.getElementById('confMail').value = config.mail || "";
         document.getElementById('confAlias').value = config.alias || "";
     }
+    
+    // Recuperar monto backup
+    const montoBkp = localStorage.getItem('montoFijoInfo');
+    if(montoBkp) document.getElementById('montoFijo').value = montoBkp;
 };
 </script>
 </body>
