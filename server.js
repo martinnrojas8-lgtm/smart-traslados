@@ -112,7 +112,7 @@ app.get('/obtener-ultimo-mensaje/:rol', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error al obtener mensaje" }); }
 });
 
-// --- EL RESTO DE TUS RUTAS (SIN CAMBIOS) ---
+// --- RUTAS DE VIAJES ---
 app.post('/solicitar-viaje', async (req, res) => {
     try {
         const d = req.body;
@@ -150,6 +150,21 @@ app.post('/aceptar-viaje', async (req, res) => {
         }, { new: true });
         res.json({ mensaje: "Viaje aceptado", viaje });
     } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
+// RUTA AGREGADA PARA FINALIZAR VIAJE
+app.post('/finalizar-viaje', async (req, res) => {
+    try {
+        const { id } = req.body;
+        const viaje = await Viaje.findByIdAndUpdate(id, { estado: "finalizado" }, { new: true });
+        if (viaje) {
+            res.json({ ok: true, mensaje: "Viaje finalizado con éxito" });
+        } else {
+            res.status(404).json({ ok: false, mensaje: "Viaje no encontrado" });
+        }
+    } catch (e) { 
+        res.status(500).json({ ok: false, error: "Error al finalizar viaje" }); 
+    }
 });
 
 app.post('/rechazar-viaje', async (req, res) => {
@@ -229,7 +244,7 @@ app.post('/login', async (req, res) => {
 
 app.post('/register', async (req, res) => {
     try {
-        const { telefono, rol, nombre } = req.body; // SE AGREGÓ NOMBRE AQUÍ
+        const { telefono, rol, nombre } = req.body; 
         const existe = await Usuario.findOne({ telefono });
         if(existe) {
             if (existe.bloqueado) return res.status(403).json({ mensaje: "Número bloqueado" });
@@ -238,7 +253,7 @@ app.post('/register', async (req, res) => {
         const nuevo = new Usuario({ 
             telefono, 
             rol: rol.toLowerCase(),
-            nombre: nombre || "" // SE AGREGÓ NOMBRE AQUÍ
+            nombre: nombre || "" 
         });
         await nuevo.save();
         res.json({ mensaje: "Ok", usuario: nuevo });
