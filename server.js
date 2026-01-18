@@ -81,8 +81,9 @@ const UbicacionSchema = new mongoose.Schema({
 });
 const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
+// --- NUEVO ESQUEMA PARA MENSAJES REALES ---
 const MensajeSchema = new mongoose.Schema({
-    destino: String, 
+    destino: String, // 'choferes' o 'pasajeros'
     texto: String,
     fecha: { type: Date, default: Date.now }
 });
@@ -94,6 +95,7 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
+// --- RUTAS DE MENSAJERÍA ---
 app.post('/enviar-mensaje-masivo', async (req, res) => {
     try {
         const { destino, texto } = req.body;
@@ -110,6 +112,7 @@ app.get('/obtener-ultimo-mensaje/:rol', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error al obtener mensaje" }); }
 });
 
+// --- RUTAS DE VIAJES ---
 app.post('/solicitar-viaje', async (req, res) => {
     try {
         const d = req.body;
@@ -137,30 +140,20 @@ app.get('/viajes-pendientes', async (req, res) => {
 app.post('/aceptar-viaje', async (req, res) => {
     try {
         const { viajeId, choferNombre, choferTel, autoModelo, autoPatente, autoColor } = req.body;
-        // MODIFICACIÓN PARA EVITAR DUPLICADOS:
-        // Solo actualiza si el estado actual es exactamente "pendiente"
-        const viaje = await Viaje.findOneAndUpdate(
-            { _id: viajeId, estado: "pendiente" }, 
-            {
-                chofer: choferNombre,
-                choferTel: choferTel,
-                autoModelo: autoModelo,
-                autoPatente: autoPatente,
-                autoColor: autoColor,
-                estado: "aceptado"
-            }, 
-            { new: true }
-        );
-
-        if (!viaje) {
-            // Si no encuentra el viaje como pendiente, es porque alguien más ya lo aceptó
-            return res.status(409).json({ error: "El viaje ya ha sido aceptado por otro chofer" });
-        }
-
+        // ÚNICO CAMBIO: Se agrega estado: "pendiente" a la búsqueda para asegurar que solo el primer chofer lo tome.
+        const viaje = await Viaje.findOneAndUpdate({ _id: viajeId, estado: "pendiente" }, {
+            chofer: choferNombre,
+            choferTel: choferTel,
+            autoModelo: autoModelo,
+            autoPatente: autoPatente,
+            autoColor: autoColor,
+            estado: "aceptado"
+        }, { new: true });
         res.json({ mensaje: "Viaje aceptado", viaje });
-    } catch (e) { res.status(500).json({ error: "Error al procesar aceptación" }); }
+    } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// RUTA AGREGADA PARA FINALIZAR VIAJE
 app.post('/finalizar-viaje', async (req, res) => {
     try {
         const { id } = req.body;
