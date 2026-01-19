@@ -3,158 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil del Chofer - Smart Taxi</title>
+    <title>Perfil Smart</title>
     <style>
         body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
         header { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .perfil-info { display: flex; align-items: center; gap: 10px; }
-        #imgMiniatura { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid #00c853; background: #222; }
         .container { max-width: 500px; background: #111; padding: 20px; border-radius: 10px; margin: 10px auto; border: 1px solid #333; box-sizing: border-box; }
-        h2 { text-align: center; color: #00c853; margin-top: 0; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #ccc; }
-        input[type="text"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; background: #222; color: #fff; }
+        h2 { text-align: center; color: #00c853; }
+        label { display: block; margin-top: 15px; color: #ccc; font-weight: bold; }
+        input[type="text"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #333; border-radius: 8px; background: #222; color: #fff; box-sizing: border-box; }
         .preview-img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; margin-top: 10px; display: none; border: 1px solid #00c853; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; }
-        .btn-guardar { background: #00c853; color: #000; }
-        .btn-mapa-top { background: #00c853; color: #000; margin-bottom: 10px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 20px; background: #00c853; color: #000; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="perfil-info">
-        <img id="imgMiniatura" src="" alt="">
-        <span style="font-size: 14px; font-weight: bold;">Mi Perfil</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <img id="imgMini" src="" style="width: 35px; height: 35px; border-radius: 50%; background: #222;">
+        <span>Mi Perfil</span>
     </div>
     <span style="color: #00c853; font-weight: bold;">Smart Chofer</span>
 </header>
 
 <div class="container">
-    <button class="btn-mapa-top" onclick="location.href='index.html'">MAPA</button>
-
-    <h2 id="titulo">Mi Perfil</h2>
+    <button style="margin-bottom: 20px;" onclick="location.href='index.html'">VOLVER AL MAPA</button>
+    <h2 id="st">Cargando...</h2>
     
-    <label>Nombre Completo</label>
-    <input type="text" id="nombre">
+    <label>Nombre</label><input type="text" id="n">
+    <label>Modelo</label><input type="text" id="m">
+    <label>Patente</label><input type="text" id="p">
+    <label>Color</label><input type="text" id="c">
 
-    <label>Modelo del Auto</label>
-    <input type="text" id="modelo">
+    <label>Foto Perfil</label><input type="file" accept="image/*" onchange="p(this, 'i1')"><img id="i1" class="preview-img">
+    <label>Carnet</label><input type="file" accept="image/*" onchange="p(this, 'i2')"><img id="i2" class="preview-img">
+    <label>Seguro</label><input type="file" accept="image/*" onchange="p(this, 'i3')"><img id="i3" class="preview-img">
+    <label>Tarjeta</label><input type="file" accept="image/*" onchange="p(this, 'i4')"><img id="i4" class="preview-img">
 
-    <label>Patente</label>
-    <input type="text" id="patente">
-
-    <label>Color del Auto</label>
-    <input type="text" id="color">
-
-    <label>Foto de Perfil</label>
-    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pPerfil')">
-    <img id="pPerfil" class="preview-img">
-
-    <label>Foto de Carnet</label>
-    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pCarnet')">
-    <img id="pCarnet" class="preview-img">
-
-    <label>Foto de Seguro</label>
-    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pSeguro')">
-    <img id="pSeguro" class="preview-img">
-
-    <label>Foto de Tarjeta</label>
-    <input type="file" accept="image/*" onchange="procesarFoto(this, 'pTarjeta')">
-    <img id="pTarjeta" class="preview-img">
-
-    <button class="btn-guardar" id="btnGuardar" onclick="guardarPerfil()">GUARDAR TODO</button>
+    <button id="bg" onclick="g()">GUARDAR ACTUALIZACIÓN</button>
 </div>
 
 <script>
-    const fotos = { pPerfil: "", pCarnet: "", pSeguro: "", pTarjeta: "" };
+    let f = {i1:"", i2:"", i3:"", i4:""};
+    let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
 
-    async function cargar() {
-        let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
-        if (!tel) return;
-
+    async function l() {
+        if(!tel) return;
         try {
-            const res = await fetch('/obtener-usuarios?t=' + Date.now());
-            const users = await res.json();
-            const u = users.find(user => String(user.telefono) === String(tel));
-
-            if (u) {
-                // Cargamos textos (buscando en todos los nombres posibles)
-                document.getElementById('nombre').value = u.nombre || "";
-                document.getElementById('modelo').value = u.autoModelo || u.modelo || "";
-                document.getElementById('patente').value = u.autoPatente || u.patente || "";
-                document.getElementById('color').value = u.autoColor || u.color || "";
-
-                // Cargamos fotos
-                const cargarFoto = (id, src) => {
-                    if (src && src.length > 100) {
-                        document.getElementById(id).src = src;
-                        document.getElementById(id).style.display = 'block';
-                        fotos[id] = src;
-                        if(id === 'pPerfil') document.getElementById('imgMiniatura').src = src;
-                    }
-                };
-                cargarFoto('pPerfil', u.foto);
-                cargarFoto('pCarnet', u.fotoCarnet);
-                cargarFoto('pSeguro', u.fotoSeguro);
-                cargarFoto('pTarjeta', u.fotoTarjeta);
+            const r = await fetch('/obtener-usuarios?t=' + Date.now());
+            const us = await r.json();
+            const u = us.find(x => String(x.telefono) === String(tel));
+            if(u) {
+                document.getElementById('st').innerText = "Datos Actuales";
+                document.getElementById('n').value = u.nombre || "";
+                // Prioridad absoluta al dato nuevo, si es "Jj" lo limpiamos
+                const cl = (v) => (v === "Jj" || v === "jj") ? "" : v;
+                document.getElementById('m').value = cl(u.autoModelo || u.modelo || "");
+                document.getElementById('p').value = cl(u.autoPatente || u.patente || "");
+                document.getElementById('c').value = cl(u.autoColor || u.color || "");
+                
+                const cf = (id, s) => { if(s && s.length > 100){ document.getElementById(id).src=s; document.getElementById(id).style.display='block'; f[id]=s; if(id==='i1')document.getElementById('imgMini').src=s; }};
+                cf('i1', u.foto); cf('i2', u.fotoCarnet); cf('i3', u.fotoSeguro); cf('i4', u.fotoTarjeta);
             }
-        } catch (e) { console.error(e); }
+        } catch(e) { document.getElementById('st').innerText = "Error de conexión"; }
     }
 
-    function procesarFoto(input, id) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
+    function p(i, id) {
+        if (i.files && i.files[0]) {
+            const r = new FileReader();
+            r.onload = (e) => {
                 const img = new Image();
                 img.src = e.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = 600;
-                    canvas.height = img.height * (600 / img.width);
+                    canvas.width = 600; canvas.height = img.height * (600 / img.width);
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.5);
-                    fotos[id] = base64;
-                    document.getElementById(id).src = base64;
+                    f[id] = canvas.toDataURL('image/jpeg', 0.5);
+                    document.getElementById(id).src = f[id];
                     document.getElementById(id).style.display = 'block';
                 }
             }
-            reader.readAsDataURL(input.files[0]);
+            r.readAsDataURL(i.files[0]);
         }
     }
 
-    async function guardarPerfil() {
-        let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
-        const btn = document.getElementById('btnGuardar');
-        btn.disabled = true;
-        btn.innerText = "GUARDANDO...";
-
-        const datos = {
-            telefono: tel,
-            nombre: document.getElementById('nombre').value,
-            autoModelo: document.getElementById('modelo').value,
-            modelo: document.getElementById('modelo').value,
-            autoPatente: document.getElementById('patente').value,
-            patente: document.getElementById('patente').value,
-            autoColor: document.getElementById('color').value,
-            color: document.getElementById('color').value,
-            foto: fotos.pPerfil,
-            fotoCarnet: fotos.pCarnet,
-            fotoSeguro: fotos.pSeguro,
-            fotoTarjeta: fotos.pTarjeta
+    async function g() {
+        const b = document.getElementById('bg');
+        b.disabled = true; b.innerText = "GUARDANDO...";
+        const d = {
+            telefono: tel, nombre: document.getElementById('n').value,
+            autoModelo: document.getElementById('m').value, modelo: document.getElementById('m').value,
+            autoPatente: document.getElementById('p').value, patente: document.getElementById('p').value,
+            autoColor: document.getElementById('c').value, color: document.getElementById('c').value,
+            foto: f.i1, fotoCarnet: f.i2, fotoSeguro: f.i3, fotoTarjeta: f.i4
         };
-
         try {
-            await fetch('/actualizar-perfil-chofer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-            alert("Guardado. Verificando...");
+            await fetch('/actualizar-perfil-chofer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(d)});
+            alert("¡Éxito! Datos guardados.");
             location.reload();
-        } catch (e) { alert("Error"); btn.disabled = false; }
+        } catch(e) { alert("Error al guardar"); b.disabled = false; b.innerText = "GUARDAR"; }
     }
-
-    window.onload = cargar;
+    window.onload = l;
 </script>
 </body>
 </html>
