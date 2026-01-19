@@ -17,7 +17,6 @@
         button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; }
         .btn-guardar { background: #00c853; color: #000; }
         
-        /* ESTILO BOTÓN MAPA SUPERIOR */
         .btn-mapa-top { background: #00c853; color: #000; margin-bottom: 10px; }
 
         .btn-whatsapp { 
@@ -98,7 +97,6 @@
 
             if (miPerfil && miPerfil.nombre && miPerfil.autoPatente) {
                 document.getElementById('titulo').innerText = "Mis Datos";
-
                 document.getElementById('nombre').value = miPerfil.nombre || "";
                 document.getElementById('modelo').value = miPerfil.autoModelo || "";
                 document.getElementById('patente').value = miPerfil.autoPatente || "";
@@ -169,10 +167,10 @@
             const datos = {
                 telefono: tel,
                 nombre: nombre,
-                modelo: modelo,
-                patente: patente,
-                color: color,
-                fotoPerfil: imagenesComprimidas.pPerfil,
+                autoModelo: modelo, // Corregido: Coincide con backend/admin
+                autoPatente: patente, // Corregido: Coincide con backend/admin
+                autoColor: color,   // Corregido: Coincide con backend/admin
+                foto: imagenesComprimidas.pPerfil, // Corregido: Coincide con admin
                 fotoCarnet: imagenesComprimidas.pCarnet,
                 fotoSeguro: imagenesComprimidas.pSeguro,
                 fotoTarjeta: imagenesComprimidas.pTarjeta
