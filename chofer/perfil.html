@@ -33,13 +33,13 @@
 <div class="container">
     <button class="btn-mapa-top" onclick="location.href='index.html'">MAPA</button>
 
-    <h2 id="titulo">Cargando...</h2>
+    <h2 id="titulo">Verificando Datos...</h2>
     
     <label>Nombre Completo</label>
-    <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
+    <input type="text" id="nombre" placeholder="Cargando...">
 
     <label>Modelo del Auto</label>
-    <input type="text" id="modelo" placeholder="Ej: Fiat Cronos">
+    <input type="text" id="modelo" placeholder="Ej: Chevrolet Onix">
 
     <label>Patente</label>
     <input type="text" id="patente" placeholder="Ej: AA123BB">
@@ -64,10 +64,6 @@
     <img id="pTarjeta" class="preview-img">
 
     <button class="btn-guardar" id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
-
-    <a href="https://wa.me/5491100000000" target="_blank" class="btn-whatsapp" style="width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 15px; box-sizing: border-box; display: flex;">
-        SOPORTE TÉCNICO
-    </a>
 </div>
 
 <script>
@@ -76,26 +72,29 @@
     async function cargarDatosYValidar() {
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
         if (!tel) {
-            document.getElementById('titulo').innerText = "Registro Obligatorio";
+            document.getElementById('titulo').innerText = "Identificación Requerida";
             return;
         }
 
         try {
-            // v=Date.now() es fundamental para ignorar el cache del celular
-            const response = await fetch('/obtener-usuarios?v=' + Date.now());
+            const response = await fetch('/obtener-usuarios?t=' + new Date().getTime());
             const usuarios = await response.json();
             const miPerfil = usuarios.find(u => String(u.telefono) === String(tel));
 
             if (miPerfil) {
-                document.getElementById('titulo').innerText = "Mis Datos";
+                console.log("Datos recibidos del servidor:", miPerfil);
+                document.getElementById('titulo').innerText = "Mis Datos Guardados";
                 
-                // ASIGNACIÓN SÓLIDA: Si el dato es "Jj" o está vacío, dejamos que el usuario escriba.
-                const limpiarDato = (val) => (val && val !== "Jj") ? val : "";
+                // Función para limpiar el molesto "Jj" y buscar en cualquier variante de nombre de campo
+                const obtenerValor = (v1, v2) => {
+                    let val = v1 || v2 || "";
+                    return (val === "Jj" || val === "jj") ? "" : val;
+                };
 
                 document.getElementById('nombre').value = miPerfil.nombre || "";
-                document.getElementById('modelo').value = limpiarDato(miPerfil.autoModelo) || limpiarDato(miPerfil.modelo);
-                document.getElementById('patente').value = limpiarDato(miPerfil.autoPatente) || limpiarDato(miPerfil.patente);
-                document.getElementById('color').value = limpiarDato(miPerfil.autoColor) || limpiarDato(miPerfil.color);
+                document.getElementById('modelo').value = obtenerValor(miPerfil.autoModelo, miPerfil.modelo);
+                document.getElementById('patente').value = obtenerValor(miPerfil.autoPatente, miPerfil.patente);
+                document.getElementById('color').value = obtenerValor(miPerfil.autoColor, miPerfil.color);
 
                 if (miPerfil.foto) {
                     document.getElementById('imgMiniatura').src = miPerfil.foto;
@@ -107,14 +106,14 @@
             } else {
                 document.getElementById('titulo').innerText = "Completar Registro";
             }
-        } catch (e) { 
-            console.error(e);
-            document.getElementById('titulo').innerText = "Error de Conexión";
+        } catch (e) {
+            console.error("Error en carga:", e);
+            document.getElementById('titulo').innerText = "Error de Red";
         }
     }
 
     function mostrarFotoExistente(id, src) {
-        if(!src || src.length < 100) return; // Evita cargar basura
+        if(!src || src.length < 100) return;
         const img = document.getElementById(id);
         img.src = src;
         img.style.display = 'block';
@@ -130,12 +129,12 @@
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const maxW = 800;
+                    const maxW = 600; // Un poco más chico para asegurar carga rápida
                     const scale = maxW / img.width;
                     canvas.width = maxW;
                     canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5);
                     imagenesComprimidas[idPreview] = base64;
                     document.getElementById(idPreview).src = base64;
                     document.getElementById(idPreview).style.display = 'block';
@@ -148,34 +147,29 @@
 
     async function guardarPerfil() {
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
-        const nombre = document.getElementById('nombre').value.trim();
-        const modelo = document.getElementById('modelo').value.trim();
-        const patente = document.getElementById('patente').value.trim();
-        const color = document.getElementById('color').value.trim();
+        const btn = document.getElementById('btnGuardar');
+        
+        const datos = {
+            telefono: tel,
+            nombre: document.getElementById('nombre').value.trim(),
+            autoModelo: document.getElementById('modelo').value.trim(),
+            autoPatente: document.getElementById('patente').value.trim(),
+            autoColor: document.getElementById('color').value.trim(),
+            foto: imagenesComprimidas.pPerfil,
+            fotoCarnet: imagenesComprimidas.pCarnet,
+            fotoSeguro: imagenesComprimidas.pSeguro,
+            fotoTarjeta: imagenesComprimidas.pTarjeta
+        };
 
-        // Validamos que haya cargado todo antes de enviar
-        if (!nombre || !modelo || !patente || !color || !imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
-            alert("⚠️ Por favor completa todos los campos y fotos.");
+        if (!datos.nombre || !datos.autoModelo || !datos.autoPatente || !datos.foto) {
+            alert("Faltan datos o fotos críticas.");
             return;
         }
 
-        const btn = document.getElementById('btnGuardar');
-        btn.innerText = "ENVIANDO...";
+        btn.innerText = "GUARDANDO...";
         btn.disabled = true;
 
         try {
-            const datos = {
-                telefono: tel,
-                nombre: nombre,
-                autoModelo: modelo,
-                autoPatente: patente,
-                autoColor: color,
-                foto: imagenesComprimidas.pPerfil,
-                fotoCarnet: imagenesComprimidas.pCarnet,
-                fotoSeguro: imagenesComprimidas.pSeguro,
-                fotoTarjeta: imagenesComprimidas.pTarjeta
-            };
-
             const response = await fetch('/actualizar-perfil-chofer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -183,16 +177,15 @@
             });
 
             if (response.ok) {
-                alert("✅ ¡Perfil actualizado con éxito!");
-                window.location.href = 'index.html';
-            } else {
-                alert("❌ Error en el servidor. Intenta de nuevo.");
+                alert("ÉXITO: Datos guardados en el servidor.");
+                // Forzamos un pequeño delay para que la DB impacte y recargamos
+                setTimeout(() => { window.location.href = 'index.html'; }, 500);
             }
-        } catch (error) { 
-            alert("❌ Error de red. Revisa tu conexión."); 
-        } finally { 
-            btn.innerText = "GUARDAR Y ENVIAR"; 
-            btn.disabled = false; 
+        } catch (error) {
+            alert("Error al conectar con el servidor.");
+        } finally {
+            btn.innerText = "GUARDAR Y ENVIAR";
+            btn.disabled = false;
         }
     }
 
