@@ -45,7 +45,7 @@
 <div class="container">
     <button class="btn-mapa-top" onclick="location.href='index.html'">MAPA</button>
 
-    <h2 id="titulo">Completar Registro</h2>
+    <h2 id="titulo">Cargando...</h2>
     
     <label>Nombre Completo</label>
     <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
@@ -88,15 +88,25 @@
 
     async function cargarDatosYValidar() {
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
-        if (!tel) return;
+        if (!tel) {
+            document.getElementById('titulo').innerText = "Registro Obligatorio";
+            return;
+        }
 
         try {
-            const response = await fetch('/obtener-usuarios');
+            // Agregamos un timestamp para evitar que el navegador use una versión vieja (cache)
+            const response = await fetch('/obtener-usuarios?t=' + Date.now());
             const usuarios = await response.json();
             const miPerfil = usuarios.find(u => u.telefono === tel);
 
-            if (miPerfil && miPerfil.nombre && miPerfil.autoPatente) {
-                document.getElementById('titulo').innerText = "Mis Datos";
+            if (miPerfil) {
+                // Si tiene nombre o patente, consideramos que ya existe
+                if (miPerfil.nombre || miPerfil.autoPatente) {
+                    document.getElementById('titulo').innerText = "Mis Datos";
+                } else {
+                    document.getElementById('titulo').innerText = "Completar Registro";
+                }
+
                 document.getElementById('nombre').value = miPerfil.nombre || "";
                 document.getElementById('modelo').value = miPerfil.autoModelo || "";
                 document.getElementById('patente').value = miPerfil.autoPatente || "";
@@ -112,10 +122,14 @@
             } else {
                 document.getElementById('titulo').innerText = "Registro Obligatorio";
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById('titulo').innerText = "Registro Obligatorio";
+        }
     }
 
     function mostrarFotoExistente(id, src) {
+        if(!src || src === "") return;
         const img = document.getElementById(id);
         img.src = src;
         img.style.display = 'block';
@@ -167,10 +181,10 @@
             const datos = {
                 telefono: tel,
                 nombre: nombre,
-                autoModelo: modelo, // Corregido: Coincide con backend/admin
-                autoPatente: patente, // Corregido: Coincide con backend/admin
-                autoColor: color,   // Corregido: Coincide con backend/admin
-                foto: imagenesComprimidas.pPerfil, // Corregido: Coincide con admin
+                autoModelo: modelo,
+                autoPatente: patente,
+                autoColor: color,
+                foto: imagenesComprimidas.pPerfil,
                 fotoCarnet: imagenesComprimidas.pCarnet,
                 fotoSeguro: imagenesComprimidas.pSeguro,
                 fotoTarjeta: imagenesComprimidas.pTarjeta
@@ -185,6 +199,8 @@
             const result = await response.json();
             if (result.mensaje === "Ok") {
                 alert("✅ Datos guardados con éxito.");
+                // Refrescamos los datos localmente antes de redirigir para asegurar persistencia
+                await cargarDatosYValidar();
                 window.location.href = 'index.html';
             }
         } catch (error) { alert("❌ Error al guardar."); }
