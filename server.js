@@ -108,13 +108,11 @@ app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 app.post('/actualizar-config-admin', async (req, res) => {
     try {
         const { app, tel, mail, alias } = req.body;
-        // Busca la única configuración existente y la actualiza, si no existe la crea (upsert)
         await Config.findOneAndUpdate({}, { app, tel, mail, alias }, { upsert: true });
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error al guardar config" }); }
 });
 
-// --- RUTA AGREGADA PARA OBTENER CONFIGURACIÓN ADMIN (Para que la app del chofer lea el número) ---
 app.get('/obtener-config-admin', async (req, res) => {
     try {
         const config = await Config.findOne();
@@ -122,7 +120,6 @@ app.get('/obtener-config-admin', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
-// --- RUTAS DE MENSAJERÍA ---
 app.post('/enviar-mensaje-masivo', async (req, res) => {
     try {
         const { destino, texto } = req.body;
@@ -293,13 +290,19 @@ app.get('/obtener-usuarios', async (req, res) => {
     } catch (e) { res.status(500).send(e); }
 });
 
+// --- RUTA ACTUALIZADA (SOLO ESTO SE TOCÓ) ---
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
         await Usuario.findOneAndUpdate({ telefono: d.telefono }, { 
-            nombre: d.nombre, autoModelo: d.modelo, autoPatente: d.patente, 
-            autoColor: d.color, foto: d.fotoPerfil, fotoCarnet: d.fotoCarnet,
-            fotoSeguro: d.fotoSeguro, fotoTarjeta: d.fotoTarjeta 
+            nombre: d.nombre, 
+            autoModelo: d.autoModelo || d.modelo, 
+            autoPatente: d.autoPatente || d.patente, 
+            autoColor: d.autoColor || d.color, 
+            foto: d.foto || d.fotoPerfil, 
+            fotoCarnet: d.fotoCarnet,
+            fotoSeguro: d.fotoSeguro, 
+            fotoTarjeta: d.fotoTarjeta 
         });
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
