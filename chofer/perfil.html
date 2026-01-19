@@ -75,23 +75,27 @@
 
     async function cargarDatosYValidar() {
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
-        if (!tel) return;
+        if (!tel) {
+            document.getElementById('titulo').innerText = "Registro Obligatorio";
+            return;
+        }
 
         try {
+            // v=Date.now() es fundamental para ignorar el cache del celular
             const response = await fetch('/obtener-usuarios?v=' + Date.now());
             const usuarios = await response.json();
-            const miPerfil = usuarios.find(u => u.telefono === tel);
+            const miPerfil = usuarios.find(u => String(u.telefono) === String(tel));
 
             if (miPerfil) {
                 document.getElementById('titulo').innerText = "Mis Datos";
                 
-                // CORRECCIÓN CLAVE: Mandamos el dato nuevo por encima de todo
+                // ASIGNACIÓN SÓLIDA: Si el dato es "Jj" o está vacío, dejamos que el usuario escriba.
+                const limpiarDato = (val) => (val && val !== "Jj") ? val : "";
+
                 document.getElementById('nombre').value = miPerfil.nombre || "";
-                
-                // Si existe el dato nuevo (autoModelo, etc), lo usamos. Si no, recién ahí miramos el viejo.
-                document.getElementById('modelo').value = (miPerfil.autoModelo && miPerfil.autoModelo !== "Jj") ? miPerfil.autoModelo : (miPerfil.modelo || "");
-                document.getElementById('patente').value = (miPerfil.autoPatente && miPerfil.autoPatente !== "Jj") ? miPerfil.autoPatente : (miPerfil.patente || "");
-                document.getElementById('color').value = (miPerfil.autoColor && miPerfil.autoColor !== "Jj") ? miPerfil.autoColor : (miPerfil.color || "");
+                document.getElementById('modelo').value = limpiarDato(miPerfil.autoModelo) || limpiarDato(miPerfil.modelo);
+                document.getElementById('patente').value = limpiarDato(miPerfil.autoPatente) || limpiarDato(miPerfil.patente);
+                document.getElementById('color').value = limpiarDato(miPerfil.autoColor) || limpiarDato(miPerfil.color);
 
                 if (miPerfil.foto) {
                     document.getElementById('imgMiniatura').src = miPerfil.foto;
@@ -100,12 +104,17 @@
                 if (miPerfil.fotoCarnet) mostrarFotoExistente('pCarnet', miPerfil.fotoCarnet);
                 if (miPerfil.fotoSeguro) mostrarFotoExistente('pSeguro', miPerfil.fotoSeguro);
                 if (miPerfil.fotoTarjeta) mostrarFotoExistente('pTarjeta', miPerfil.fotoTarjeta);
+            } else {
+                document.getElementById('titulo').innerText = "Completar Registro";
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e);
+            document.getElementById('titulo').innerText = "Error de Conexión";
+        }
     }
 
     function mostrarFotoExistente(id, src) {
-        if(!src || src.length < 50) return;
+        if(!src || src.length < 100) return; // Evita cargar basura
         const img = document.getElementById(id);
         img.src = src;
         img.style.display = 'block';
@@ -144,6 +153,7 @@
         const patente = document.getElementById('patente').value.trim();
         const color = document.getElementById('color').value.trim();
 
+        // Validamos que haya cargado todo antes de enviar
         if (!nombre || !modelo || !patente || !color || !imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
             alert("⚠️ Por favor completa todos los campos y fotos.");
             return;
@@ -173,12 +183,17 @@
             });
 
             if (response.ok) {
-                alert("✅ ¡Cambios guardados! Ahora verás tus datos reales.");
-                // Limpiamos cualquier rastro de Jj y redirigimos
+                alert("✅ ¡Perfil actualizado con éxito!");
                 window.location.href = 'index.html';
+            } else {
+                alert("❌ Error en el servidor. Intenta de nuevo.");
             }
-        } catch (error) { alert("❌ Error al guardar."); }
-        finally { btn.innerText = "GUARDAR Y ENVIAR"; btn.disabled = false; }
+        } catch (error) { 
+            alert("❌ Error de red. Revisa tu conexión."); 
+        } finally { 
+            btn.innerText = "GUARDAR Y ENVIAR"; 
+            btn.disabled = false; 
+        }
     }
 
     window.onload = cargarDatosYValidar;
