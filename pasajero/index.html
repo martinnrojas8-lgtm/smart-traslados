@@ -91,7 +91,7 @@
             <div style="font-size: 10px; color: #aaa;">RECORRIDO</div>
         </div>
     </div>
-    <button onclick="location.reload()" style="background:#ff5252; color:#fff; margin-top:10px; font-size:12px;">CANCELAR VIAJE</button>
+    <button onclick="cancelarViajePasajero()" style="background:#ff5252; color:#fff; margin-top:10px; font-size:12px;">CANCELAR VIAJE</button>
 </div>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=places"></script>
@@ -124,6 +124,24 @@ async function initApp() {
 
     setInterval(chequearMensajesAdmin, 15000);
     chequearMensajesAdmin(); 
+}
+
+// NUEVA FUNCIÓN: Para cancelar el viaje correctamente avisando al servidor
+async function cancelarViajePasajero() {
+    if(!idViaje) return location.reload();
+    if(!confirm("¿Seguro que deseas cancelar el viaje?")) return;
+    
+    try {
+        await fetch('/eliminar-viaje', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: idViaje })
+        });
+        location.reload();
+    } catch (e) {
+        console.error("Error al cancelar");
+        location.reload();
+    }
 }
 
 async function chequearMensajesAdmin() {
@@ -235,11 +253,10 @@ function iniciarModoSeguimiento() {
             const viajes = await resV.json();
             const miV = viajes.find(v => v._id === idViaje);
 
-            // ÚNICO CAMBIO: Si el viaje finaliza, se detiene el rastreo y se recarga la app para limpiar todo
             if (!miV || miV.estado === "finalizado" || miV.estado === "terminado" || miV.estado === "cancelado") {
                 clearInterval(rastreo);
-                alert("VIAJE FINALIZADO. ¡Gracias por confiar en Smart Traslados!");
-                location.reload(); // Esto limpia la pantalla del pasajero por completo
+                alert("VIAJE FINALIZADO O CANCELADO.");
+                location.reload(); 
                 return;
             }
 
