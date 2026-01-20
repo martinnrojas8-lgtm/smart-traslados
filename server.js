@@ -89,7 +89,7 @@ const MensajeSchema = new mongoose.Schema({
 });
 const Mensaje = mongoose.model('Mensaje', MensajeSchema);
 
-// --- ESQUEMA DE CONFIGURACIÓN ADMIN (AGREGADO) ---
+// --- ESQUEMA DE CONFIGURACIÓN ADMIN ---
 const ConfigSchema = new mongoose.Schema({
     app: String,
     tel: String,
@@ -104,7 +104,6 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- RUTA AGREGADA PARA GUARDAR CONFIGURACIÓN ADMIN ---
 app.post('/actualizar-config-admin', async (req, res) => {
     try {
         const { app, tel, mail, alias } = req.body;
@@ -176,6 +175,14 @@ app.post('/aceptar-viaje', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// RUTA PARA QUE EL CHOFER VERIFIQUE EL ESTADO DEL VIAJE
+app.get('/verificar-estado-viaje/:id', async (req, res) => {
+    try {
+        const viaje = await Viaje.findById(req.params.id);
+        res.json({ estado: viaje ? viaje.estado : "eliminado" });
+    } catch (e) { res.status(500).json({ error: "Error" }); }
+});
+
 app.post('/finalizar-viaje', async (req, res) => {
     try {
         const { id } = req.body;
@@ -192,16 +199,18 @@ app.post('/finalizar-viaje', async (req, res) => {
 
 app.post('/rechazar-viaje', async (req, res) => {
     try {
-        // Modificado para que el rechazo sea local por chofer y no cancele el viaje para otros
-        res.json({ mensaje: "Rechazo registrado localmente" });
+        const { viajeId } = req.body;
+        await Viaje.findByIdAndUpdate(viajeId, { estado: "cancelado" });
+        res.json({ mensaje: "Viaje rechazado" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// MODIFICADO: Cuando el pasajero "elimina", el viaje pasa a estado cancelado para avisar al chofer
 app.post('/eliminar-viaje', async (req, res) => {
     try {
         const { id } = req.body;
-        await Viaje.findByIdAndDelete(id);
-        res.json({ mensaje: "Viaje eliminado del historial" });
+        await Viaje.findByIdAndUpdate(id, { estado: "cancelado" });
+        res.json({ mensaje: "Viaje marcado como cancelado" });
     } catch (e) { res.status(500).json({ error: "Error al eliminar registro" }); }
 });
 
@@ -289,7 +298,6 @@ app.get('/obtener-usuarios', async (req, res) => {
     } catch (e) { res.status(500).send(e); }
 });
 
-// --- RUTA ACTUALIZADA ---
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
