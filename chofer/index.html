@@ -150,6 +150,7 @@ let infoPrecioFinal = "";
 let infoDistanciaFinal = "";
 let wakeLock = null;
 let ultimoMsgID = null; 
+let monitorCancelacion = null; // NUEVO: Para escuchar si el pasajero cancela
 
 let cacheMonto = "10.000";
 let cacheAlias = "martin.rojas78";
@@ -378,7 +379,6 @@ function toggleEstado() {
     document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
 }
 
-// BUSCADOR DE VIAJES CON FILTRO DE RECHAZADOS (SOLUCIONADO)
 setInterval(async () => {
     if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || document.getElementById("modalViaje").style.display === "block") return;
     
@@ -386,11 +386,9 @@ setInterval(async () => {
         const res = await fetch('/viajes-pendientes');
         const viajes = await res.json();
         
-        // Obtener lista de viajes rechazados por ESTE chofer
         let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
 
         if (viajes.length > 0) {
-            // Buscamos el primer viaje que NO esté en la lista de rechazados
             const v = viajes.find(viaje => !rechazados.includes(viaje._id));
             
             if (v) {
@@ -409,6 +407,23 @@ setInterval(async () => {
         viajeActualId = null;
     }
 }, 4000);
+
+// NUEVA FUNCIÓN: Monitorea si el pasajero cancela mientras el chofer va en camino
+function iniciarMonitoreoCancelacion() {
+    if (monitorCancelacion) clearInterval(monitorCancelacion);
+    monitorCancelacion = setInterval(async () => {
+        if (!viajeActualId) return clearInterval(monitorCancelacion);
+        try {
+            const res = await fetch(`/verificar-estado-viaje/${viajeActualId}`);
+            const data = await res.json();
+            if (data.estado === "cancelado" || data.estado === "eliminado") {
+                clearInterval(monitorCancelacion);
+                alert("EL PASAJERO CANCELÓ EL VIAJE.");
+                location.reload(); 
+            }
+        } catch (e) { console.error("Error monitoreo"); }
+    }, 5000);
+}
 
 document.getElementById('btnAceptarViaje').onclick = async function() {
     detenerAlerta();
@@ -440,6 +455,7 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO";
             document.getElementById("btnAccionViaje").style.background = "#ffb300";
             trazarRuta(direccionOrigenViaje);
+            iniciarMonitoreoCancelacion(); // Activa la escucha de cancelación
         } else {
             alert("Este viaje ya no está disponible.");
             location.reload(); 
@@ -481,6 +497,7 @@ function trazarRuta(destino) {
 
 async function finalizarViaje() {
     if (!viajeActualId) return;
+    if (monitorCancelacion) clearInterval(monitorCancelacion);
     try {
         const respuesta = await fetch('/finalizar-viaje', { 
             method: 'POST', 
@@ -499,24 +516,18 @@ async function finalizarViaje() {
     }
 }
 
-// RECHAZAR VIAJE (LOCALMENTE PARA ESTE CHOFER)
 async function rechazarViaje() {
     detenerAlerta();
-    
-    // Guardamos el ID en la lista de rechazados local
     let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
     if (!rechazados.includes(viajeActualId)) {
         rechazados.push(viajeActualId);
         localStorage.setItem('viajes_rechazados', JSON.stringify(rechazados));
     }
-
-    // Avisamos al servidor pero el servidor ya NO lo cancela para todos
     await fetch('/rechazar-viaje', { 
         method: 'POST', 
         headers: {'Content-Type': 'application/json'}, 
         body: JSON.stringify({ viajeId: viajeActualId }) 
     });
-
     document.getElementById("modalViaje").style.display = "none";
     viajeActualId = null;
 }
