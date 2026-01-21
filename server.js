@@ -2,7 +2,12 @@ const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
+const http = require('http'); // Necesario para Sockets
+const { Server } = require('socket.io'); // Necesario para Sockets
+
 const app = express();
+const server = http.createServer(app); // Envolvemos app en server
+const io = new Server(server, { cors: { origin: "*" } }); // Inicializamos Sockets
 
 app.use(cors());
 
@@ -78,6 +83,7 @@ const UbicacionSchema = new mongoose.Schema({
     lat: Number,
     lng: Number,
     estado: String,
+    socketId: String, // Guardamos el ID de conexión para limpieza
     ultimaAct: { type: Date, default: Date.now }
 });
 const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
@@ -96,6 +102,19 @@ const ConfigSchema = new mongoose.Schema({
     alias: String
 });
 const Config = mongoose.model('Config', ConfigSchema);
+
+// --- LÓGICA DE SOCKETS (DETECCIÓN INSTANTÁNEA) ---
+io.on('connection', (socket) => {
+    socket.on('registrar-chofer', async (telefono) => {
+        await Ubicacion.findOneAndUpdate({ telefono }, { socketId: socket.id });
+    });
+
+    socket.on('disconnect', async () => {
+        // Al desconectarse, eliminamos su ubicación para que salga del mapa
+        await Ubicacion.findOneAndDelete({ socketId: socket.id });
+        io.emit('actualizar-mapa'); // Avisa a pasajeros que refresquen
+    });
+});
 
 // --- RUTAS ---
 app.use(express.static(path.join(__dirname, 'Public')));
@@ -212,7 +231,7 @@ app.post('/eliminar-viaje', async (req, res) => {
 
 app.get('/obtener-viajes', async (req, res) => {
     try {
-        const viajes = await Viaje.find().sort({ timestamp: -1 }).limit(100); // Subido a 100 para que no se te pierdan
+        const viajes = await Viaje.find().sort({ timestamp: -1 }).limit(100); 
         res.json(viajes);
     } catch (e) { res.status(500).send(e); }
 });
@@ -258,7 +277,6 @@ app.get('/obtener-tarifas', async (req, res) => {
 app.post('/login', async (req, res) => {
     try {
         const tel = req.body.telefono.trim();
-        // Buscamos sin importar mayúsculas/minúsculas en el rol para evitar que queden afuera
         const usuario = await Usuario.findOne({ 
             telefono: tel, 
             rol: { $regex: new RegExp("^" + req.body.rol.toLowerCase().trim() + "$", "i") } 
@@ -278,7 +296,6 @@ app.post('/register', async (req, res) => {
         const existe = await Usuario.findOne({ telefono });
         if(existe) {
             if (existe.bloqueado) return res.status(403).json({ mensaje: "Número bloqueado" });
-            // Si existe pero el rol cambió (raro pero posible), lo actualizamos
             existe.rol = rol.toLowerCase().trim();
             await existe.save();
             return res.json({ mensaje: "Ok", usuario: existe });
@@ -295,7 +312,6 @@ app.post('/register', async (req, res) => {
 
 app.get('/obtener-usuarios', async (req, res) => {
     try {
-        // Obtenemos todos los usuarios para que el Admin decida cómo filtrarlos
         const usuarios = await Usuario.find().sort({ fechaRegistro: -1 });
         res.json(usuarios);
     } catch (e) { res.status(500).send(e); }
@@ -304,7 +320,6 @@ app.get('/obtener-usuarios', async (req, res) => {
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
-        // LIMPIEZA DE DATOS: Aseguramos que se guarden en los campos correctos del Esquema
         const actualizacion = {
             nombre: d.nombre,
             autoModelo: d.autoModelo || d.modelo,
@@ -314,7 +329,7 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
             fotoCarnet: d.fotoCarnet,
             fotoSeguro: d.fotoSeguro,
             fotoTarjeta: d.fotoTarjeta,
-            rol: 'chofer' // RE-ASEGURAMOS el rol para que no desaparezca del Admin
+            rol: 'chofer'
         };
 
         await Usuario.findOneAndUpdate({ telefono: d.telefono }, actualizacion);
@@ -375,4 +390,4 @@ app.get('/admin-panel', (req, res) => { res.sendFile(path.join(__dirname, 'admin
 app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'Public', 'login.html')); });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor Smart Online en puerto ${PORT} 🚀`));
+server.listen(PORT, () => console.log(`Servidor Smart Online en puerto ${PORT} 🚀`));
