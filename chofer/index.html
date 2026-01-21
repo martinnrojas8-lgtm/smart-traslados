@@ -93,7 +93,7 @@
             📞 LLAMAR PARA VALIDAR
         </a>
 
-        <button id="btnAceptarViaje" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
+        <button id="btnAceptarViaje">ACEPTAR VIAJE</button>
         <button onclick="rechazarViaje()" style="background:#ff5252; color:#fff; margin-top:8px;">RECHAZAR</button>
     </div>
 </div>
@@ -161,7 +161,7 @@
           <div id="controlesEstandar">
               <div class="card" style="text-align:center;">
                   <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px;">ESTADO: BLOQUEADO</h3>
-                  <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
+                  <button id="btnToggle" onclick="activarYToggle()" disabled>ESPERANDO ACTIVACIÓN</button>
                   <button id="btnInstalarApp" class="btn-instalar" style="display:none">DESCARGAR APP OFICIAL</button>
                   <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
               </div>
@@ -172,7 +172,6 @@
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
-// AGREGADO: Inicialización del socket
 const socket = io();
 
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
@@ -186,6 +185,24 @@ let infoDistanciaFinal = "";
 let monitorCancelacion = null;
 let currentRatingChofer = 0;
 
+// --- SISTEMA DE PROTECCIÓN ANTIDORMIDA ---
+let audioContext;
+function activarEscudoAntidormida() {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0; 
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.loop = true;
+            oscillator.start();
+            console.log("Escudo antidormida activado.");
+        } catch(e) { console.log("No se pudo iniciar el audio"); }
+    }
+}
+
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
     cargarInfoPinSilencioso();
@@ -194,6 +211,11 @@ async function initApp() {
     setInterval(transmitirUbicacion, 3000); 
     setInterval(chequearMensajesAdmin, 15000); 
     chequearMensajesAdmin();
+}
+
+function activarYToggle() {
+    activarEscudoAntidormida();
+    toggleEstado();
 }
 
 function setRatingChofer(n) {
@@ -303,9 +325,7 @@ async function cargarDatosChofer() {
 
 function activarModoTrabajo(vencimiento) {
     pagoConfirmado = true;
-    // AGREGADO: Identificamos este socket con el teléfono del chofer para la desconexión automática
     socket.emit('registrar-chofer', sesion.telefono);
-
     document.getElementById('seccionActivacion').style.display = 'none';
     document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO";
@@ -387,14 +407,11 @@ setInterval(async () => {
             viajeActualId = v._id; direccionOrigenViaje = v.origen; direccionDestinoViaje = v.destino; infoPrecioFinal = v.precio; infoDistanciaFinal = v.distancia || "0 km";
             document.getElementById("datosViaje").innerHTML = `Pasajero: <b>${v.pasajero}</b><br>Desde: ${v.origen}`;
             document.getElementById("detallesRuta").innerHTML = `PRECIO: <b style="font-size:18px">${v.precio}</b>`;
-            
-            // CONFIGURAR LLAMADA PREVIA PARA VALIDAR
             if(v.pasajeroTel) {
                 const btnLlamarP = document.getElementById("btnLlamarPrevio");
                 btnLlamarP.href = "tel:" + v.pasajeroTel;
                 btnLlamarP.style.display = "flex";
             }
-
             document.getElementById("modalViaje").style.display = "flex";
             sonarAlerta();
         }
@@ -415,6 +432,7 @@ function iniciarMonitoreoCancelacion() {
 
 document.getElementById('btnAceptarViaje').onclick = async function() {
     detenerAlerta();
+    activarEscudoAntidormida();
     try {
         const respuesta = await fetch('/aceptar-viaje', { 
             method: 'POST', headers: {'Content-Type': 'application/json'}, 
@@ -425,8 +443,6 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("modalViaje").style.display = "none";
             document.getElementById("controlesEstandar").style.display = "none";
             document.getElementById("controlesViaje").style.display = "block";
-            
-            // CONFIGURAR BOTONES DE CONTACTO EN VIAJE
             try {
                 const resV = await fetch('/obtener-viajes');
                 const listV = await resV.json();
@@ -436,7 +452,6 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
                     document.getElementById("btnWspPasajero").href = "https://wa.me/" + miV.pasajeroTel;
                 }
             } catch(err) {}
-
             faseViaje = 1;
             document.getElementById("destinoActual").innerText = "BUSCANDO A: " + direccionOrigenViaje;
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO";
@@ -448,6 +463,7 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
 };
 
 function gestionarFaseViaje() {
+    activarEscudoAntidormida();
     if (faseViaje === 1) {
         faseViaje = 2;
         document.getElementById("destinoActual").innerText = "YENDO A: " + direccionDestinoViaje;
@@ -485,7 +501,6 @@ async function rechazarViaje() {
 
 function cerrarSesion() { 
     if(confirm("¿Cerrar?")) { 
-        // AGREGADO: Forzamos la desconexión del socket antes de limpiar
         socket.disconnect();
         localStorage.clear(); 
         location.href = "/"; 
