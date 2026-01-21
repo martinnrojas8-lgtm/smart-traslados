@@ -22,6 +22,35 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log("Conectado a MongoDB ✅"))
   .catch(err => console.error("Error Mongo ❌:", err));
 
+// --- CONFIGURACIÓN TELEGRAM ---
+const TELEGRAM_TOKEN = '8052546878:AAG4hKT5-306Y1lcMS5rtcg9_ondxcpR7ag';
+const TELEGRAM_CHAT_ID = '-5185887027';
+
+async function enviarAlertaTelegram(viaje) {
+    const texto = `🚕 *NUEVO VIAJE DISPONIBLE* 🚕\n\n` +
+                  `📍 *Origen:* ${viaje.origen}\n` +
+                  `🏁 *Destino:* ${viaje.destino}\n` +
+                  `💰 *Precio:* ${viaje.precio}\n` +
+                  `📏 *Distancia:* ${viaje.distancia}\n\n` +
+                  `👉 [ABRIR APP PARA ACEPTAR](https://smart-traslados.onrender.com/chofer/chofer.html)`;
+
+    try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: texto,
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+            })
+        });
+        console.log("Alerta de Telegram enviada con éxito");
+    } catch (error) {
+        console.error("Error enviando a Telegram:", error);
+    }
+}
+
 // --- ESQUEMAS ---
 const UsuarioSchema = new mongoose.Schema({
     telefono: { type: String, unique: true },
@@ -173,6 +202,10 @@ app.post('/solicitar-viaje', async (req, res) => {
             estado: "pendiente"
         });
         await nuevoViaje.save();
+        
+        // --- ACTIVACIÓN DE ALERTA TELEGRAM ---
+        enviarAlertaTelegram(nuevoViaje);
+        
         res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
     } catch (e) { res.status(500).json({ error: "Error al solicitar viaje" }); }
 });
