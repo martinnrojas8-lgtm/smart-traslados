@@ -5,6 +5,8 @@
 <title>Smart Traslados – Chofer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="/manifest.json">
+<script src="/socket.io/socket.io.js"></script>
+
 <style>
   html, body { 
     margin:0; 
@@ -170,6 +172,9 @@
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
+// AGREGADO: Inicialización del socket
+const socket = io();
+
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", direccionDestinoViaje = "", intervaloReloj;
 let datosAuto = { modelo: "", patente: "", color: "" };
@@ -298,6 +303,9 @@ async function cargarDatosChofer() {
 
 function activarModoTrabajo(vencimiento) {
     pagoConfirmado = true;
+    // AGREGADO: Identificamos este socket con el teléfono del chofer para la desconexión automática
+    socket.emit('registrar-chofer', sesion.telefono);
+
     document.getElementById('seccionActivacion').style.display = 'none';
     document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO";
@@ -475,7 +483,14 @@ async function rechazarViaje() {
     viajeActualId = null;
 }
 
-function cerrarSesion() { if(confirm("¿Cerrar?")) { localStorage.clear(); location.href = "/"; } }
+function cerrarSesion() { 
+    if(confirm("¿Cerrar?")) { 
+        // AGREGADO: Forzamos la desconexión del socket antes de limpiar
+        socket.disconnect();
+        localStorage.clear(); 
+        location.href = "/"; 
+    } 
+}
 
 window.onload = initApp;
 </script>
