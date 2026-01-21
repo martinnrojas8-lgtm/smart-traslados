@@ -53,6 +53,7 @@ const ViajeSchema = new mongoose.Schema({
     precio: String,
     distancia: String,
     estado: { type: String, default: "pendiente" }, 
+    estrellasPasajero: { type: Number, default: 0 }, // AGREGADO: Calificación dada por el chofer
     timestamp: { type: Date, default: Date.now }
 });
 const Viaje = mongoose.model('Viaje', ViajeSchema);
@@ -81,15 +82,13 @@ const UbicacionSchema = new mongoose.Schema({
 });
 const Ubicacion = mongoose.model('Ubicacion', UbicacionSchema);
 
-// --- NUEVO ESQUEMA PARA MENSAJES REALES ---
 const MensajeSchema = new mongoose.Schema({
-    destino: String, // 'choferes' o 'pasajeros'
+    destino: String, 
     texto: String,
     fecha: { type: Date, default: Date.now }
 });
 const Mensaje = mongoose.model('Mensaje', MensajeSchema);
 
-// --- ESQUEMA DE CONFIGURACIÓN ADMIN (AGREGADO) ---
 const ConfigSchema = new mongoose.Schema({
     app: String,
     tel: String,
@@ -104,7 +103,15 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.use('/chofer', express.static(path.join(__dirname, 'chofer')));
 app.use('/pasajero', express.static(path.join(__dirname, 'pasajero')));
 
-// --- RUTA AGREGADA PARA GUARDAR CONFIGURACIÓN ADMIN ---
+// NUEVA RUTA: PARA GUARDAR LAS ESTRELLAS DEL VIAJE
+app.post('/calificar-pasajero', async (req, res) => {
+    try {
+        const { viajeId, estrellas } = req.body;
+        await Viaje.findByIdAndUpdate(viajeId, { estrellasPasajero: estrellas });
+        res.json({ mensaje: "Calificación guardada" });
+    } catch (e) { res.status(500).json({ error: "Error al calificar" }); }
+});
+
 app.post('/actualizar-config-admin', async (req, res) => {
     try {
         const { app, tel, mail, alias } = req.body;
@@ -192,7 +199,6 @@ app.post('/finalizar-viaje', async (req, res) => {
 
 app.post('/rechazar-viaje', async (req, res) => {
     try {
-        // Modificado para que el rechazo sea local por chofer y no cancele el viaje para otros
         res.json({ mensaje: "Rechazo registrado localmente" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
@@ -289,7 +295,6 @@ app.get('/obtener-usuarios', async (req, res) => {
     } catch (e) { res.status(500).send(e); }
 });
 
-// --- RUTA ACTUALIZADA ---
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
