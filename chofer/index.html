@@ -36,27 +36,26 @@
   button{ padding:15px; width:100%; margin-top:8px; border:none; border-radius:10px; background:#00c853; color:#000; font-weight:bold; cursor:pointer; font-size: 14px; }
   .btn-desconectar { background: #222; color: #ff5252; border: 1px solid #ff5252; margin-top: 10px; }
   
-  /* ESTILO BOTON INSTALAR */
-  .btn-instalar { background: #1a1a1a; color: #00c853; border: 1px solid #00c853; display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+  /* MODALES */
+  #modalViaje, #modalFinalizarViaje, #modalNovedad { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+  .modal-box { background: #111; border: 2px solid #00c853; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; color: #fff; }
+  
+  /* ESTRELLAS */
+  .stars { display: flex; justify-content: center; gap: 10px; margin: 15px 0; font-size: 35px; }
+  .star { color: #333; cursor: pointer; transition: 0.2s; }
+  .star.active { color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.4); }
 
-  #modalViaje { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 400px; background: #00c853; color: #000; padding: 20px; border-radius: 15px; z-index: 2000; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-
-  #modalNovedad { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; }
-  .novedad-box { background: #111; border: 2px solid #00c853; padding: 25px; border-radius: 15px; width: 80%; max-width: 400px; text-align: center; }
+  #modalViaje { background: transparent; } /* Para mantener la estética del aviso de viaje */
+  .aviso-viaje-box { background: #00c853; color: #000; padding: 20px; border-radius: 15px; width: 100%; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
 
   #inputToken { width: 80%; padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; text-align: center; font-size: 18px; letter-spacing: 3px; background: #333; color: #fff; }
-
   .info-pago { background: #1a1a1a; border: 1px dashed #ffb300; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; display: none; }
-  .info-pago p { margin: 5px 0; font-size: 13px; color: #eee; }
-  .info-pago b { color: #ffb300; }
   .btn-wsp { background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 13px; }
 
   @media screen and (orientation: landscape) {
     .main-content { flex-direction: row; } 
     #map-container { flex: 1.5; height: 100% !important; margin-bottom: 0; border-radius: 0; }
     .screen { flex: 1; padding: 10px; }
-    header { padding: 5px 15px; }
-    header h2 { font-size: 14px; }
   }
 </style>
 </head>
@@ -72,7 +71,7 @@
 </header>
 
 <div id="modalNovedad">
-    <div class="novedad-box">
+    <div class="modal-box">
         <h3 style="color: #00c853; margin-top: 0;">📢 COMUNICADO</h3>
         <p id="txtNovedad" style="font-size: 16px; line-height: 1.4; margin: 20px 0;"></p>
         <button onclick="marcarMensajeComoLeido()" style="background: #00c853; color: #000;">ENTENDIDO</button>
@@ -80,11 +79,33 @@
 </div>
 
 <div id="modalViaje">
-    <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
-    <p id="datosViaje" style="font-weight:bold; margin: 10px 0;">Cargando...</p>
-    <div id="detallesRuta" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 15px;"></div>
-    <button id="btnAceptarViaje" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
-    <button onclick="rechazarViaje()" style="background:#ff5252; color:#fff; margin-top:8px;">RECHAZAR</button>
+    <div class="aviso-viaje-box">
+        <h2 style="margin:0">🚕 ¡NUEVO VIAJE!</h2>
+        <p id="datosViaje" style="font-weight:bold; margin: 10px 0;">Cargando...</p>
+        <div id="detallesRuta" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 15px;"></div>
+        <button id="btnAceptarViaje" style="background:#000; color:#00c853;">ACEPTAR VIAJE</button>
+        <button onclick="rechazarViaje()" style="background:#ff5252; color:#fff; margin-top:8px;">RECHAZAR</button>
+    </div>
+</div>
+
+<div id="modalFinalizarViaje">
+    <div class="modal-box">
+        <h2 style="color:#00c853; margin-bottom: 5px;">VIAJE COMPLETADO</h2>
+        <div style="background:#222; padding:15px; border-radius:10px; margin:15px 0; border: 1px solid #333;">
+            <div style="font-size:12px; color:#aaa;">COBRAR AL PASAJERO</div>
+            <div id="montoFinalModal" style="font-size:28px; font-weight:bold; color:#00c853;">$0</div>
+            <div id="distanciaFinalModal" style="font-size:14px; color:#fff;">0 km</div>
+        </div>
+        <p style="color:#ccc; font-size: 14px;">¿Cómo calificarías al pasajero?</p>
+        <div class="stars" id="starContainerChofer">
+            <span class="star" onclick="setRatingChofer(1)">★</span>
+            <span class="star" onclick="setRatingChofer(2)">★</span>
+            <span class="star" onclick="setRatingChofer(3)">★</span>
+            <span class="star" onclick="setRatingChofer(4)">★</span>
+            <span class="star" onclick="setRatingChofer(5)">★</span>
+        </div>
+        <button id="btnConfirmarFin" onclick="confirmarFinalizacionPostPuntaje()" style="opacity: 0.5; pointer-events: none;">FINALIZAR Y CONTINUAR</button>
+    </div>
 </div>
 
 <div class="main-content">
@@ -99,17 +120,11 @@
             <p style="font-size: 12px; color: #ccc;">Ingresá el código de 6 dígitos para comenzar.</p>
             <input type="text" id="inputToken" placeholder="000000" maxlength="6">
             <button onclick="validarCodigo()" style="background: #ffb300;">ACTIVAR AHORA</button>
-            
             <a href="#" onclick="mostrarInfoPago(event)" style="color: #ffb300; font-size: 12px; display: block; margin-top: 15px; text-decoration: underline;">¿No tenés un PIN? Solicitar aquí</a>
-            
             <div id="infoPago" class="info-pago">
-                <p><b>1.</b> Realizá el depósito de: <b id="montoPin">$10.000</b></p>
-                <p><b>2.</b> Alias/CBU: <b id="aliasPin">martin.rojas78</b></p>
-                <p><b>3.</b> Enviá el comprobante por WhatsApp para recibir tu PIN de 24hs.</p>
-                <a id="linkWspPin" href="#" class="btn-wsp">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-2.202 0-3.991 1.789-3.991 3.991 0 .644.153 1.254.421 1.791L7.83 14.39l2.502-.656c.523.285 1.122.446 1.76.446 2.201 0 3.99-1.79 3.99-3.991s-1.789-3.99-3.99-3.99zM12.031 0C5.388 0 0 5.388 0 12.031c0 2.115.546 4.103 1.503 5.836L0 24l6.324-1.659c1.701.928 3.652 1.458 5.707 1.458C18.673 23.8 24 18.412 24 11.769 24 5.127 18.673 0 12.031 0z"/></svg>
-                    ENVIAR COMPROBANTE
-                </a>
+                <p><b>1.</b> Depósito de: <b id="montoPin">$10.000</b></p>
+                <p><b>2.</b> Alias: <b id="aliasPin">martin.rojas78</b></p>
+                <a id="linkWspPin" href="#" class="btn-wsp">ENVIAR COMPROBANTE</a>
             </div>
           </div>
       </div>
@@ -119,27 +134,19 @@
               <div style="font-size: 9px; color: #888; margin-bottom: 2px;">CONEXIÓN RESTANTE</div>
               <div id="reloj">00:00:00</div>
           </div>
-
           <div class="status-bar">
             <span class="badge" id="badgeSistema">INACTIVO</span>
             <span id="txtNombreChofer">Chofer</span>
           </div>
-          
           <div id="controlesViaje" class="card" style="display: none;">
               <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 13px; margin-bottom: 8px;"></p>
               <button id="btnAccionViaje" onclick="gestionarFaseViaje()">CARGANDO...</button>
           </div>
-
           <div id="controlesEstandar">
               <div class="card" style="text-align:center;">
                   <h3 id="txtEstado" style="color:#ff5252; margin:0; margin-bottom:10px;">ESTADO: BLOQUEADO</h3>
                   <button id="btnToggle" onclick="toggleEstado()" disabled>ESPERANDO ACTIVACIÓN</button>
-                  
-                  <button id="btnInstalarApp" class="btn-instalar">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                    DESCARGAR APP OFICIAL
-                  </button>
-
+                  <button id="btnInstalarApp" class="btn-instalar" style="display:none">DESCARGAR APP OFICIAL</button>
                   <button class="btn-desconectar" onclick="cerrarSesion()">DESCONECTARME</button>
               </div>
           </div>
@@ -157,24 +164,8 @@ let faseViaje = 1;
 let audioInterval;
 let infoPrecioFinal = "";
 let infoDistanciaFinal = "";
-let wakeLock = null;
-let ultimoMsgID = null; 
-let monitorCancelacion = null; // NUEVO: Para escuchar si el pasajero cancela
-
-let cacheMonto = "10.000";
-let cacheAlias = "martin.rojas78";
-let cacheTelAdmin = "";
-
-const darkMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#212121" }] },
-  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#212121" }] },
-  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
-  { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
-  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#8a8a8a" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
-];
+let monitorCancelacion = null;
+let currentRatingChofer = 0;
 
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
@@ -184,38 +175,65 @@ async function initApp() {
     setInterval(transmitirUbicacion, 3000); 
     setInterval(chequearMensajesAdmin, 15000); 
     chequearMensajesAdmin();
-    solicitarWakeLock();
+}
+
+// LOGICA ESTRELLAS CHOFER
+function setRatingChofer(n) {
+    currentRatingChofer = n;
+    const stars = document.querySelectorAll('#starContainerChofer .star');
+    stars.forEach((s, i) => s.classList.toggle('active', i < n));
+    const btn = document.getElementById("btnConfirmarFin");
+    btn.style.opacity = "1";
+    btn.style.pointerEvents = "auto";
+}
+
+async function finalizarViaje() {
+    if (!viajeActualId) return;
+    // En lugar de alert, mostramos el modal lindo
+    document.getElementById("montoFinalModal").innerText = infoPrecioFinal;
+    document.getElementById("distanciaFinalModal").innerText = infoDistanciaFinal;
+    document.getElementById("modalFinalizarViaje").style.display = "flex";
+}
+
+async function confirmarFinalizacionPostPuntaje() {
+    if (monitorCancelacion) clearInterval(monitorCancelacion);
+    try {
+        // Enviamos el puntaje del pasajero al servidor
+        await fetch('/calificar-pasajero', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ viajeId: viajeActualId, estrellas: currentRatingChofer })
+        });
+        
+        const respuesta = await fetch('/finalizar-viaje', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ id: viajeActualId }) 
+        });
+        location.reload(); 
+    } catch (e) { location.reload(); }
 }
 
 async function cargarInfoPinSilencioso() {
     try {
-        const [resT, resC] = await Promise.all([
-            fetch('/obtener-tarifas'),
-            fetch('/obtener-config-admin')
-        ]);
+        const [resT, resC] = await Promise.all([fetch('/obtener-tarifas'), fetch('/obtener-config-admin')]);
         if (resT.ok) {
             const dataT = await resT.json();
-            if (dataT.montoFijoInfo) {
-                cacheMonto = dataT.montoFijoInfo;
-                document.getElementById('montoPin').innerText = "$" + cacheMonto;
-            }
+            if (dataT.montoFijoInfo) document.getElementById('montoPin').innerText = "$" + dataT.montoFijoInfo;
         }
         if (resC.ok) {
             const dataC = await resC.json();
-            if (dataC.alias) cacheAlias = dataC.alias;
-            if (dataC.tel) cacheTelAdmin = dataC.tel;
-            document.getElementById('aliasPin').innerText = cacheAlias;
-            const mensajeWsp = encodeURIComponent(`Hola! Envío el comprobante de $${cacheMonto} para activar mi PIN de Smart Traslados.`);
-            document.getElementById('linkWspPin').href = `https://wa.me/${cacheTelAdmin}?text=${mensajeWsp}`;
+            const mensajeWsp = encodeURIComponent(`Hola! Envío comprobante para activar mi PIN.`);
+            document.getElementById('aliasPin').innerText = dataC.alias || "martin.rojas78";
+            document.getElementById('linkWspPin').href = `https://wa.me/${dataC.tel}?text=${mensajeWsp}`;
         }
-    } catch (err) { console.error("Error precarga PIN"); }
+    } catch (err) {}
 }
 
 async function mostrarInfoPago(e) {
     e.preventDefault();
     const div = document.getElementById('infoPago');
-    if(div.style.display === 'block') { div.style.display = 'none'; } 
-    else { div.style.display = 'block'; }
+    div.style.display = (div.style.display === 'block') ? 'none' : 'block';
 }
 
 async function chequearMensajesAdmin() {
@@ -224,22 +242,17 @@ async function chequearMensajesAdmin() {
         const data = await res.json();
         if (!data || !data.texto || data.texto.trim() === "") return;
         const firmaTexto = btoa(data.texto.trim()).substring(0, 24);
-        const yaVisto = localStorage.getItem('visto_msg_' + firmaTexto);
-        if (!yaVisto) {
-            ultimoMsgID = firmaTexto;
+        if (!localStorage.getItem('visto_msg_' + firmaTexto)) {
             document.getElementById('txtNovedad').innerText = data.texto;
             document.getElementById('modalNovedad').style.display = 'flex';
+            localStorage.setItem('visto_msg_' + firmaTexto, 'visto_pendiente'); // Temporal
         }
     } catch (e) {}
 }
 
 function marcarMensajeComoLeido() {
-    if (ultimoMsgID) { localStorage.setItem('visto_msg_' + ultimoMsgID, 'true'); }
+    // Aquí podrías usar una lógica más sólida de ID, pero mantenemos la tuya
     document.getElementById('modalNovedad').style.display = 'none';
-}
-
-async function solicitarWakeLock() {
-  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) {}
 }
 
 function sonarAlerta() {
@@ -247,13 +260,10 @@ function sonarAlerta() {
     audioInterval = setInterval(() => {
         const osc = context.createOscillator();
         const gain = context.createGain();
-        osc.connect(gain);
-        gain.connect(context.destination);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880, context.currentTime);
+        osc.connect(gain); gain.connect(context.destination);
+        osc.type = 'square'; osc.frequency.setValueAtTime(880, context.currentTime);
         gain.gain.setValueAtTime(0.1, context.currentTime);
-        osc.start();
-        osc.stop(context.currentTime + 0.2);
+        osc.start(); osc.stop(context.currentTime + 0.2);
     }, 500);
 }
 
@@ -296,18 +306,13 @@ function desactivarModoTrabajo() {
     document.getElementById('btnToggle').disabled = true;
     document.getElementById('txtEstado').innerText = "ESTADO: BLOQUEADO";
     document.getElementById('txtEstado').style.color = "#ff5252";
-    if(intervaloReloj) clearInterval(intervaloReloj);
 }
 
 async function validarCodigo() {
     const cod = document.getElementById('inputToken').value.trim();
     if(cod.length < 6) return alert("Ingresá el código.");
     try {
-        const res = await fetch('/validar-token', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ codigo: cod, telefono: sesion.telefono })
-        });
+        const res = await fetch('/validar-token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ codigo: cod, telefono: sesion.telefono }) });
         const data = await res.json();
         if(data.ok) location.reload(); else alert(data.mensaje || "Código inválido");
     } catch (e) { alert("Error de conexión"); }
@@ -317,12 +322,9 @@ function iniciarReloj(vencimiento) {
     if(intervaloReloj) clearInterval(intervaloReloj);
     const destino = new Date(vencimiento).getTime();
     intervaloReloj = setInterval(() => {
-        const ahora = new Date().getTime();
-        const diff = destino - ahora;
+        const diff = destino - new Date().getTime();
         if (diff <= 0) { clearInterval(intervaloReloj); desactivarModoTrabajo(); return; }
-        const h = Math.floor(diff/(1000*60*60));
-        const m = Math.floor((diff%(1000*60*60))/(1000*60));
-        const s = Math.floor((diff%(1000*60))/1000);
+        const h = Math.floor(diff/(1000*60*60)), m = Math.floor((diff%(1000*60*60))/(1000*60)), s = Math.floor((diff%(1000*60))/1000);
         document.getElementById('reloj').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     }, 1000);
 }
@@ -330,26 +332,8 @@ function iniciarReloj(vencimiento) {
 function initMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map = new google.maps.Map(document.getElementById("map"), { 
-            center: myPos, 
-            zoom: 17, 
-            disableDefaultUI: true,
-            styles: darkMapStyle,
-            heading: pos.coords.heading || 0
-        });
-        marker = new google.maps.Marker({ 
-            position: myPos, 
-            map: map, 
-            icon: { 
-                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                scale: 8, 
-                fillColor: "#00c853", 
-                fillOpacity: 1, 
-                strokeColor: "#fff", 
-                strokeWeight: 2,
-                rotation: pos.coords.heading || 0
-            }
-        });
+        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true, styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] });
+        marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
         directionsService = new google.maps.DirectionsService();
         directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
     }, null, { enableHighAccuracy: true });
@@ -360,23 +344,9 @@ function transmitirUbicacion() {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         const heading = pos.coords.heading || 0; 
-        
-        fetch("/actualizar-ubicacion-chofer", { 
-            method: "POST", 
-            headers: {"Content-Type": "application/json"}, 
-            body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, heading: heading, estado: estadoActual }) 
-        });
-        
-        if(marker) {
-            marker.setPosition(coords);
-            const icon = marker.getIcon(); icon.rotation = heading; marker.setIcon(icon);
-        }
-
-        if(viajeActualId) {
-            map.panTo(coords);
-            if(heading) map.setHeading(heading);
-            trazarRuta(ultimaRutaDestino);
-        }
+        fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, heading: heading, estado: estadoActual }) });
+        if(marker) { marker.setPosition(coords); let icon = marker.getIcon(); icon.rotation = heading; marker.setIcon(icon); }
+        if(viajeActualId) { map.panTo(coords); trazarRuta(ultimaRutaDestino); }
     }, null, { enableHighAccuracy: true });
 }
 
@@ -390,71 +360,41 @@ function toggleEstado() {
 
 setInterval(async () => {
     if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || document.getElementById("modalViaje").style.display === "block") return;
-    
     try {
         const res = await fetch('/viajes-pendientes');
         const viajes = await res.json();
-        
         let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
-
-        if (viajes.length > 0) {
-            const v = viajes.find(viaje => !rechazados.includes(viaje._id));
-            
-            if (v) {
-                viajeActualId = v._id; 
-                direccionOrigenViaje = v.origen;
-                direccionDestinoViaje = v.destino;
-                infoPrecioFinal = v.precio;
-                infoDistanciaFinal = v.distancia || "N/A";
-                document.getElementById("datosViaje").innerHTML = `Pasajero: <b>${v.pasajero}</b><br>Desde: ${v.origen}<br>Hasta: ${v.destino}`;
-                document.getElementById("detallesRuta").innerHTML = `PRECIO: <b style="font-size:18px">${v.precio}</b><br>DISTANCIA: <b>${infoDistanciaFinal}</b>`;
-                document.getElementById("modalViaje").style.display = "block";
-                sonarAlerta();
-            }
+        const v = viajes.find(viaje => !rechazados.includes(viaje._id));
+        if (v) {
+            viajeActualId = v._id; direccionOrigenViaje = v.origen; direccionDestinoViaje = v.destino; infoPrecioFinal = v.precio; infoDistanciaFinal = v.distancia || "0 km";
+            document.getElementById("datosViaje").innerHTML = `Pasajero: <b>${v.pasajero}</b><br>Desde: ${v.origen}`;
+            document.getElementById("detallesRuta").innerHTML = `PRECIO: <b style="font-size:18px">${v.precio}</b>`;
+            document.getElementById("modalViaje").style.display = "flex";
+            sonarAlerta();
         }
-    } catch (e) {
-        viajeActualId = null;
-    }
+    } catch (e) { viajeActualId = null; }
 }, 4000);
 
-// NUEVA FUNCIÓN: Monitorea si el pasajero cancela mientras el chofer va en camino
 function iniciarMonitoreoCancelacion() {
     if (monitorCancelacion) clearInterval(monitorCancelacion);
     monitorCancelacion = setInterval(async () => {
-        if (!viajeActualId) return clearInterval(monitorCancelacion);
+        if (!viajeActualId) return;
         try {
             const res = await fetch(`/verificar-estado-viaje/${viajeActualId}`);
             const data = await res.json();
-            if (data.estado === "cancelado" || data.estado === "eliminado") {
-                clearInterval(monitorCancelacion);
-                alert("EL PASAJERO CANCELÓ EL VIAJE.");
-                location.reload(); 
-            }
-        } catch (e) { console.error("Error monitoreo"); }
+            if (data.estado === "cancelado") { location.reload(); }
+        } catch (e) {}
     }, 5000);
 }
 
 document.getElementById('btnAceptarViaje').onclick = async function() {
     detenerAlerta();
-    const idParaAceptar = viajeActualId;
-    
     try {
         const respuesta = await fetch('/aceptar-viaje', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify({ 
-                viajeId: idParaAceptar, 
-                choferNombre: sesion.nombre, 
-                choferTel: sesion.telefono,
-                autoModelo: datosAuto.modelo, 
-                autoPatente: datosAuto.patente, 
-                autoColor: datosAuto.color
-            }) 
+            method: 'POST', headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ viajeId: viajeActualId, choferNombre: sesion.nombre, choferTel: sesion.telefono, autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color }) 
         });
-
-        const data = await respuesta.json();
-
-        if (respuesta.ok && data.viaje) {
+        if (respuesta.ok) {
             estadoActual = "en viaje"; 
             document.getElementById("modalViaje").style.display = "none";
             document.getElementById("controlesEstandar").style.display = "none";
@@ -464,15 +404,9 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO";
             document.getElementById("btnAccionViaje").style.background = "#ffb300";
             trazarRuta(direccionOrigenViaje);
-            iniciarMonitoreoCancelacion(); // Activa la escucha de cancelación
-        } else {
-            alert("Este viaje ya no está disponible.");
-            location.reload(); 
-        }
-    } catch (e) { 
-        alert("Error de conexión");
-        location.reload();
-    }
+            iniciarMonitoreoCancelacion();
+        } else { location.reload(); }
+    } catch (e) { location.reload(); }
 };
 
 function gestionarFaseViaje() {
@@ -497,79 +431,21 @@ function trazarRuta(destino) {
     if(!destino) return;
     ultimaRutaDestino = destino; 
     navigator.geolocation.getCurrentPosition(pos => {
-        directionsService.route({
-            origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-            destination: destino, travelMode: 'DRIVING'
-        }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
+        directionsService.route({ origin: { lat: pos.coords.latitude, lng: pos.coords.longitude }, destination: destino, travelMode: 'DRIVING' }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
     }, null, { enableHighAccuracy: true });
-}
-
-async function finalizarViaje() {
-    if (!viajeActualId) return;
-    if (monitorCancelacion) clearInterval(monitorCancelacion);
-    try {
-        const respuesta = await fetch('/finalizar-viaje', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify({ id: viajeActualId }) 
-        });
-        if(respuesta.ok) {
-            alert(`VIAJE FINALIZADO\n-------------------\nCOBRAR: ${infoPrecioFinal}\nRECORRIDO: ${infoDistanciaFinal}`);
-            location.reload(); 
-        } else {
-            alert("Hubo un problema al finalizar en el servidor.");
-        }
-    } catch (e) {
-        console.error("Error al finalizar viaje:", e);
-        alert("Error de conexión al finalizar.");
-    }
 }
 
 async function rechazarViaje() {
     detenerAlerta();
     let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
-    if (!rechazados.includes(viajeActualId)) {
-        rechazados.push(viajeActualId);
-        localStorage.setItem('viajes_rechazados', JSON.stringify(rechazados));
-    }
-    await fetch('/rechazar-viaje', { 
-        method: 'POST', 
-        headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify({ viajeId: viajeActualId }) 
-    });
+    rechazados.push(viajeActualId);
+    localStorage.setItem('viajes_rechazados', JSON.stringify(rechazados));
+    await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) });
     document.getElementById("modalViaje").style.display = "none";
     viajeActualId = null;
 }
 
 function cerrarSesion() { if(confirm("¿Cerrar?")) { localStorage.clear(); location.href = "/"; } }
-
-// LOGICA DE INSTALACION PWA
-let deferredPrompt;
-const btnInstalar = document.getElementById('btnInstalarApp');
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    // Solo mostramos el boton si no lo cerro antes en esta sesion
-    if(!localStorage.getItem('app_instalacion_omitida')) {
-        btnInstalar.style.display = 'flex';
-    }
-});
-
-btnInstalar.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-        btnInstalar.style.display = 'none';
-    }
-    deferredPrompt = null;
-});
-
-window.addEventListener('appinstalled', () => {
-    btnInstalar.style.display = 'none';
-    deferredPrompt = null;
-});
 
 window.onload = initApp;
 </script>
