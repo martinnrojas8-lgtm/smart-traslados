@@ -134,14 +134,16 @@ let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
 
+// --- FUNCION DE VIDEO INVISIBLE (BLOQUEO DE SUEÑO) ---
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
     if (video.paused) {
+        // Creamos un video minúsculo de 1 segundo en blanco por código
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
         const stream = canvas.captureStream();
         video.srcObject = stream;
-        video.play().then(() => console.log("Protección de sistema activa")).catch(e => console.log("Error Video:", e));
+        video.play().then(() => console.log("Protección de sistema activa (Video Mode)")).catch(e => console.log("Error Video:", e));
     }
 }
 
@@ -152,7 +154,7 @@ async function initApp() {
 }
 
 function activarYToggle() {
-    activarKeepAlive(); 
+    activarKeepAlive(); // Activa el video invisible
     toggleEstado();
 }
 
@@ -228,7 +230,7 @@ function activarModoTrabajo(vencimiento) {
     pagoConfirmado = true; socket.emit('registrar-chofer', sesion.telefono);
     document.getElementById('seccionActivacion').style.display = 'none'; document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO"; document.getElementById('badgeSistema').style.background = "#00c853";
-    document.getElementById('btnToggle').disabled = false; document.getElementById('btnToggle').innerText = "PONERME AS OCUPADO";
+    document.getElementById('btnToggle').disabled = false; document.getElementById('btnToggle').innerText = "PONERME COMO OCUPADO";
     document.getElementById('txtEstado').innerText = "ESTADO: DISPONIBLE"; document.getElementById('txtEstado').style.color = "#00c853";
     iniciarReloj(vencimiento);
 }
@@ -261,16 +263,7 @@ function iniciarReloj(vencimiento) {
 function initMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        map = new google.maps.Map(document.getElementById("map"), { 
-            center: myPos, 
-            zoom: 17, 
-            disableDefaultUI: true,
-            tilt: 0,
-            heading: 35, // Este valor gira el mapa para que las calles de tu ciudad se vean rectas
-            rotateControl: false,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] 
-        });
+        map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true, styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] });
         marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
         directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
     }, null, { enableHighAccuracy: true });
@@ -291,7 +284,7 @@ function toggleEstado() {
     estadoActual = (estadoActual === "disponible") ? "ocupado" : "disponible";
     document.getElementById("txtEstado").innerText = "ESTADO: " + estadoActual.toUpperCase();
     document.getElementById("txtEstado").style.color = (estadoActual === "disponible") ? "#00c853" : "#ff5252";
-    document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME AS OCUPADO" : "PONERME AS DISPONIBLE";
+    document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
 }
 
 setInterval(async () => {
