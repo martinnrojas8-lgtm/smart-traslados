@@ -3,7 +3,6 @@ const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
 const http = require('http'); // Necesario para Sockets
-const https = require('https'); // Necesario para Telegram
 const { Server } = require('socket.io'); // Necesario para Sockets
 
 const app = express();
@@ -27,41 +26,29 @@ mongoose.connect(MONGO_URI)
 const TELEGRAM_TOKEN = '8052546878:AAG4hKT5-306Y1lcMS5rtcg9_ondxcpR7ag';
 const TELEGRAM_CHAT_ID = '-5185887027';
 
-function enviarAlertaTelegram(viaje) {
-    const textoMensaje = `激 *NUEVO VIAJE DISPONIBLE* 激\n\n` +
-                         `📍 *Origen:* ${viaje.origen}\n` +
-                         `🏁 *Destino:* ${viaje.destino}\n` +
-                         `💰 *Precio:* ${viaje.precio}\n` +
-                         `📏 *Distancia:* ${viaje.distancia}\n\n` +
-                         `👉 [ABRIR APP PARA ACEPTAR](https://smart-traslados.onrender.com/chofer/chofer.html)`;
+async function enviarAlertaTelegram(viaje) {
+    const texto = `🚕 *NUEVO VIAJE DISPONIBLE* 🚕\n\n` +
+                  `📍 *Origen:* ${viaje.origen}\n` +
+                  `🏁 *Destino:* ${viaje.destino}\n` +
+                  `💰 *Precio:* ${viaje.precio}\n` +
+                  `📏 *Distancia:* ${viaje.distancia}\n\n` +
+                  `👉 [ABRIR APP PARA ACEPTAR](https://smart-traslados.onrender.com/chofer/chofer.html)`;
 
-    const data = JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: textoMensaje,
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-    });
-
-    const options = {
-        hostname: 'api.telegram.org',
-        port: 443,
-        path: `/bot${TELEGRAM_TOKEN}/sendMessage`,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': data.length
-        }
-    };
-
-    const reqTelegram = https.request(options, (res) => {
-        let responseData = '';
-        res.on('data', (chunk) => { responseData += chunk; });
-        res.on('end', () => { console.log("Respuesta Telegram:", responseData); });
-    });
-
-    reqTelegram.on('error', (error) => { console.error("Error Telegram:", error); });
-    reqTelegram.write(data);
-    reqTelegram.end();
+    try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: texto,
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+            })
+        });
+        console.log("Alerta de Telegram enviada con éxito");
+    } catch (error) {
+        console.error("Error enviando a Telegram:", error);
+    }
 }
 
 // --- ESQUEMAS ---
