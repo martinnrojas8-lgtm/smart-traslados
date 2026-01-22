@@ -134,7 +134,6 @@ let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
 
-// --- FUNCION DE VIDEO INVISIBLE (BLOQUEO DE SUEÑO) ---
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
     if (video.paused) {
@@ -142,7 +141,7 @@ function activarKeepAlive() {
         canvas.width = canvas.height = 1;
         const stream = canvas.captureStream();
         video.srcObject = stream;
-        video.play().then(() => console.log("Protección de sistema activa (Video Mode)")).catch(e => console.log("Error Video:", e));
+        video.play().then(() => console.log("Protección de sistema activa")).catch(e => console.log("Error Video:", e));
     }
 }
 
@@ -266,9 +265,8 @@ function initMap() {
             center: myPos, 
             zoom: 17, 
             disableDefaultUI: true,
-            // Configuración para mapa RECTO:
             tilt: 0,
-            heading: 0,
+            heading: 35, // Este valor gira el mapa para que las calles de tu ciudad se vean rectas
             rotateControl: false,
             mapTypeId: google.maps.MapTypeId.ROADMAP,
             styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] 
