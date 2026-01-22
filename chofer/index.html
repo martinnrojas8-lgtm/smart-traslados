@@ -133,8 +133,8 @@ let map, marker, directionsService, directionsRenderer, estadoActual = "disponib
 let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
+let pasajeroTelActual = null; // Variable para guardar el teléfono del viaje actual
 
-// --- FUNCION DE VIDEO INVISIBLE (BLOQUEO DE SUEÑO) ---
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
     if (video.paused) {
@@ -142,7 +142,7 @@ function activarKeepAlive() {
         canvas.width = canvas.height = 1;
         const stream = canvas.captureStream();
         video.srcObject = stream;
-        video.play().then(() => console.log("Protección de sistema activa (Video Mode)")).catch(e => console.log("Error Video:", e));
+        video.play().then(() => console.log("Protección activa")).catch(e => console.log("Error Video:", e));
     }
 }
 
@@ -153,7 +153,6 @@ async function initApp() {
 }
 
 function activarYToggle() {
-    // --- ESCUDO DE AUDIO PARA EVITAR CIERRE ---
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
@@ -163,7 +162,6 @@ function activarYToggle() {
         gain.connect(ctx.destination);
         osc.start();
     } catch (e) {}
-    
     activarKeepAlive(); 
     toggleEstado();
 }
@@ -252,10 +250,9 @@ function desactivarModoTrabajo() {
 
 async function validarCodigo() {
     const cod = document.getElementById('inputToken').value.trim();
-    if(cod.length < 6) return alert("Ingresá el código.");
     try {
         const res = await fetch('/validar-token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ codigo: cod, telefono: sesion.telefono }) });
-        const data = await res.json(); if(data.ok) location.reload(); else alert(data.mensaje || "Código inválido");
+        const data = await res.json(); if(data.ok) location.reload(); else alert(data.mensaje || "Inválido");
     } catch (e) { alert("Error de conexión"); }
 }
 
@@ -275,7 +272,7 @@ function initMap() {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true, styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] });
         marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-        directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
+        directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
     }, null, { enableHighAccuracy: true });
 }
 
@@ -284,7 +281,7 @@ function transmitirUbicacion() {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; const heading = pos.coords.heading || 0; 
         fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, heading: heading, estado: estadoActual }) });
-        if(marker) { marker.setPosition(coords); let icon = marker.getIcon(); icon.rotation = heading; marker.setIcon(icon); }
+        if(marker) { marker.setPosition(coords); }
         if(viajeActualId) { map.panTo(coords); trazarRuta(ultimaRutaDestino); }
     }, null, { enableHighAccuracy: true });
 }
@@ -304,10 +301,21 @@ setInterval(async () => {
         let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
         const v = viajes.find(viaje => !rechazados.includes(viaje._id));
         if (v) {
-            viajeActualId = v._id; direccionOrigenViaje = v.origen; direccionDestinoViaje = v.destino; infoPrecioFinal = v.precio; infoDistanciaFinal = v.distancia || "0 km";
+            viajeActualId = v._id; 
+            direccionOrigenViaje = v.origen; 
+            direccionDestinoViaje = v.destino; 
+            infoPrecioFinal = v.precio; 
+            infoDistanciaFinal = v.distancia || "0 km";
+            pasajeroTelActual = v.pasajeroTel; // Guardamos el tel
+
             document.getElementById("datosViaje").innerHTML = `Pasajero: <b>${v.pasajero}</b><br>Desde: ${v.origen}`;
             document.getElementById("detallesRuta").innerHTML = `PRECIO: <b style="font-size:18px">${v.precio}</b>`;
-            if(v.pasajeroTel) { document.getElementById("btnLlamarPrevio").href = "tel:" + v.pasajeroTel; document.getElementById("btnLlamarPrevio").style.display = "flex"; }
+            
+            // VINCULACIÓN DE BOTÓN LLAMADA EN MODAL DE AVISO
+            if(pasajeroTelActual) { 
+                document.getElementById("btnLlamarPrevio").href = "tel:" + pasajeroTelActual; 
+                document.getElementById("btnLlamarPrevio").style.display = "flex"; 
+            }
             document.getElementById("modalViaje").style.display = "flex"; sonarAlerta();
         }
     } catch (e) { viajeActualId = null; }
@@ -318,9 +326,20 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
     try {
         const respuesta = await fetch('/aceptar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId, choferNombre: sesion.nombre, choferTel: sesion.telefono, autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color }) });
         if (respuesta.ok) {
-            estadoActual = "en viaje"; document.getElementById("modalViaje").style.display = "none"; document.getElementById("controlesEstandar").style.display = "none"; document.getElementById("controlesViaje").style.display = "block";
+            estadoActual = "en viaje"; 
+            document.getElementById("modalViaje").style.display = "none"; 
+            document.getElementById("controlesEstandar").style.display = "none"; 
+            document.getElementById("controlesViaje").style.display = "block";
+            
+            // VINCULACIÓN DE BOTONES EN PANEL DE CONTROL ACTIVO
+            if(pasajeroTelActual) {
+                document.getElementById("btnLlamarCel").href = "tel:" + pasajeroTelActual;
+                document.getElementById("btnWspPasajero").href = `https://wa.me/${pasajeroTelActual}?text=Hola,%20estoy%20en%20camino`;
+            }
+
             faseViaje = 1; document.getElementById("destinoActual").innerText = "BUSCANDO A: " + direccionOrigenViaje;
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO"; document.getElementById("btnAccionViaje").style.background = "#ffb300";
+            ultimaRutaDestino = direccionOrigenViaje;
             trazarRuta(direccionOrigenViaje);
         } else { location.reload(); }
     } catch (e) { location.reload(); }
@@ -331,6 +350,7 @@ function gestionarFaseViaje() {
     if (faseViaje === 1) {
         faseViaje = 2; document.getElementById("destinoActual").innerText = "YENDO A: " + direccionDestinoViaje;
         document.getElementById("btnAccionViaje").innerText = "IR AL DESTINO"; document.getElementById("btnAccionViaje").style.background = "#00c853";
+        ultimaRutaDestino = direccionDestinoViaje;
         trazarRuta(direccionDestinoViaje);
     } else if (faseViaje === 2) {
         faseViaje = 3; document.getElementById("destinoActual").innerText = "LLEGADA AL DESTINO";
