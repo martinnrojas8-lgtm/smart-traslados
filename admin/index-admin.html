@@ -85,9 +85,8 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="estadisticas" class="pantalla">
     <div class="card">
         <h3>Consultar Demanda por Fecha</h3>
-        <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Seleccioná un día del calendario para ver el detalle horario.</p>
         <input type="date" id="inputFechaEst" onchange="actualizarEstadisticasFecha()" style="margin-bottom: 20px;">
-        <h4 id="tituloDia" style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px;">Seleccione una fecha</h4>
+        <h4 id="tituloDia" style="color:#4caf50;">Seleccione una fecha</h4>
         <div style="overflow-x:auto;"><table id="tablaEstadisticasHoras"><tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr></table></div>
     </div>
 </div>
@@ -97,7 +96,6 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         <div id="contenedorFicha" style="display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; border: 3px solid #4caf50;">
-            <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px;">
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
             <div style="font-weight: bold;">VÁLIDO POR 24 HORAS</div>
         </div>
@@ -109,21 +107,8 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Tarifas de la App</h3>
         <label>Precio base por viaje</label><input type="number" id="precioBase">
         <label>Precio por km</label><input type="number" id="precioKm">
-        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         <label>Monto suscripción 24hs (Info)</label><input type="number" id="montoFijo">
         <button class="btn-ok" onclick="guardarTarifas()">Guardar en servidor</button>
-    </div>
-</div>
-
-<div id="mensajes" class="pantalla">
-    <div class="card">
-        <h3>Mensajería Masiva</h3>
-        <select id="selectDestino">
-            <option value="choferes">Todos los conductores</option>
-            <option value="pasajeros">Todos los pasajeros</option>
-        </select>
-        <input type="text" id="msgMasivo" placeholder="Escribí el mensaje">
-        <button class="btn-ok" onclick="enviarMensajeMasivo()">Enviar a todos</button>
     </div>
 </div>
 
@@ -131,7 +116,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card">
         <h3>Configuración de Contacto</h3>
         <label>Nombre de la app</label><input id="confApp">
-        <label>Teléfono soporte (Ej: 5492344123456)</label><input id="confTel">
+        <label>Teléfono soporte</label><input id="confTel">
         <label>Email soporte</label><input id="confMail">
         <label>Alias / CBU para Cobros</label><input id="confAlias">
         <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
@@ -146,13 +131,10 @@ function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
-    if(id === 'estadisticas') { 
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('inputFechaEst').value = hoy;
-        actualizarEstadisticasFecha();
-    }
+    if(id === 'estadisticas') actualizarEstadisticasFecha();
     if(id === 'tarifas') cargarTarifas();
-    if(id === 'conductores' || id === 'pasajeros' || id === 'inicio') cargarDatosReales();
+    if(id === 'config') cargarConfiguracion();
+    cargarDatosReales();
 }
 
 async function cargarDatosReales() {
@@ -161,7 +143,7 @@ async function cargarDatosReales() {
         listaViajesGlobal = await resV.json();
         const resU = await fetch('/obtener-usuarios');
         listaUsuariosGlobal = await resU.json();
-        const conds = listaUsuariosGlobal.filter(u => (u.rol && u.rol.toLowerCase().trim() === 'chofer') || (u.autoPatente && u.autoPatente.trim() !== ""));
+        const conds = listaUsuariosGlobal.filter(u => (u.rol && u.rol.toLowerCase() === 'chofer') || u.autoPatente);
         const pasas = listaUsuariosGlobal.filter(u => !conds.some(c => c.telefono === u.telefono));
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
@@ -172,7 +154,7 @@ async function cargarDatosReales() {
 
 function actualizarTablaConductores(conds) {
     let tC = document.getElementById('tablaConductores');
-    tC.innerHTML = `<tr><th>Chofer (Ver Perfil)</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
+    tC.innerHTML = `<tr><th>Chofer</th><th>Estado</th><th>Recaudado</th><th>Acción</th></tr>`;
     conds.forEach(c => {
         const viajesDelChofer = listaViajesGlobal.filter(v => v.choferTel === c.telefono && v.estado.toLowerCase() === "finalizado");
         const totalRecaudado = viajesDelChofer.reduce((acc, v) => acc + (parseInt(v.precio.replace(/[^0-9]/g, '')) || 0), 0);
@@ -180,9 +162,9 @@ function actualizarTablaConductores(conds) {
         const docOk = c.aprobado === true;
         tC.innerHTML += `<tr>
             <td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a></td>
-            <td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC OK':'DOC PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO OK':'VENCIDO'}</span></td>
+            <td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC OK':'PEND'}</span> | <span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO OK':'VENC'}</span></td>
             <td>$${totalRecaudado.toLocaleString()}</td>
-            <td><button class="btn-accion" style="background:#4caf50;" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">🗑️</button></td>
+            <td><button class="btn-accion" style="background:#4caf50;" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">🗑️</button></td>
         </tr>`;
     });
 }
@@ -201,72 +183,60 @@ async function cargarViajesReales() {
         listaViajesGlobal = await res.json();
         let tV = document.getElementById('tablaViajes');
         tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Calif.</th><th>Estado</th><th>Acción</th></tr>`;
-        
-        listaViajesGlobal.forEach(v => {
-            const estadoActual = (v.estado || "pendiente").toLowerCase();
-            let color = "#ff9800";
-            if(estadoActual === "finalizado") color = "#4caf50";
-            if(estadoActual === "cancelado") color = "#f44336";
-
-            // BOTÓN FINALIZAR: Aparece si NO es FINALIZADO ni CANCELADO
-            let btnCheck = (estadoActual !== "finalizado" && estadoActual !== "cancelado") 
-                ? `<button class="btn-accion" style="background:#2e7d32; font-size:16px;" onclick="finalizarViajeAdmin('${v._id}', '${v.precio}')">✅</button>` 
-                : '';
-
-            tV.innerHTML += `<tr>
-                <td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || '...'}</td><td>${v.pasajero || 'S/N'}</td>
-                <td style="color:#ffc107;">${v.estrellasPasajero > 0 ? v.estrellasPasajero + ' ⭐' : '-'}</td>
-                <td style="color:${color}; font-weight:bold;">${estadoActual.toUpperCase()}</td>
-                <td>${btnCheck} <button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">🗑️</button></td>
-            </tr>`;
+        listaViajesGlobal.reverse().forEach(v => {
+            const est = (v.estado || "pendiente").toLowerCase();
+            let btnCheck = (est !== "finalizado" && est !== "cancelado") ? `<button class="btn-accion" style="background:#2e7d32;" onclick="finalizarViajeAdmin('${v._id}', '${v.precio}')">✅</button>` : '';
+            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || '...'}</td><td>${v.pasajero || 'S/N'}</td><td>${v.estrellasPasajero || '-'}</td><td style="font-weight:bold;">${est.toUpperCase()}</td><td>${btnCheck}<button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">🗑️</button></td></tr>`;
         });
     } catch (e) {}
 }
 
 async function actualizarEstadisticasFecha() {
-    const fechaSel = document.getElementById('inputFechaEst').value;
-    if (!fechaSel) return;
+    const fechaSel = document.getElementById('inputFechaEst').value || new Date().toISOString().split('T')[0];
     document.getElementById('tituloDia').innerText = "Detalle del día: " + fechaSel;
     const tE = document.getElementById('tablaEstadisticasHoras');
     tE.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>`;
     try {
         const res = await fetch('/obtener-viajes');
         const todos = await res.json();
-        const viajesDia = todos.filter(v => v.fecha === fechaSel);
-        const conteo = {};
-        for (let i = 0; i < 24; i++) { conteo[i.toString().padStart(2, '0') + ":00"] = 0; }
-        viajesDia.forEach(v => { const hS = v.hora.split(':')[0] + ":00"; if (conteo[hS] !== undefined) conteo[hS]++; });
-        Object.keys(conteo).forEach(hora => {
-            tE.innerHTML += `<tr><td>${hora} hs</td><td style="font-weight:bold; color:#4caf50;">${conteo[hora]}</td></tr>`;
-        });
+        const vDia = todos.filter(v => v.fecha === fechaSel);
+        for (let i = 0; i < 24; i++) {
+            const h = i.toString().padStart(2, '0') + ":00";
+            const cant = vDia.filter(v => v.hora.startsWith(i.toString().padStart(2, '0'))).length;
+            tE.innerHTML += `<tr><td>${h} hs</td><td>${cant}</td></tr>`;
+        }
     } catch (e) {}
 }
 
-async function finalizarViajeAdmin(id, precio) {
-    const monto = prompt("Confirmar monto:", precio);
-    if (monto !== null) {
-        await fetch('/finalizar-viaje-admin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: id, monto: monto }) });
-        cargarViajesReales();
-    }
+async function cargarTarifas() {
+    const res = await fetch('/obtener-tarifas');
+    const data = await res.json();
+    if(data) { document.getElementById('precioBase').value = data.precioBase; document.getElementById('precioKm').value = data.precioKm; document.getElementById('montoFijo').value = data.montoFijoInfo; }
 }
 
-async function eliminarViajeHistorial(id) {
-    if(confirm("¿Eliminar?")) {
-        await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        cargarViajesReales();
-    }
+async function cargarConfiguracion() {
+    const res = await fetch('/obtener-config-admin');
+    const data = await res.json();
+    if(data) { document.getElementById('confApp').value = data.app || ""; document.getElementById('confTel').value = data.tel || ""; document.getElementById('confMail').value = data.mail || ""; document.getElementById('confAlias').value = data.alias || ""; }
 }
 
-async function toggleDocumentacion(tel, estado) {
-    await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: !estado }) });
-    cargarDatosReales();
+async function guardarTarifas() {
+    const body = { precioBase: document.getElementById('precioBase').value, precioKm: document.getElementById('precioKm').value, montoFijoInfo: document.getElementById('montoFijo').value };
+    await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    alert('OK');
 }
 
-async function eliminarUsuario(tel) {
-    if(confirm("¿Eliminar definitivamente?")) {
-        await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
-        cargarDatosReales();
-    }
+async function guardarConfiguracion() {
+    const body = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
+    await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    alert('OK');
+}
+
+async function generarNuevoCodigo() {
+    const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
+    await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
+    document.getElementById('txtFichaCodigo').innerText = nuevoCod;
+    document.getElementById('contenedorFicha').style.display = 'flex';
 }
 
 function verPerfilCompleto(tel) {
@@ -278,36 +248,12 @@ function verPerfilCompleto(tel) {
         document.getElementById('modalPerfil').style.display = 'block';
     }
 }
-
 function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
-
-async function generarNuevoCodigo() {
-    const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
-    const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
-    if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
-}
-
-async function guardarTarifas() {
-    const pBase = document.getElementById('precioBase').value;
-    const pKm = document.getElementById('precioKm').value;
-    const mF = document.getElementById('montoFijo').value;
-    await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ precioBase: pBase, precioKm: pKm, montoFijoInfo: mF }) });
-    alert('OK');
-}
-
-async function cargarTarifas() {
-    const res = await fetch('/obtener-tarifas');
-    const data = await res.json();
-    if(data) { document.getElementById('precioBase').value = data.precioBase; document.getElementById('precioKm').value = data.precioKm; document.getElementById('montoFijo').value = data.montoFijoInfo; }
-}
-
-async function guardarConfiguracion() {
-    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
-    await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-    alert('OK');
-}
-
-window.onload = () => { cargarDatosReales(); cargarTarifas(); };
+async function finalizarViajeAdmin(id, p) { const m = prompt("Confirmar monto:", p); if(m !== null) { await fetch('/finalizar-viaje-admin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: id, monto: m }) }); cargarViajesReales(); } }
+async function eliminarViajeHistorial(id) { if(confirm("¿Eliminar?")) { await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); cargarViajesReales(); } }
+async function toggleDocumentacion(tel, est) { await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: !est }) }); cargarDatosReales(); }
+async function eliminarUsuario(tel) { if(confirm("¿Eliminar?")) { await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) }); cargarDatosReales(); } }
+window.onload = () => { cargarDatosReales(); cargarTarifas(); cargarConfiguracion(); };
 </script>
 </body>
 </html>
