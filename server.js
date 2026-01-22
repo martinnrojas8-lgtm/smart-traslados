@@ -2,13 +2,13 @@ const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
-const http = require('http'); 
-const { Server } = require('socket.io'); 
-const https = require('https'); 
+const http = require('http'); // Necesario para Sockets
+const { Server } = require('socket.io'); // Necesario para Sockets
+const https = require('https'); // Necesario para Telegram
 
 const app = express();
-const server = http.createServer(app); 
-const io = new Server(server, { cors: { origin: "*" } }); 
+const server = http.createServer(app); // Envolvemos app en server
+const io = new Server(server, { cors: { origin: "*" } }); // Inicializamos Sockets
 
 app.use(cors());
 
@@ -16,8 +16,8 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// --- FUNCIÓN DE TELEGRAM (VERIFICADO CON FOTO 1000710347.JPG) ---
-const TELEGRAM_TOKEN = '8052546878:AAF-Enh2ar_O9WYXe5u_bP8vSyjli7KfcdE';
+// --- FUNCIÓN DE NOTIFICACIÓN TELEGRAM (DATOS SEGÚN CAPTURAS) ---
+const TELEGRAM_TOKEN = '8052546878:AAG4hKT5-306Y1lcMS5rtcg9_ondxcpR7ag';
 const TELEGRAM_CHAT_ID = '-5185887027';
 
 function enviarNotificacionTelegram(viaje) {
@@ -210,9 +210,10 @@ app.post('/solicitar-viaje', async (req, res) => {
             estado: "pendiente"
         });
         await nuevoViaje.save();
-        
+
+        // LLAMADA A TELEGRAM
         enviarNotificacionTelegram(nuevoViaje);
-        
+
         res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
     } catch (e) { res.status(500).json({ error: "Error al solicitar viaje" }); }
 });
