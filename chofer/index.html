@@ -138,7 +138,6 @@ let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = 
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
     if (video.paused) {
-        // Creamos un video minúsculo de 1 segundo en blanco por código
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
         const stream = canvas.captureStream();
@@ -154,7 +153,19 @@ async function initApp() {
 }
 
 function activarYToggle() {
-    activarKeepAlive(); // Activa el video invisible
+    // --- ESCUDO DE AUDIO PARA EVITAR CIERRE (NUEVO) ---
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0; // Silencio total
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        console.log("Escudo de audio activo");
+    } catch (e) { console.log("Audio Shield Error"); }
+    
+    activarKeepAlive(); // Activa el video invisible que ya tenías
     toggleEstado();
 }
 
@@ -265,7 +276,7 @@ function initMap() {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true, styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] });
         marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-        directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
+        directionsService = new google.maps.DirectionsService(); directionsRenderer = new directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: true });
     }, null, { enableHighAccuracy: true });
 }
 
