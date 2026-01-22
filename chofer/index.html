@@ -103,11 +103,7 @@
               <div style="font-size: 9px; color: #888; margin-bottom: 2px;">CONEXIÓN RESTANTE</div>
               <div id="reloj">00:00:00</div>
           </div>
-          <div class="status-bar">
-            <span class="badge" id="badgeSistema">INACTIVO</span>
-            <span id="txtNombreChofer">Chofer</span>
-            <span id="punteroStatus" style="color:#ff5252;">● Desconectado</span>
-          </div>
+          <div class="status-bar"><span class="badge" id="badgeSistema">INACTIVO</span><span id="txtNombreChofer">Chofer</span></div>
           <div id="controlesViaje" class="card" style="display: none;">
               <p id="destinoActual" style="margin:0; font-weight:bold; color:#00c853; font-size: 13px; margin-bottom: 8px;"></p>
               <div id="contactoPasajero" style="display: flex; gap: 5px; margin-bottom: 10px;">
@@ -127,7 +123,7 @@
   </div>
 </div>
 
-<video id="keepAliveVideo" loop muted playsinline style="position:fixed; top:0; left:0; width:1px; height:1px; opacity:0.01; pointer-events:none;"></video>
+<video id="keepAliveVideo" loop muted playsinline style="position:fixed; top:0; left:0; width:1px; height:1px; opacity:0; pointer-events:none;"></video>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
 <script>
@@ -137,38 +133,28 @@ let map, marker, directionsService, directionsRenderer, estadoActual = "disponib
 let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
-let wakeLock = null;
 
-// --- FUNCION DE PROTECCIÓN PARA QUE EL CELULAR NO SE DUERMA ---
-async function activarKeepAlive() {
+// --- FUNCION DE VIDEO INVISIBLE (BLOQUEO DE SUEÑO) ---
+function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
-    
-    // 1. Iniciar Video Invisible (Engaña al sistema de energía)
     if (video.paused) {
+        // Creamos un video minúsculo de 1 segundo en blanco por código
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "white";
-        ctx.fillRect(0,0,1,1);
         const stream = canvas.captureStream();
         video.srcObject = stream;
-        try { await video.play(); console.log("Video Keep-Alive Activo"); } catch(e) {}
-    }
-
-    // 2. WakeLock API (Mantiene la pantalla encendida si el navegador lo permite)
-    if ('wakeLock' in navigator) {
-        try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        video.play().then(() => console.log("Protección de sistema activa (Video Mode)")).catch(e => console.log("Error Video:", e));
     }
 }
 
-function initApp() {
+async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
     cargarInfoPinSilencioso(); await cargarDatosChofer(); initMap();
     setInterval(transmitirUbicacion, 3000); setInterval(chequearMensajesAdmin, 15000); chequearMensajesAdmin();
 }
 
 function activarYToggle() {
-    activarKeepAlive(); // ACTIVA EL ESCUDO
+    activarKeepAlive(); // Activa el video invisible
     toggleEstado();
 }
 
@@ -244,8 +230,8 @@ function activarModoTrabajo(vencimiento) {
     pagoConfirmado = true; socket.emit('registrar-chofer', sesion.telefono);
     document.getElementById('seccionActivacion').style.display = 'none'; document.getElementById('timerContenedor').style.display = 'block';
     document.getElementById('badgeSistema').innerText = "SISTEMA ACTIVO"; document.getElementById('badgeSistema').style.background = "#00c853";
-    document.getElementById('btnToggle').disabled = false; document.getElementById('btnToggle').innerText = "PONERME COMO DISPONIBLE";
-    document.getElementById('txtEstado').innerText = "ESTADO: BLOQUEADO"; document.getElementById('txtEstado').style.color = "#ff5252";
+    document.getElementById('btnToggle').disabled = false; document.getElementById('btnToggle').innerText = "PONERME COMO OCUPADO";
+    document.getElementById('txtEstado').innerText = "ESTADO: DISPONIBLE"; document.getElementById('txtEstado').style.color = "#00c853";
     iniciarReloj(vencimiento);
 }
 
@@ -299,14 +285,6 @@ function toggleEstado() {
     document.getElementById("txtEstado").innerText = "ESTADO: " + estadoActual.toUpperCase();
     document.getElementById("txtEstado").style.color = (estadoActual === "disponible") ? "#00c853" : "#ff5252";
     document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
-    
-    // Feedback visual de conexión
-    const puntero = document.getElementById("punteroStatus");
-    if(estadoActual === "disponible") {
-        puntero.innerText = "● Conectado"; puntero.style.color = "#00c853";
-    } else {
-        puntero.innerText = "● Desconectado"; puntero.style.color = "#ff5252";
-    }
 }
 
 setInterval(async () => {
