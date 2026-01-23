@@ -78,13 +78,11 @@
         if (!tel) return;
 
         try {
-            // Buscamos con ?t= para que el servidor no nos de una versión vieja guardada en memoria
             const response = await fetch('/obtener-usuarios?t=' + Date.now());
             const usuarios = await response.json();
             const miPerfil = usuarios.find(u => String(u.telefono) === String(tel));
 
             if (miPerfil) {
-                // CARGA DIRECTA: Mostramos lo que venga del servidor, sin filtros ni condiciones.
                 document.getElementById('nombre').value = miPerfil.nombre || "";
                 document.getElementById('modelo').value = miPerfil.autoModelo || miPerfil.modelo || "";
                 document.getElementById('patente').value = miPerfil.autoPatente || miPerfil.patente || "";
@@ -129,6 +127,23 @@
     }
 
     async function guardarPerfil() {
+        // VALIDACIÓN DE CAMPOS OBLIGATORIOS
+        const nombre = document.getElementById('nombre').value.trim();
+        const modelo = document.getElementById('modelo').value.trim();
+        const patente = document.getElementById('patente').value.trim();
+        const color = document.getElementById('color').value.trim();
+
+        if (!nombre || !modelo || !patente || !color) {
+            alert("⚠️ Todos los datos del vehículo y tu nombre son obligatorios.");
+            return;
+        }
+
+        // VALIDACIÓN DE FOTOS OBLIGATORIAS
+        if (!imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
+            alert("⚠️ Debes subir todas las fotos solicitadas (Perfil, Carnet, Seguro y Tarjeta) para poder continuar.");
+            return;
+        }
+
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
         const btn = document.getElementById('btnGuardar');
         btn.innerText = "GUARDANDO...";
@@ -136,10 +151,10 @@
 
         const datos = {
             telefono: tel,
-            nombre: document.getElementById('nombre').value,
-            autoModelo: document.getElementById('modelo').value,
-            autoPatente: document.getElementById('patente').value,
-            autoColor: document.getElementById('color').value,
+            nombre: nombre,
+            autoModelo: modelo,
+            autoPatente: patente,
+            autoColor: color,
             foto: imagenesComprimidas.pPerfil,
             fotoCarnet: imagenesComprimidas.pCarnet,
             fotoSeguro: imagenesComprimidas.pSeguro,
@@ -153,8 +168,8 @@
                 body: JSON.stringify(datos)
             });
             if (response.ok) {
-                alert("✅ Guardado correctamente.");
-                location.reload(); // Recarga para ver que el dato quedó
+                alert("✅ Datos y documentos enviados correctamente.");
+                location.reload();
             }
         } catch (error) { alert("❌ Error de red."); }
         finally { btn.innerText = "GUARDAR Y ENVIAR"; btn.disabled = false; }
