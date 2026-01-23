@@ -135,8 +135,8 @@ let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let currentRatingChofer = 0;
 let pasajeroTelActual = null; 
 let ultimaPosicionMapa = null; 
-let intervalBusqueda = null; // Guardamos el intervalo de búsqueda
-let aceptandoViaje = false; // Bandera de seguridad
+let intervalBusqueda = null; 
+let ocupadoAceptando = false; 
 
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
@@ -154,12 +154,12 @@ async function initApp() {
     cargarInfoPinSilencioso(); await cargarDatosChofer(); initMap();
     setInterval(transmitirUbicacion, 3000); 
     setInterval(chequearMensajesAdmin, 15000); chequearMensajesAdmin();
-    iniciarIntervaloBusqueda(); // Iniciamos búsqueda
+    iniciarIntervaloBusqueda();
 }
 
 function iniciarIntervaloBusqueda() {
     if(intervalBusqueda) clearInterval(intervalBusqueda);
-    intervalBusqueda = setInterval(buscarViajes, 4000);
+    intervalBusqueda = setInterval(buscarViajes, 3500); // Un poco más rápido
 }
 
 function activarYToggle() {
@@ -310,11 +310,12 @@ function toggleEstado() {
 }
 
 async function buscarViajes() {
-    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || aceptandoViaje || document.getElementById("modalViaje").style.display === "flex") return;
+    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || ocupadoAceptando || document.getElementById("modalViaje").style.display === "flex") return;
     try {
         const res = await fetch('/viajes-pendientes'); const viajes = await res.json();
         let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
-        const v = viajes.find(viaje => !rechazados.includes(viaje._id));
+        // Solo mostramos viajes que no tengan chofer asignado Y no estén rechazados
+        const v = viajes.find(viaje => !rechazados.includes(viaje._id) && !viaje.choferTel);
         if (v) {
             viajeActualId = v._id; direccionOrigenViaje = v.origen; direccionDestinoViaje = v.destino; 
             infoPrecioFinal = v.precio; infoDistanciaFinal = v.distancia || "0 km"; pasajeroTelActual = v.pasajeroTel; 
@@ -331,12 +332,42 @@ async function buscarViajes() {
 }
 
 document.getElementById('btnAceptarViaje').onclick = async function() {
-    if(aceptandoViaje) return; // Evitar doble clic
-    aceptandoViaje = true;
-    clearInterval(intervalBusqueda); // DETENER BÚSQUEDA INMEDIATAMENTE
+    if(ocupadoAceptando) return;
+    ocupadoAceptando = true; 
+    
+    // BLOQUEO INMEDIATO DEL BOTÓN
+    const btn = document.getElementById('btnAceptarViaje');
+    btn.innerText = "VERIFICANDO...";
+    btn.disabled = true;
+
+    clearInterval(intervalBusqueda); // Detenemos la búsqueda de fondo
     detenerAlerta(); activarKeepAlive();
+
     try {
-        const respuesta = await fetch('/aceptar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId, choferNombre: sesion.nombre, choferTel: sesion.telefono, autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color }) });
+        // DOBLE VERIFICACIÓN: Antes de avisar al servidor, chequeamos si el viaje sigue libre
+        const checkRes = await fetch('/viajes-pendientes');
+        const lista = await checkRes.json();
+        const viajeSigueLibre = lista.find(v => v._id === viajeActualId && !v.choferTel);
+
+        if (!viajeSigueLibre) {
+            alert("⚠️ Lo sentimos, otro chofer aceptó este viaje milisegundos antes.");
+            location.reload();
+            return;
+        }
+
+        const respuesta = await fetch('/aceptar-viaje', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ 
+                viajeId: viajeActualId, 
+                choferNombre: sesion.nombre, 
+                choferTel: sesion.telefono, 
+                autoModelo: datosAuto.modelo, 
+                autoPatente: datosAuto.patente, 
+                autoColor: datosAuto.color 
+            }) 
+        });
+
         if (respuesta.ok) {
             estadoActual = "en viaje"; 
             document.getElementById("modalViaje").style.display = "none"; 
@@ -350,7 +381,10 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO"; document.getElementById("btnAccionViaje").style.background = "#ffb300";
             ultimaRutaDestino = direccionOrigenViaje;
             trazarRuta(direccionOrigenViaje);
-        } else { location.reload(); }
+        } else {
+            alert("El viaje ya no está disponible.");
+            location.reload();
+        }
     } catch (e) { location.reload(); }
 };
 
@@ -389,7 +423,8 @@ async function rechazarViaje() {
     await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) }); 
     document.getElementById("modalViaje").style.display = "none"; 
     viajeActualId = null; 
-    aceptandoViaje = false; 
+    ocupadoAceptando = false; 
+    iniciarIntervaloBusqueda(); // Reiniciamos búsqueda tras rechazar
 }
 function cerrarSesion() { if(confirm("¿Cerrar?")) { socket.disconnect(); localStorage.clear(); location.href = "/"; } }
 window.onload = initApp;
