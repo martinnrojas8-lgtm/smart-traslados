@@ -125,15 +125,18 @@
 
 <video id="keepAliveVideo" loop muted playsinline style="position:fixed; top:0; left:0; width:1px; height:1px; opacity:0; pointer-events:none;"></video>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8zZaje1NKai0k2MxuQvQVW6vrRdfUIrY&libraries=geometry"></script>
 <script>
 const socket = io();
 let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
 let map, marker, directionsService, directionsRenderer, estadoActual = "disponible", pagoConfirmado = false, viajeActualId = null, direccionOrigenViaje = "", direccionDestinoViaje = "", intervaloReloj;
 let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
-let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
-let pasajeroTelActual = null; // Variable para guardar el teléfono del viaje actual
+let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let currentRatingChofer = 0;
+let pasajeroTelActual = null; 
+let ultimaPosicionMapa = null; 
+let intervalBusqueda = null; // Guardamos el intervalo de búsqueda
+let aceptandoViaje = false; // Bandera de seguridad
 
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
@@ -149,7 +152,14 @@ function activarKeepAlive() {
 async function initApp() {
     if(!sesion.telefono) return location.href = "/"; 
     cargarInfoPinSilencioso(); await cargarDatosChofer(); initMap();
-    setInterval(transmitirUbicacion, 3000); setInterval(chequearMensajesAdmin, 15000); chequearMensajesAdmin();
+    setInterval(transmitirUbicacion, 3000); 
+    setInterval(chequearMensajesAdmin, 15000); chequearMensajesAdmin();
+    iniciarIntervaloBusqueda(); // Iniciamos búsqueda
+}
+
+function iniciarIntervaloBusqueda() {
+    if(intervalBusqueda) clearInterval(intervalBusqueda);
+    intervalBusqueda = setInterval(buscarViajes, 4000);
 }
 
 function activarYToggle() {
@@ -182,7 +192,6 @@ async function finalizarViaje() {
 }
 
 async function confirmarFinalizacionPostPuntaje() {
-    if (monitorCancelacion) clearInterval(monitorCancelacion);
     try {
         await fetch('/calificar-pasajero', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId, estrellas: currentRatingChofer }) });
         await fetch('/finalizar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: viajeActualId }) });
@@ -270,9 +279,10 @@ function iniciarReloj(vencimiento) {
 function initMap() {
     navigator.geolocation.getCurrentPosition(pos => {
         const myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        ultimaPosicionMapa = myPos;
         map = new google.maps.Map(document.getElementById("map"), { center: myPos, zoom: 17, disableDefaultUI: true, styles: [ { elementType: "geometry", stylers: [{ color: "#212121" }] }, { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] } ] });
         marker = new google.maps.Marker({ position: myPos, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 8, fillColor: "#00c853", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-        directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+        directionsService = new google.maps.DirectionsService(); directionsRenderer = new google.maps.DirectionsRenderer({ map: map, preserveViewport: true, suppressMarkers: true });
     }, null, { enableHighAccuracy: true });
 }
 
@@ -281,8 +291,13 @@ function transmitirUbicacion() {
     navigator.geolocation.getCurrentPosition(pos => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; const heading = pos.coords.heading || 0; 
         fetch("/actualizar-ubicacion-chofer", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ telefono: sesion.telefono, lat: coords.lat, lng: coords.lng, heading: heading, estado: estadoActual }) });
-        if(marker) { marker.setPosition(coords); }
-        if(viajeActualId) { map.panTo(coords); trazarRuta(ultimaRutaDestino); }
+        if(marker) { 
+            marker.setPosition(coords); 
+            if(viajeActualId && ultimaPosicionMapa) {
+                const dist = google.maps.geometry.spherical.computeDistanceBetween(new google.maps.LatLng(ultimaPosicionMapa), new google.maps.LatLng(coords));
+                if(dist > 15) { map.panTo(coords); ultimaPosicionMapa = coords; }
+            }
+        }
     }, null, { enableHighAccuracy: true });
 }
 
@@ -294,24 +309,18 @@ function toggleEstado() {
     document.getElementById("btnToggle").innerText = (estadoActual === "disponible") ? "PONERME COMO OCUPADO" : "PONERME COMO DISPONIBLE";
 }
 
-setInterval(async () => {
-    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || document.getElementById("modalViaje").style.display === "block") return;
+async function buscarViajes() {
+    if (estadoActual !== "disponible" || !pagoConfirmado || viajeActualId || aceptandoViaje || document.getElementById("modalViaje").style.display === "flex") return;
     try {
         const res = await fetch('/viajes-pendientes'); const viajes = await res.json();
         let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]");
         const v = viajes.find(viaje => !rechazados.includes(viaje._id));
         if (v) {
-            viajeActualId = v._id; 
-            direccionOrigenViaje = v.origen; 
-            direccionDestinoViaje = v.destino; 
-            infoPrecioFinal = v.precio; 
-            infoDistanciaFinal = v.distancia || "0 km";
-            pasajeroTelActual = v.pasajeroTel; // Guardamos el tel
+            viajeActualId = v._id; direccionOrigenViaje = v.origen; direccionDestinoViaje = v.destino; 
+            infoPrecioFinal = v.precio; infoDistanciaFinal = v.distancia || "0 km"; pasajeroTelActual = v.pasajeroTel; 
 
             document.getElementById("datosViaje").innerHTML = `Pasajero: <b>${v.pasajero}</b><br>Desde: ${v.origen}`;
             document.getElementById("detallesRuta").innerHTML = `PRECIO: <b style="font-size:18px">${v.precio}</b>`;
-            
-            // VINCULACIÓN DE BOTÓN LLAMADA EN MODAL DE AVISO
             if(pasajeroTelActual) { 
                 document.getElementById("btnLlamarPrevio").href = "tel:" + pasajeroTelActual; 
                 document.getElementById("btnLlamarPrevio").style.display = "flex"; 
@@ -319,9 +328,12 @@ setInterval(async () => {
             document.getElementById("modalViaje").style.display = "flex"; sonarAlerta();
         }
     } catch (e) { viajeActualId = null; }
-}, 4000);
+}
 
 document.getElementById('btnAceptarViaje').onclick = async function() {
+    if(aceptandoViaje) return; // Evitar doble clic
+    aceptandoViaje = true;
+    clearInterval(intervalBusqueda); // DETENER BÚSQUEDA INMEDIATAMENTE
     detenerAlerta(); activarKeepAlive();
     try {
         const respuesta = await fetch('/aceptar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId, choferNombre: sesion.nombre, choferTel: sesion.telefono, autoModelo: datosAuto.modelo, autoPatente: datosAuto.patente, autoColor: datosAuto.color }) });
@@ -330,13 +342,10 @@ document.getElementById('btnAceptarViaje').onclick = async function() {
             document.getElementById("modalViaje").style.display = "none"; 
             document.getElementById("controlesEstandar").style.display = "none"; 
             document.getElementById("controlesViaje").style.display = "block";
-            
-            // VINCULACIÓN DE BOTONES EN PANEL DE CONTROL ACTIVO
             if(pasajeroTelActual) {
                 document.getElementById("btnLlamarCel").href = "tel:" + pasajeroTelActual;
                 document.getElementById("btnWspPasajero").href = `https://wa.me/${pasajeroTelActual}?text=Hola,%20estoy%20en%20camino`;
             }
-
             faseViaje = 1; document.getElementById("destinoActual").innerText = "BUSCANDO A: " + direccionOrigenViaje;
             document.getElementById("btnAccionViaje").innerText = "YA BUSQUÉ AL PASAJERO"; document.getElementById("btnAccionViaje").style.background = "#ffb300";
             ultimaRutaDestino = direccionOrigenViaje;
@@ -361,11 +370,27 @@ function gestionarFaseViaje() {
 function trazarRuta(destino) {
     if(!destino) return;
     navigator.geolocation.getCurrentPosition(pos => {
-        directionsService.route({ origin: { lat: pos.coords.latitude, lng: pos.coords.longitude }, destination: destino, travelMode: 'DRIVING' }, (result, status) => { if (status === 'OK') directionsRenderer.setDirections(result); });
+        const origen = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        directionsService.route({ origin: origen, destination: destino, travelMode: 'DRIVING' }, (result, status) => { 
+            if (status === 'OK') {
+                directionsRenderer.setDirections(result);
+                map.panTo(origen);
+                ultimaPosicionMapa = origen;
+            } 
+        });
     }, null, { enableHighAccuracy: true });
 }
 
-async function rechazarViaje() { detenerAlerta(); let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]"); rechazados.push(viajeActualId); localStorage.setItem('viajes_rechazados', JSON.stringify(rechazados)); await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) }); document.getElementById("modalViaje").style.display = "none"; viajeActualId = null; }
+async function rechazarViaje() { 
+    detenerAlerta(); 
+    let rechazados = JSON.parse(localStorage.getItem('viajes_rechazados') || "[]"); 
+    rechazados.push(viajeActualId); 
+    localStorage.setItem('viajes_rechazados', JSON.stringify(rechazados)); 
+    await fetch('/rechazar-viaje', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ viajeId: viajeActualId }) }); 
+    document.getElementById("modalViaje").style.display = "none"; 
+    viajeActualId = null; 
+    aceptandoViaje = false; 
+}
 function cerrarSesion() { if(confirm("¿Cerrar?")) { socket.disconnect(); localStorage.clear(); location.href = "/"; } }
 window.onload = initApp;
 </script>
