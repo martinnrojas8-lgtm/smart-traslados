@@ -2,21 +2,21 @@ const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
-const http = require('http'); // Necesario para Sockets
-const { Server } = require('socket.io'); // Necesario para Sockets
-const https = require('https'); // Necesario para notificaciones Telegram
+const http = require('http'); 
+const { Server } = require('socket.io'); 
+const https = require('https'); 
 
 const app = express();
-const server = http.createServer(app); // Envolvemos app en server
-const io = new Server(server, { cors: { origin: "*" } }); // Inicializamos Sockets
+const server = http.createServer(app); 
+const io = new Server(server, { cors: { origin: "*" } }); 
 
 app.use(cors());
 
-// Configuración para recibir fotos pesadas
+// Configuración para recibir fotos pesadas (Base64)
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-// --- CONFIGURACIÓN TELEGRAM VERIFICADA ---
+// --- CONFIGURACIÓN TELEGRAM ---
 const TELEGRAM_TOKEN = '8579157525:AAF15oAwFpQWbcjcGDWRX6drcxhwN1l3GGE';
 const TELEGRAM_CHAT_ID = '-5185887027';
 
@@ -33,6 +33,7 @@ const UsuarioSchema = new mongoose.Schema({
     rol: String,
     nombre: String,
     foto: String,
+    fotoPerfil: String, // Campo extra para asegurar compatibilidad
     autoModelo: String,
     autoPatente: String,
     autoColor: String,
@@ -178,10 +179,7 @@ app.post('/solicitar-viaje', async (req, res) => {
             estado: "pendiente"
         });
         await nuevoViaje.save();
-
-        // Notificar a Telegram
         enviarNotificacionTelegram(nuevoViaje);
-
         res.json({ mensaje: "Viaje solicitado con éxito", id: nuevoViaje._id });
     } catch (e) { res.status(500).json({ error: "Error al solicitar viaje" }); }
 });
@@ -212,47 +210,24 @@ app.post('/finalizar-viaje', async (req, res) => {
     try {
         const { id } = req.body;
         const viaje = await Viaje.findByIdAndUpdate(id, { estado: "finalizado" }, { new: true });
-        if (viaje) {
-            res.json({ ok: true, mensaje: "Viaje finalizado con éxito" });
-        } else {
-            res.status(404).json({ ok: false, mensaje: "Viaje no encontrado" });
-        }
-    } catch (e) { 
-        res.status(500).json({ ok: false, error: "Error al finalizar viaje" }); 
-    }
+        if (viaje) res.json({ ok: true });
+        else res.status(404).send();
+    } catch (e) { res.status(500).send(); }
 });
 
-// NUEVA RUTA: FINALIZACIÓN DESDE EL PANEL ADMIN
 app.post('/finalizar-viaje-admin', async (req, res) => {
     try {
         const { viajeId, monto } = req.body;
-        const viaje = await Viaje.findByIdAndUpdate(viajeId, { 
-            estado: "finalizado", 
-            precio: monto 
-        }, { new: true });
-        
-        if (viaje) {
-            res.json({ ok: true, mensaje: "Viaje finalizado por admin" });
-        } else {
-            res.status(404).json({ ok: false, mensaje: "Viaje no encontrado" });
-        }
-    } catch (e) {
-        res.status(500).json({ ok: false, error: "Error al finalizar viaje" });
-    }
-});
-
-app.post('/rechazar-viaje', async (req, res) => {
-    try {
-        res.json({ mensaje: "Rechazo registrado localmente" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
+        await Viaje.findByIdAndUpdate(viajeId, { estado: "finalizado", precio: monto });
+        res.json({ ok: true });
+    } catch (e) { res.status(500).send(); }
 });
 
 app.post('/eliminar-viaje', async (req, res) => {
     try {
-        const { id } = req.body;
-        await Viaje.findByIdAndDelete(id);
-        res.json({ mensaje: "Viaje eliminado del historial" });
-    } catch (e) { res.status(500).json({ error: "Error al eliminar registro" }); }
+        await Viaje.findByIdAndDelete(req.body.id);
+        res.json({ mensaje: "Ok" });
+    } catch (e) { res.status(500).send(); }
 });
 
 app.get('/obtener-viajes', async (req, res) => {
@@ -279,8 +254,7 @@ app.post('/eliminar-usuario', async (req, res) => {
 
 app.post('/bloquear-usuario', async (req, res) => {
     try {
-        const { telefono, bloqueado } = req.body;
-        await Usuario.findOneAndUpdate({ telefono: telefono }, { bloqueado: bloqueado });
+        await Usuario.findOneAndUpdate({ telefono: req.body.telefono }, { bloqueado: req.body.bloqueado });
         res.json({ mensaje: "Ok" });
     } catch (e) { res.status(500).json({ error: "Error" }); }
 });
@@ -326,11 +300,7 @@ app.post('/register', async (req, res) => {
             await existe.save();
             return res.json({ mensaje: "Ok", usuario: existe });
         }
-        const nuevo = new Usuario({ 
-            telefono, 
-            rol: rol.toLowerCase().trim(),
-            nombre: nombre || "" 
-        });
+        const nuevo = new Usuario({ telefono, rol: rol.toLowerCase().trim(), nombre: nombre || "" });
         await nuevo.save();
         res.json({ mensaje: "Ok", usuario: nuevo });
     } catch (e) { res.status(500).json({ error: "Error" }); }
@@ -343,6 +313,7 @@ app.get('/obtener-usuarios', async (req, res) => {
     } catch (e) { res.status(500).send(e); }
 });
 
+// --- RUTA ACTUALIZAR PERFIL CHOFER (MEJORADA) ---
 app.post('/actualizar-perfil-chofer', async (req, res) => {
     try {
         const d = req.body;
@@ -352,15 +323,24 @@ app.post('/actualizar-perfil-chofer', async (req, res) => {
             autoPatente: d.autoPatente || d.patente,
             autoColor: d.autoColor || d.color,
             foto: d.foto || d.fotoPerfil,
+            fotoPerfil: d.foto || d.fotoPerfil,
             fotoCarnet: d.fotoCarnet,
             fotoSeguro: d.fotoSeguro,
             fotoTarjeta: d.fotoTarjeta,
-            rol: 'chofer'
+            rol: 'chofer',
+            estadoRevision: 'pendiente' 
         };
 
-        await Usuario.findOneAndUpdate({ telefono: d.telefono }, actualizacion);
+        // Eliminar valores undefined para no pisar datos con nulos
+        Object.keys(actualizacion).forEach(key => actualizacion[key] === undefined && delete actualizacion[key]);
+
+        await Usuario.findOneAndUpdate(
+            { telefono: d.telefono }, 
+            { $set: actualizacion }, 
+            { upsert: true }
+        );
         res.json({ mensaje: "Ok" });
-    } catch (e) { res.status(500).json({ error: "Error" }); }
+    } catch (e) { res.status(500).json({ error: "Error al guardar perfil" }); }
 });
 
 app.post('/crear-token', async (req, res) => {
@@ -396,13 +376,9 @@ app.get('/estado-suscripcion/:telefono', async (req, res) => {
 app.get('/obtener-choferes-activos', async (req, res) => {
     try {
         const limiteTiempo = new Date(Date.now() - 5 * 60 * 1000);
-        const choferes = await Ubicacion.find({
-            ultimaAct: { $gte: limiteTiempo }
-        }); 
+        const choferes = await Ubicacion.find({ ultimaAct: { $gte: limiteTiempo } }); 
         res.json(choferes);
-    } catch (e) { 
-        res.status(500).send([]); 
-    }
+    } catch (e) { res.status(500).send([]); }
 });
 
 app.post('/actualizar-ubicacion-chofer', async (req, res) => {
@@ -420,7 +396,6 @@ app.post('/actualizar-ubicacion-chofer', async (req, res) => {
 app.get('/admin-panel', (req, res) => { res.sendFile(path.join(__dirname, 'admin', 'index-admin.html')); });
 app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'Public', 'login.html')); });
 
-// --- FUNCIÓN DE NOTIFICACIÓN ---
 function enviarNotificacionTelegram(viaje) {
     const texto = `🚨 *NUEVO VIAJE SOLICITADO*\n\n` +
                   `👤 *Pasajero:* ${viaje.pasajero}\n` +
@@ -430,11 +405,7 @@ function enviarNotificacionTelegram(viaje) {
                   `📞 *Tel:* ${viaje.pasajeroTel}\n\n` +
                   `🚕 _Revisar Panel de Control_`;
 
-    const data = JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: texto,
-        parse_mode: 'Markdown'
-    });
+    const data = JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: texto, parse_mode: 'Markdown' });
 
     const options = {
         hostname: 'api.telegram.org',
@@ -447,14 +418,8 @@ function enviarNotificacionTelegram(viaje) {
         }
     };
 
-    const req = https.request(options, (res) => {
-        res.on('data', () => {});
-    });
-
-    req.on('error', (error) => {
-        console.error("Error Telegram:", error);
-    });
-
+    const req = https.request(options, (res) => { res.on('data', () => {}); });
+    req.on('error', (error) => { console.error("Error Telegram:", error); });
     req.write(data);
     req.end();
 }
