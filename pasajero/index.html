@@ -33,6 +33,10 @@
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   
   .btn-parada{ background:#222; color:#00c853; border:1px solid #00c853; font-size:12px; padding:5px; margin:5px 0; width:auto; display:inline-block; }
+
+  /* ESTILO PARA FILA DE PARADA */
+  .fila-parada { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+  .btn-remove-parada { background: #ff5252; color: #fff; width: 40px; margin-top: 5px; padding: 12px 0; border-radius: 8px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -140,6 +144,11 @@ async function initApp() {
     const autoD = new google.maps.places.Autocomplete(document.getElementById("destino"), { componentRestrictions:{country:"ar"} });
     autoO.addListener("place_changed", calcularRuta); 
     autoD.addListener("place_changed", calcularRuta);
+    
+    // Escuchar cuando el usuario borra manualmente el texto de los inputs principales
+    document.getElementById("origen").addEventListener("input", function(){ if(this.value==="") calcularRuta(); });
+    document.getElementById("destino").addEventListener("input", function(){ if(this.value==="") calcularRuta(); });
+
     if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p => {
         const pos = { lat: p.coords.latitude, lng: p.coords.longitude }; 
         map.setCenter(pos);
@@ -153,7 +162,6 @@ async function initApp() {
     chequearMensajesAdmin(); 
 }
 
-// LOGICA ESTRELLAS
 function setRating(n) {
     currentRating = n;
     const stars = document.querySelectorAll('.star');
@@ -215,12 +223,34 @@ async function mostrarChoferesCercanos() {
 }
 
 function agregarParada() {
-    if (paradasCount >= 3) return alert("Máximo 3 paradas");
+    if (document.querySelectorAll(".fila-parada").length >= 3) return alert("Máximo 3 paradas");
+    
     paradasCount++;
+    const div = document.createElement("div");
+    div.className = "fila-parada";
+    div.id = "contParada" + paradasCount;
+
     const input = document.createElement("input");
-    input.type = "text"; input.placeholder = "Parada " + paradasCount;
-    input.className = "input-parada"; input.id = "parada" + paradasCount;
-    document.getElementById("contenedorParadas").appendChild(input);
+    input.type = "text"; 
+    input.placeholder = "Parada...";
+    input.className = "input-parada"; 
+    input.id = "parada" + paradasCount;
+    
+    // Si borran el texto manualmente
+    input.addEventListener("input", function(){ if(this.value==="") calcularRuta(); });
+
+    const btn = document.createElement("button");
+    btn.className = "btn-remove-parada";
+    btn.innerText = "X";
+    btn.onclick = function() {
+        div.remove();
+        calcularRuta();
+    };
+
+    div.appendChild(input);
+    div.appendChild(btn);
+    document.getElementById("contenedorParadas").appendChild(div);
+
     const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions:{country:"ar"} });
     autocomplete.addListener("place_changed", calcularRuta);
 }
@@ -255,12 +285,20 @@ function marcarMensajeComoLeido() {
 
 function calcularRuta() {
     const o = document.getElementById("origen").value, d = document.getElementById("destino").value;
-    if(!o || !d) return;
-    let waypoints = [];
-    for (let i = 1; i <= paradasCount; i++) {
-        const pValue = document.getElementById("parada" + i).value;
-        if (pValue) waypoints.push({ location: pValue, stopover: true });
+    if(!o || !d) {
+        document.getElementById("infoDistancia").innerText = "Distancia: 0 km";
+        document.getElementById("cuadroPrecio").innerText = "Total: $0";
+        return;
     }
+    
+    let waypoints = [];
+    const inputsParada = document.querySelectorAll(".input-parada");
+    inputsParada.forEach(inp => {
+        if (inp.value.trim() !== "") {
+            waypoints.push({ location: inp.value, stopover: true });
+        }
+    });
+
     directionsService.route({ origin:o, destination:d, waypoints: waypoints, travelMode:'DRIVING' }, (res, stat) => {
         if(stat === 'OK') {
             directionsRenderer.setDirections(res);
@@ -275,7 +313,6 @@ function calcularRuta() {
 }
 
 async function pedirViaje() {
-    // BLOQUEO INMEDIATO DE BOTÓN PARA EVITAR ANSIEDAD Y DUPLICADOS
     const btn = document.getElementById("btnPedir");
     btn.disabled = true;
     btn.innerText = "PROCESANDO PEDIDO...";
@@ -292,13 +329,22 @@ async function pedirViaje() {
         }
     } catch (e) { }
 
+    // Capturar paradas para el servidor
+    let paradasTexto = "";
+    const inputsParada = document.querySelectorAll(".input-parada");
+    inputsParada.forEach(inp => {
+        if(inp.value.trim() !== "") paradasTexto += inp.value + " | ";
+    });
+
     const pedido = { 
         pasajeroTel: sesion.telefono, pasajeroNombre: sesion.nombre, 
-        origen: document.getElementById("origen").value, destino: document.getElementById("destino").value, 
-        precio: document.getElementById("cuadroPrecio").innerText 
+        origen: document.getElementById("origen").value, 
+        destino: document.getElementById("destino").value, 
+        parada: paradasTexto,
+        precio: document.getElementById("cuadroPrecio").innerText,
+        distancia: document.getElementById("infoDistancia").innerText.replace("Distancia: ","")
     };
 
-    // Validar datos mínimos antes de enviar
     if(!pedido.origen || !pedido.destino || pedido.origen === "" || pedido.destino === "") {
         alert("Por favor, ingresa origen y destino.");
         btn.disabled = false;
@@ -343,7 +389,7 @@ function iniciarModoSeguimiento() {
     document.getElementById("txtA").innerText = `${viajeInfo.autoModelo} (${viajeInfo.autoColor}) • ${viajeInfo.autoPatente}`;
     document.getElementById("btnLlamar").onclick = () => window.open(`tel:${viajeInfo.choferTel}`);
     document.getElementById("seguimientoPrecio").innerText = viajeInfo.precio;
-    document.getElementById("seguimientoDistancia").innerText = document.getElementById("infoDistancia").innerText.replace("Distancia: ","");
+    document.getElementById("seguimientoDistancia").innerText = viajeInfo.distancia;
 
     const rastreo = setInterval(async () => {
         try {
@@ -389,7 +435,6 @@ function iniciarModoSeguimiento() {
     }, 4000);
 }
 
-// INSTALACION
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('btnInstalarApp').style.display = 'flex'; });
 document.getElementById('btnInstalarApp').addEventListener('click', async () => {
