@@ -88,9 +88,16 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="estadisticas" class="pantalla">
     <div class="card">
         <h3>Consultar Demanda por Fecha</h3>
+        <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Seleccioná un día del calendario para ver el detalle horario.</p>
+        
         <input type="date" id="inputFechaEst" onchange="actualizarEstadisticasFecha()" style="margin-bottom: 20px;">
+
         <h4 id="tituloDia" style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px;">Seleccione una fecha</h4>
-        <div style="overflow-x:auto;"><table id="tablaEstadisticasHoras"><tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr></table></div>
+        <div style="overflow-x:auto;">
+            <table id="tablaEstadisticasHoras">
+                <tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -98,12 +105,20 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
     <div class="card" style="text-align:center;">
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
-        <div id="contenedorFicha" style="position: relative; display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50;">
-            <div id="botonShareContainer" style="position: absolute; top: 10px; right: 10px;"><button class="btn-compartir" onclick="compartirCodigo()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button></div>
+        
+        <div id="contenedorFicha" style="position: relative; display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+            <div id="botonShareContainer" style="position: absolute; top: 10px; right: 10px;">
+                <button class="btn-compartir" onclick="compartirCodigo()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+            </div>
             <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;" crossorigin="anonymous">
-            <div style="font-size: 20px; font-weight: bold; color: #111;">SMART TRASLADOS</div>
+            <div style="font-size: 20px; font-weight: bold; color: #111; margin-bottom: 5px;">SMART TRASLADOS</div>
+            <div style="font-size: 12px; color: #666; font-weight: bold; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #ddd; width: 100%; padding-bottom: 10px;">VOUCHER DE ACTIVACIÓN</div>
+            <div style="font-size: 11px; color: #333; margin-bottom: 5px;">CÓDIGO DE ACCESO:</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
             <div style="font-size: 12px; color: #000; font-weight: bold; margin-top: 15px; background: #e8f5e9; padding: 5px 10px; border-radius: 5px;">VÁLIDO POR 24 HORAS</div>
+            <div style="font-size: 10px; color: #999; margin-top: 15px;">Smart Traslados - El control en tus manos.</div>
         </div>
     </div>
 </div>
@@ -122,7 +137,10 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="mensajes" class="pantalla">
     <div class="card">
         <h3>Mensajería Masiva</h3>
-        <select id="selectDestino"><option value="choferes">Todos los conductores</option><option value="pasajeros">Todos los pasajeros</option></select>
+        <select id="selectDestino">
+            <option value="choferes">Todos los conductores</option>
+            <option value="pasajeros">Todos los pasajeros</option>
+        </select>
         <input type="text" id="msgMasivo" placeholder="Escribí el mensaje">
         <button class="btn-ok" onclick="enviarMensajeMasivo()">Enviar a todos</button>
     </div>
@@ -131,7 +149,10 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="config" class="pantalla">
     <div class="card">
         <h3>Configuración de Contacto</h3>
-        <label>Nombre de la app</label><input id="confApp"><label>Teléfono soporte</label><input id="confTel"><label>Email soporte</label><input id="confMail"><label>Alias / CBU</label><input id="confAlias">
+        <label>Nombre de la app</label><input id="confApp">
+        <label>Teléfono soporte (Ej: 5492344123456)</label><input id="confTel">
+        <label>Email soporte</label><input id="confMail">
+        <label>Alias / CBU para Cobros</label><input id="confAlias">
         <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
@@ -144,8 +165,30 @@ function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
+    if(id === 'estadisticas') { 
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('inputFechaEst').value = hoy;
+        actualizarEstadisticasFecha();
+    }
     if(id === 'tarifas') cargarTarifas();
     if(id === 'conductores' || id === 'pasajeros' || id === 'inicio') cargarDatosReales();
+}
+
+async function enviarMensajeMasivo() {
+    const destino = document.getElementById('selectDestino').value;
+    const texto = document.getElementById('msgMasivo').value;
+    if(!texto) return alert("Escribí un mensaje primero");
+    try {
+        const res = await fetch('/enviar-mensaje-masivo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destino, texto })
+        });
+        if(res.ok) {
+            alert('¡Mensaje enviado a la base de datos!');
+            document.getElementById('msgMasivo').value = "";
+        }
+    } catch (e) { alert("Error de conexión"); }
 }
 
 async function cargarDatosReales() {
@@ -154,13 +197,13 @@ async function cargarDatosReales() {
         listaViajesGlobal = await resV.json();
         const res = await fetch('/obtener-usuarios');
         listaUsuariosGlobal = await res.json();
-        const conds = listaUsuariosGlobal.filter(u => (u.rol && u.rol.toLowerCase() === 'chofer') || (u.autoPatente && u.autoPatente.length > 2));
+        const conds = listaUsuariosGlobal.filter(u => (u.rol && u.rol.toLowerCase().trim() === 'chofer') || (u.autoPatente && u.autoPatente.trim() !== ""));
         const pasas = listaUsuariosGlobal.filter(u => !conds.some(c => c.telefono === u.telefono));
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
         actualizarTablaConductores(conds);
         actualizarTablaPasajeros(pasas);
-    } catch (e) {}
+    } catch (e) { console.error("Error cargando usuarios"); }
 }
 
 function actualizarTablaConductores(conds) {
@@ -171,7 +214,9 @@ function actualizarTablaConductores(conds) {
         const totalRecaudado = viajesDelChofer.reduce((acc, v) => acc + (parseInt(v.precio.replace(/[^0-9]/g, '')) || 0), 0);
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        tC.innerHTML += `<tr><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td style="color:#4caf50; font-weight:bold;">$${totalRecaudado.toLocaleString()}</td><td><button class="btn-accion" style="background:${docOk?'#4caf50':'#f44336'};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">🗑</button></td></tr>`;
+        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        const colorBotonTilde = docOk ? '#4caf50' : '#f44336';
+        tC.innerHTML += `<tr id="fila-${c.telefono}"><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span id="doc-${c.telefono}" class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td style="color:#4caf50; font-weight:bold;">$${totalRecaudado.toLocaleString()}</td><td><button id="btnTilde-${c.telefono}" class="btn-accion" style="background:${colorBotonTilde};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button></td></tr>`;
     });
 }
 
@@ -180,7 +225,10 @@ function actualizarTablaPasajeros(pasas) {
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
         const estaBloqueado = p.bloqueado === true;
-        tP.innerHTML += `<tr><td><b style="color: #4caf50;">${p.nombre || "Pasajero"}</b></td><td>${p.telefono}</td><td><button class="btn-accion" style="background:${estaBloqueado?'#f44336':'#ff9800'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
+        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
+        const colorLock = estaBloqueado ? '#f44336' : '#ff9800';
+        const nombreVisible = p.nombre || p.usuario || p.user || "Pasajero: " + p.telefono;
+        tP.innerHTML += `<tr id="fila-${p.telefono}"><td><b style="color: #4caf50;">${nombreVisible}</b></td><td>${p.telefono}</td><td><button id="btnLock-${p.telefono}" class="btn-accion" style="background:${colorLock};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">${iconTrash}</button></td></tr>`; 
     });
 }
 
@@ -192,51 +240,88 @@ async function cargarViajesReales() {
         tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Calif.</th><th>Estado</th><th>Acción</th></tr>`;
         listaViajesGlobal.forEach(v => {
             let color = v.estado === "finalizado" ? "#4caf50" : (v.estado === "cancelado" ? "#f44336" : "#ff9800");
+            const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
             let estrellasTxt = v.estrellasPasajero && v.estrellasPasajero > 0 ? v.estrellasPasajero + " ⭐" : "-";
-            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || '...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:#ffc107; font-weight:bold;">${estrellasTxt}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td><button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">🗑</button></td></tr>`;
+            
+            // AGREGADO ÚNICAMENTE: Botón Finalizar (solo si no está finalizado/cancelado)
+            let btnFinalizar = (v.estado !== "finalizado" && v.estado !== "cancelado") 
+                ? `<button class="btn-accion" style="background:#2e7d32;" onclick="finalizarViajeAdmin('${v._id}', '${v.precio}')">✅</button>` 
+                : '';
+
+            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || 'Buscando...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:#ffc107; font-weight:bold;">${estrellasTxt}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td>${btnFinalizar}<button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">${iconTrash}</button></td></tr>`;
+        });
+    } catch (e) { console.error("Error viajes"); }
+}
+
+async function finalizarViajeAdmin(viajeId, precioActual) {
+    const nuevoMonto = prompt("Confirmar monto final para este viaje:", precioActual);
+    if(nuevoMonto !== null) {
+        try {
+            const res = await fetch('/finalizar-viaje-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ viajeId, monto: nuevoMonto })
+            });
+            if(res.ok) cargarViajesReales();
+        } catch(e) { alert("Error al finalizar"); }
+    }
+}
+
+async function eliminarViajeHistorial(id) {
+    if(!confirm("¿Eliminar registro?")) return;
+    try { await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); cargarViajesReales(); } catch (e) {}
+}
+
+async function actualizarEstadisticasFecha() {
+    const fechaSel = document.getElementById('inputFechaEst').value;
+    if(!fechaSel) return;
+    try {
+        const res = await fetch('/obtener-viajes');
+        const viajes = await res.json();
+        const partes = fechaSel.split('-');
+        const fechaFormatoDB = `${parseInt(partes[1])}/${parseInt(partes[2])}/${partes[0]}`; 
+        document.getElementById('tituloDia').innerText = `Demanda del día: ${partes[2]}/${partes[1]}/${partes[0]}`;
+        let horasMap = {};
+        for(let i=0; i<24; i++) horasMap[i.toString().padStart(2, '0') + ":00"] = 0;
+        viajes.forEach(v => {
+            if(v.fecha === fechaFormatoDB && v.hora) {
+                let hStr = v.hora.split(":")[0];
+                if(v.hora.includes("PM") && hStr !== "12") hStr = parseInt(hStr) + 12;
+                if(v.hora.includes("AM") && hStr === "12") hStr = "00";
+                let hFinal = hStr.toString().padStart(2, '0') + ":00";
+                if(horasMap[hFinal] !== undefined) horasMap[hFinal]++;
+            }
+        });
+        let tH = document.getElementById('tablaEstadisticasHoras');
+        tH.innerHTML = `<tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>`;
+        Object.keys(horasMap).forEach(h => {
+            let cant = horasMap[h];
+            tH.innerHTML += `<tr><td>${h} hs</td><td style="${cant > 0 ? 'color:#4caf50; font-weight:bold;' : 'color:#555;'}">${cant}</td></tr>`;
         });
     } catch (e) {}
 }
 
-async function cargarTarifas() {
+async function bloquearPasajero(tel, estadoActual) {
+    const nuevoEstado = !estadoActual;
     try {
-        const res = await fetch('/obtener-tarifas');
-        const data = await res.json();
-        if(data) {
-            document.getElementById('precioBase').value = data.precioBase || "";
-            document.getElementById('precioKm').value = data.precioKm || "";
-            document.getElementById('montoFijo').value = data.montoFijoInfo || "";
-        }
-    } catch (e) {}
+        await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, bloqueado: nuevoEstado }) });
+        cargarDatosReales();
+    } catch(e) { cargarDatosReales(); }
 }
 
-async function guardarTarifas() {
-    const body = { 
-        precioBase: parseInt(document.getElementById('precioBase').value), 
-        precioKm: parseInt(document.getElementById('precioKm').value),
-        montoFijoInfo: document.getElementById('montoFijo').value
-    };
-    await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    alert("Tarifas Guardadas");
+async function eliminarUsuario(tel) {
+    if(confirm("¿Eliminar definitivamente?")) {
+        await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) });
+        cargarDatosReales();
+    }
 }
 
-async function cargarConfiguracion() {
+async function toggleDocumentacion(tel, estadoActual) {
+    const nuevoEstado = !estadoActual;
     try {
-        const res = await fetch('/obtener-config-admin');
-        const config = await res.json();
-        if(config) {
-            document.getElementById('confApp').value = config.app || "";
-            document.getElementById('confTel').value = config.tel || "";
-            document.getElementById('confMail').value = config.mail || "";
-            document.getElementById('confAlias').value = config.alias || "";
-        }
-    } catch(e) {}
-}
-
-async function guardarConfiguracion() {
-    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
-    await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-    alert("Configuración Guardada");
+        await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: nuevoEstado }) });
+        cargarDatosReales();
+    } catch(e) { cargarDatosReales(); }
 }
 
 function verPerfilCompleto(tel) {
@@ -245,7 +330,7 @@ function verPerfilCompleto(tel) {
         document.getElementById('nomPerfil').innerText = "Perfil: " + (u.nombre || 'S/N');
         const setImg = (id, src) => {
             const el = document.getElementById(id);
-            if(src && src.length > 50) { el.src = src; el.style.display = "block"; } else { el.src = ""; el.style.display = "none"; }
+            if(src && src.trim() !== "") { el.src = src; el.style.display = "block"; } else { el.src = ""; el.style.display = "none"; }
         };
         setImg('imgCarnet', u.fotoCarnet);
         setImg('imgSeguro', u.fotoSeguro);
@@ -256,47 +341,96 @@ function verPerfilCompleto(tel) {
 
 function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
 
-async function toggleDocumentacion(tel, estadoActual) {
-    await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: !estadoActual }) });
-    cargarDatosReales();
+async function cargarTarifas() {
+    try {
+        const res = await fetch('/obtener-tarifas');
+        const data = await res.json();
+        if(data) {
+            document.getElementById('precioBase').value = data.precioBase || "";
+            document.getElementById('precioKm').value = data.precioKm || "";
+            if(data.montoFijoInfo) {
+                document.getElementById('montoFijo').value = data.montoFijoInfo;
+                localStorage.setItem('montoFijoInfo', data.montoFijoInfo);
+            }
+        }
+    } catch (e) {}
 }
 
-async function bloquearPasajero(tel, estadoActual) {
-    await fetch('/bloquear-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, bloqueado: !estadoActual }) });
-    cargarDatosReales();
+async function guardarTarifas() {
+    const pBase = parseInt(document.getElementById('precioBase').value);
+    const pKm = parseInt(document.getElementById('precioKm').value);
+    const mFijo = document.getElementById('montoFijo').value;
+    if(!mFijo) return alert("El monto no puede estar vacío.");
+    try {
+        const res = await fetch('/actualizar-tarifas', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ precioBase: pBase, precioKm: pKm, montoFijoInfo: mFijo }) 
+        });
+        if(res.ok) { localStorage.setItem('montoFijoInfo', mFijo); alert('Tarifas guardadas'); }
+    } catch(e) {}
 }
 
-async function eliminarUsuario(tel) {
-    if(confirm("¿Eliminar?")) { await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) }); cargarDatosReales(); }
-}
-
-async function eliminarViajeHistorial(id) {
-    if(confirm("¿Eliminar?")) { await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); cargarViajesReales(); }
+async function guardarConfiguracion() {
+    const telLimpio = document.getElementById('confTel').value.replace(/\s+/g, '').replace('+', '');
+    document.getElementById('confTel').value = telLimpio;
+    const config = { 
+        app: document.getElementById('confApp').value, 
+        tel: telLimpio, 
+        mail: document.getElementById('confMail').value, 
+        alias: document.getElementById('confAlias').value 
+    };
+    try {
+        const res = await fetch('/actualizar-config-admin', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(config) 
+        });
+        if(res.ok) {
+            localStorage.setItem('configAdmin', JSON.stringify(config));
+            alert('✅ CONFIGURACIÓN GUARDADA.');
+        } else { alert('❌ EL SERVIDOR NO PUDO GUARDAR.'); }
+    } catch(e) { alert("❌ ERROR DE RED."); }
 }
 
 async function generarNuevoCodigo() {
     const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
-    const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
-    if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
+    try {
+        const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
+        if(res.ok) { document.getElementById('txtFichaCodigo').innerText = nuevoCod; document.getElementById('contenedorFicha').style.display = 'flex'; }
+    } catch (e) {}
 }
 
 async function compartirCodigo() {
     const elemento = document.getElementById('contenedorFicha');
+    const btnShare = document.getElementById('botonShareContainer');
+    const codigo = document.getElementById('txtFichaCodigo').innerText;
+    btnShare.classList.add('ignore-capture');
     html2canvas(elemento, { backgroundColor: null, useCORS: true, scale: 2 }).then(async canvas => {
+        btnShare.classList.remove('ignore-capture');
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        const file = new File([blob], `voucher.png`, { type: 'image/png' });
+        const file = new File([blob], `voucher-${codigo}.png`, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file] });
+            try { await navigator.share({ files: [file], title: 'Voucher Smart Traslados', text: `🚗 *SMART TRASLADOS*\nCódigo: *${codigo}*` }); } catch (e) {}
         } else {
-            window.open(`https://wa.me/?text=Código: ${document.getElementById('txtFichaCodigo').innerText}`, '_blank');
+            const texto = `🚗 *SMART TRASLADOS*\n\nHola! Tu código de acceso es: *${codigo}*\n\nVálido por 24 horas.`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
         }
     });
 }
 
-window.onload = () => { 
-    cargarDatosReales(); 
+window.onload = () => {
+    cargarDatosReales();
     cargarTarifas();
-    cargarConfiguracion();
+    const config = JSON.parse(localStorage.getItem('configAdmin'));
+    if(config) {
+        document.getElementById('confApp').value = config.app || "";
+        document.getElementById('confTel').value = config.tel || "";
+        document.getElementById('confMail').value = config.mail || "";
+        document.getElementById('confAlias').value = config.alias || "";
+    }
+    const montoBkp = localStorage.getItem('montoFijoInfo');
+    if(montoBkp) document.getElementById('montoFijo').value = montoBkp;
 };
 </script>
 </body>
