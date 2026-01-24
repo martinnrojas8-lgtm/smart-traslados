@@ -305,7 +305,19 @@ function calcularRuta() {
             let totalDist = 0;
             res.routes[0].legs.forEach(leg => { totalDist += leg.distance.value; });
             let dist = totalDist / 1000;
-            let precio = dist <= 3 ? 3500 : dist * 900;
+            
+            // Nueva lógica de escalones de precio
+            let precio;
+            if (dist <= 3) {
+                precio = 3500;
+            } else if (dist > 3 && dist <= 3.5) {
+                precio = 4000;
+            } else if (dist > 3.5 && dist <= 5) {
+                precio = 4500;
+            } else {
+                precio = dist * 900;
+            }
+            
             document.getElementById("infoDistancia").innerText = "Distancia: " + dist.toFixed(1) + " km";
             document.getElementById("cuadroPrecio").innerText = "Total: $" + Math.round(precio);
         }
