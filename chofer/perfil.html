@@ -18,6 +18,7 @@
         .btn-guardar { background: #00c853; color: #000; }
         .btn-mapa-top { background: #00c853; color: #000; margin-bottom: 10px; }
         .btn-whatsapp { background: transparent; color: #25d366; border: 1px solid #25d366; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+        input[type="file"] { background: #222; color: #aaa; padding: 10px; width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px dashed #444; }
     </style>
 </head>
 <body>
@@ -31,39 +32,41 @@
 </header>
 
 <div class="container">
-    <button class="btn-mapa-top" onclick="location.href='index.html'">MAPA</button>
+    <button class="btn-mapa-top" onclick="location.href='index.html'">VOLVER AL MAPA</button>
 
-    <h2 id="titulo">Mis Datos</h2>
+    <h2 id="titulo">Mis Datos y Documentos</h2>
     
     <label>Nombre Completo</label>
-    <input type="text" id="nombre">
+    <input type="text" id="nombre" placeholder="Ej: Juan Pérez">
 
     <label>Modelo del Auto</label>
-    <input type="text" id="modelo">
+    <input type="text" id="modelo" placeholder="Ej: Toyota Corolla 2022">
 
     <label>Patente</label>
-    <input type="text" id="patente">
+    <input type="text" id="patente" placeholder="Ej: AB123CD">
 
     <label>Color del Auto</label>
-    <input type="text" id="color">
+    <input type="text" id="color" placeholder="Ej: Blanco">
 
-    <label>Foto de Perfil</label>
+    <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+
+    <label>📸 Foto de Perfil (Cara)</label>
     <input type="file" accept="image/*" onchange="procesarFoto(this, 'pPerfil')">
     <img id="pPerfil" class="preview-img">
 
-    <label>Foto de Carnet de Conducir</label>
+    <label>🪪 Carnet de Conducir (Frente)</label>
     <input type="file" accept="image/*" onchange="procesarFoto(this, 'pCarnet')">
     <img id="pCarnet" class="preview-img">
 
-    <label>Foto de Seguro</label>
+    <label>📄 Póliza de Seguro (Vigente)</label>
     <input type="file" accept="image/*" onchange="procesarFoto(this, 'pSeguro')">
     <img id="pSeguro" class="preview-img">
 
-    <label>Foto de Tarjeta Vehículo</label>
+    <label>🚗 Tarjeta del Vehículo (Cédula)</label>
     <input type="file" accept="image/*" onchange="procesarFoto(this, 'pTarjeta')">
     <img id="pTarjeta" class="preview-img">
 
-    <button class="btn-guardar" id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR</button>
+    <button class="btn-guardar" id="btnGuardar" onclick="guardarPerfil()">GUARDAR Y ENVIAR PARA APROBACIÓN</button>
 
     <a href="https://wa.me/5491100000000" target="_blank" class="btn-whatsapp" style="width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 15px; box-sizing: border-box; display: flex;">
         SOPORTE TÉCNICO
@@ -71,10 +74,12 @@
 </div>
 
 <script>
+    // Inicializamos el objeto con valores nulos
     const imagenesComprimidas = { pPerfil: null, pCarnet: null, pSeguro: null, pTarjeta: null };
 
     async function cargarDatosYValidar() {
-        let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
+        let sesion = JSON.parse(localStorage.getItem("sesion") || "{}");
+        let tel = localStorage.getItem('userTelefono') || sesion.telefono;
         if (!tel) return;
 
         try {
@@ -84,22 +89,24 @@
 
             if (miPerfil) {
                 document.getElementById('nombre').value = miPerfil.nombre || "";
-                document.getElementById('modelo').value = miPerfil.autoModelo || miPerfil.modelo || "";
-                document.getElementById('patente').value = miPerfil.autoPatente || miPerfil.patente || "";
-                document.getElementById('color').value = miPerfil.autoColor || miPerfil.color || "";
+                document.getElementById('modelo').value = miPerfil.autoModelo || "";
+                document.getElementById('patente').value = miPerfil.autoPatente || "";
+                document.getElementById('color').value = miPerfil.autoColor || "";
 
-                const mostrarFoto = (id, src) => {
-                    if (src && src.length > 100) {
-                        document.getElementById(id).src = src;
-                        document.getElementById(id).style.display = 'block';
-                        imagenesComprimidas[id] = src;
-                        if(id === 'pPerfil') document.getElementById('imgMiniatura').src = src;
+                // IMPORTANTE: Cargamos las fotos existentes en el objeto de envío
+                const recuperarFoto = (idElemento, dataBase64) => {
+                    if (dataBase64 && dataBase64.length > 100) {
+                        document.getElementById(idElemento).src = dataBase64;
+                        document.getElementById(idElemento).style.display = 'block';
+                        imagenesComprimidas[idElemento] = dataBase64; // Esto asegura que ya "estén" ahí
+                        if(idElemento === 'pPerfil') document.getElementById('imgMiniatura').src = dataBase64;
                     }
                 };
-                mostrarFoto('pPerfil', miPerfil.foto);
-                mostrarFoto('pCarnet', miPerfil.fotoCarnet);
-                mostrarFoto('pSeguro', miPerfil.fotoSeguro);
-                mostrarFoto('pTarjeta', miPerfil.fotoTarjeta);
+
+                recuperarFoto('pPerfil', miPerfil.foto);
+                recuperarFoto('pCarnet', miPerfil.fotoCarnet);
+                recuperarFoto('pSeguro', miPerfil.fotoSeguro);
+                recuperarFoto('pTarjeta', miPerfil.fotoTarjeta);
             }
         } catch (e) { console.error("Error al cargar:", e); }
     }
@@ -112,11 +119,14 @@
                 img.src = e.target.result;
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const maxW = 800;
+                    const maxW = 800; // Calidad suficiente para documentos
+                    const scale = maxW / img.width;
                     canvas.width = maxW;
-                    canvas.height = img.height * (maxW / img.width);
-                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const base64 = canvas.toDataURL('image/jpeg', 0.7);
                     imagenesComprimidas[idPreview] = base64;
                     document.getElementById(idPreview).src = base64;
                     document.getElementById(idPreview).style.display = 'block';
@@ -127,26 +137,37 @@
     }
 
     async function guardarPerfil() {
-        // VALIDACIÓN DE CAMPOS OBLIGATORIOS
         const nombre = document.getElementById('nombre').value.trim();
         const modelo = document.getElementById('modelo').value.trim();
         const patente = document.getElementById('patente').value.trim();
         const color = document.getElementById('color').value.trim();
 
+        // 1. VALIDACIÓN DE TEXTOS
         if (!nombre || !modelo || !patente || !color) {
-            alert("⚠️ Todos los datos del vehículo y tu nombre son obligatorios.");
+            alert("⚠️ Error: Todos los datos del vehículo son obligatorios.");
             return;
         }
 
-        // VALIDACIÓN DE FOTOS OBLIGATORIAS
-        if (!imagenesComprimidas.pPerfil || !imagenesComprimidas.pCarnet || !imagenesComprimidas.pSeguro || !imagenesComprimidas.pTarjeta) {
-            alert("⚠️ Debes subir todas las fotos solicitadas (Perfil, Carnet, Seguro y Tarjeta) para poder continuar.");
-            return;
+        // 2. VALIDACIÓN ESTRICTA DE FOTOS
+        // Verificamos que ninguna de las propiedades en imagenesComprimidas sea nula o vacía
+        if (!imagenesComprimidas.pPerfil || imagenesComprimidas.pPerfil.length < 500) {
+            alert("⚠️ Falta subir: FOTO DE PERFIL"); return;
+        }
+        if (!imagenesComprimidas.pCarnet || imagenesComprimidas.pCarnet.length < 500) {
+            alert("⚠️ Falta subir: FOTO DEL CARNET"); return;
+        }
+        if (!imagenesComprimidas.pSeguro || imagenesComprimidas.pSeguro.length < 500) {
+            alert("⚠️ Falta subir: FOTO DEL SEGURO"); return;
+        }
+        if (!imagenesComprimidas.pTarjeta || imagenesComprimidas.pTarjeta.length < 500) {
+            alert("⚠️ Falta subir: FOTO DE LA TARJETA DEL AUTO"); return;
         }
 
         let tel = localStorage.getItem('userTelefono') || JSON.parse(localStorage.getItem("sesion") || "{}").telefono;
+        if(!tel) { alert("Error de sesión. Reingresa a la app."); return; }
+
         const btn = document.getElementById('btnGuardar');
-        btn.innerText = "GUARDANDO...";
+        btn.innerText = "ENVIANDO DOCUMENTOS...";
         btn.disabled = true;
 
         const datos = {
@@ -167,12 +188,18 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
             });
+            
             if (response.ok) {
-                alert("✅ Datos y documentos enviados correctamente.");
-                location.reload();
+                alert("✅ ¡Éxito! Tus datos y fotos han sido recibidos. El administrador revisará tu perfil pronto.");
+                location.href = "index.html"; // Lo mandamos al mapa
+            } else {
+                throw new Error();
             }
-        } catch (error) { alert("❌ Error de red."); }
-        finally { btn.innerText = "GUARDAR Y ENVIAR"; btn.disabled = false; }
+        } catch (error) { 
+            alert("❌ Error al enviar. Verifica tu conexión a internet."); 
+            btn.innerText = "REINTENTAR GUARDAR";
+            btn.disabled = false;
+        }
     }
 
     window.onload = cargarDatosYValidar;
