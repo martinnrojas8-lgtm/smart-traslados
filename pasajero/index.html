@@ -275,19 +275,41 @@ function calcularRuta() {
 }
 
 async function pedirViaje() {
+    // BLOQUEO INMEDIATO DE BOTÓN PARA EVITAR ANSIEDAD Y DUPLICADOS
+    const btn = document.getElementById("btnPedir");
+    btn.disabled = true;
+    btn.innerText = "PROCESANDO PEDIDO...";
+    btn.style.opacity = "0.6";
+
     try {
         const resU = await fetch('/obtener-usuarios');
         const usuarios = await resU.json();
         const yo = usuarios.find(u => u.telefono === sesion.telefono);
-        if (yo && yo.bloqueado) { alert("AVISO: Cuenta inhabilitada."); return; }
+        if (yo && yo.bloqueado) { 
+            alert("AVISO: Cuenta inhabilitada."); 
+            location.reload();
+            return; 
+        }
     } catch (e) { }
+
     const pedido = { 
         pasajeroTel: sesion.telefono, pasajeroNombre: sesion.nombre, 
         origen: document.getElementById("origen").value, destino: document.getElementById("destino").value, 
         precio: document.getElementById("cuadroPrecio").innerText 
     };
+
+    // Validar datos mínimos antes de enviar
+    if(!pedido.origen || !pedido.destino || pedido.origen === "" || pedido.destino === "") {
+        alert("Por favor, ingresa origen y destino.");
+        btn.disabled = false;
+        btn.innerText = "SOLICITAR AHORA";
+        btn.style.opacity = "1";
+        return;
+    }
+
     for (let tel in marcadoresChoferes) { marcadoresChoferes[tel].setMap(null); }
     marcadoresChoferes = {};
+
     fetch("/solicitar-viaje", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(pedido) })
     .then(r => r.json()).then(data => {
         idViaje = data.id; 
@@ -305,6 +327,11 @@ async function pedirViaje() {
                 document.getElementById("modalConfirmacion").style.display="flex"; 
             }
         }, 3000);
+    }).catch(err => {
+        alert("Error al conectar con el servidor. Intenta de nuevo.");
+        btn.disabled = false;
+        btn.innerText = "SOLICITAR AHORA";
+        btn.style.opacity = "1";
     });
 }
 
