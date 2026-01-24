@@ -90,14 +90,9 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="estadisticas" class="pantalla">
     <div class="card">
         <h3>Consultar Demanda por Fecha</h3>
-        <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Seleccioná un día del calendario para ver el detalle horario.</p>
         <input type="date" id="inputFechaEst" onchange="actualizarEstadisticasFecha()" style="margin-bottom: 20px;">
         <h4 id="tituloDia" style="color:#4caf50; border-bottom: 1px solid #333; padding-bottom: 5px;">Seleccione una fecha</h4>
-        <div style="overflow-x:auto;">
-            <table id="tablaEstadisticasHoras">
-                <tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table id="tablaEstadisticasHoras"><tr><th>Franja Horaria</th><th>Viajes Solicitados</th></tr></table></div>
     </div>
 </div>
 
@@ -106,11 +101,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Generar Pin de Activación 24hs</h3>
         <button class="btn-ok" onclick="generarNuevoCodigo()">GENERAR NUEVO CÓDIGO</button>
         <div id="contenedorFicha" style="position: relative; display: none; flex-direction: column; align-items: center; background: #fff; padding: 25px; border-radius: 15px; max-width: 300px; margin: 25px auto; color: #000; text-align: center; border: 3px solid #4caf50;">
-            <div id="botonShareContainer" style="position: absolute; top: 10px; right: 10px;">
-                <button class="btn-compartir" onclick="compartirCodigo()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                </button>
-            </div>
+            <div id="botonShareContainer" style="position: absolute; top: 10px; right: 10px;"><button class="btn-compartir" onclick="compartirCodigo()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button></div>
             <img src="https://raw.githubusercontent.com/martinnrojas8-lgtm/smart-traslados/main/Public/IMG_20260103_204207.png" style="height: 50px; margin-bottom: 10px;" crossorigin="anonymous">
             <div style="font-size: 20px; font-weight: bold; color: #111;">SMART TRASLADOS</div>
             <div id="txtFichaCodigo" class="ficha-codigo">000000</div>
@@ -124,6 +115,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
         <h3>Tarifas de la App</h3>
         <label>Precio base por viaje</label><input type="number" id="precioBase">
         <label>Precio por km</label><input type="number" id="precioKm">
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         <label>Monto suscripción 24hs (Info)</label><input type="number" id="montoFijo">
         <button class="btn-ok" onclick="guardarTarifas()">Guardar en servidor</button>
     </div>
@@ -132,10 +124,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="mensajes" class="pantalla">
     <div class="card">
         <h3>Mensajería Masiva</h3>
-        <select id="selectDestino">
-            <option value="choferes">Todos los conductores</option>
-            <option value="pasajeros">Todos los pasajeros</option>
-        </select>
+        <select id="selectDestino"><option value="choferes">Todos los conductores</option><option value="pasajeros">Todos los pasajeros</option></select>
         <input type="text" id="msgMasivo" placeholder="Escribí el mensaje">
         <button class="btn-ok" onclick="enviarMensajeMasivo()">Enviar a todos</button>
     </div>
@@ -144,10 +133,7 @@ th, td{ padding:10px; border-bottom:1px solid #333; text-align:left; font-size:1
 <div id="config" class="pantalla">
     <div class="card">
         <h3>Configuración de Contacto</h3>
-        <label>Nombre de la app</label><input id="confApp">
-        <label>Teléfono soporte</label><input id="confTel">
-        <label>Email soporte</label><input id="confMail">
-        <label>Alias / CBU</label><input id="confAlias">
+        <label>Nombre de la app</label><input id="confApp"><label>Teléfono soporte</label><input id="confTel"><label>Email soporte</label><input id="confMail"><label>Alias / CBU</label><input id="confAlias">
         <button class="btn-ok" onclick="guardarConfiguracion()">Guardar configuración</button>
     </div>
 </div>
@@ -160,7 +146,7 @@ function mostrar(id){
     document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('activa'));
     document.getElementById(id).classList.add('activa');
     if(id === 'viajes') cargarViajesReales();
-    if(id === 'estadisticas') { 
+    if(id === 'estadisticas') {
         const hoy = new Date().toISOString().split('T')[0];
         document.getElementById('inputFechaEst').value = hoy;
         actualizarEstadisticasFecha();
@@ -175,18 +161,14 @@ async function cargarDatosReales() {
         listaViajesGlobal = await resV.json();
         const res = await fetch('/obtener-usuarios');
         listaUsuariosGlobal = await res.json();
-        
-        // FILTRO: Chofer real es quien tiene patente cargada
-        const conds = listaUsuariosGlobal.filter(u => 
-            (u.rol && u.rol.toLowerCase().trim() === 'chofer' && u.autoPatente && u.autoPatente.trim() !== "")
-        );
+        // Filtro: Chofer si tiene patente
+        const conds = listaUsuariosGlobal.filter(u => (u.rol === 'chofer' && u.autoPatente && u.autoPatente.length > 2));
         const pasas = listaUsuariosGlobal.filter(u => !conds.some(c => c.telefono === u.telefono));
-        
         document.getElementById('cActivos').innerText = conds.length;
         document.getElementById('pTotal').innerText = pasas.length;
         actualizarTablaConductores(conds);
         actualizarTablaPasajeros(pasas);
-    } catch (e) { console.error("Error cargando datos"); }
+    } catch (e) {}
 }
 
 function actualizarTablaConductores(conds) {
@@ -197,18 +179,7 @@ function actualizarTablaConductores(conds) {
         const totalRecaudado = viajesDelChofer.reduce((acc, v) => acc + (parseInt(v.precio.replace(/[^0-9]/g, '')) || 0), 0);
         const pagoAlDia = c.vencimientoPago && new Date(c.vencimientoPago) > new Date();
         const docOk = c.aprobado === true;
-        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-        
-        tC.innerHTML += `<tr>
-            <td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td>
-            <td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td>
-            <td style="color:#4caf50; font-weight:bold;">$${totalRecaudado.toLocaleString()}</td>
-            <td>
-                <button class="btn-accion" style="background:${docOk?'#4caf50':'#f44336'};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button>
-                <button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button>
-                <button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">${iconTrash}</button>
-            </td>
-        </tr>`;
+        tC.innerHTML += `<tr><td><a href="#" onclick="verPerfilCompleto('${c.telefono}')" style="color:#4caf50; text-decoration:none;"><b>${c.nombre || 'S/N'}</b></a><br><small>${c.telefono}</small></td><td><span class="${docOk?'estado-ok':'estado-pendiente'}">${docOk?'DOC: OK':'DOC: PEND'}</span><br><span class="${pagoAlDia?'estado-ok':'estado-off'}">${pagoAlDia?'PAGO: OK':'PAGO: VENC'}</span></td><td style="color:#4caf50; font-weight:bold;">$${totalRecaudado.toLocaleString()}</td><td><button class="btn-accion" style="background:${docOk?'#4caf50':'#f44336'};" onclick="toggleDocumentacion('${c.telefono}', ${docOk})">✔</button><button class="btn-accion" style="background:#25d366;" onclick="window.open('https://wa.me/${c.telefono}')">✉</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${c.telefono}')">🗑</button></td></tr>`;
     });
 }
 
@@ -217,39 +188,88 @@ function actualizarTablaPasajeros(pasas) {
     tP.innerHTML = `<tr><th>Nombre</th><th>Teléfono</th><th>Acción</th></tr>`;
     pasas.forEach(p => { 
         const estaBloqueado = p.bloqueado === true;
-        const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-        const nombreVisible = p.nombre || "Pasajero: " + p.telefono;
-        tP.innerHTML += `<tr><td><b style="color: #4caf50;">${nombreVisible}</b></td><td>${p.telefono}</td><td><button class="btn-accion" style="background:${estaBloqueado?'#f44336':'#ff9800'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">${iconTrash}</button></td></tr>`; 
+        tP.innerHTML += `<tr><td><b style="color: #4caf50;">${p.nombre || "Pasajero"}</b></td><td>${p.telefono}</td><td><button class="btn-accion" style="background:${estaBloqueado?'#f44336':'#ff9800'};" onclick="bloquearPasajero('${p.telefono}', ${estaBloqueado})">🔒</button><button class="btn-accion" style="background:#f44336;" onclick="eliminarUsuario('${p.telefono}')">🗑</button></td></tr>`; 
     });
 }
+
+async function cargarTarifas() {
+    try {
+        const res = await fetch('/obtener-tarifas');
+        const data = await res.json();
+        if(data) {
+            document.getElementById('precioBase').value = data.precioBase || "";
+            document.getElementById('precioKm').value = data.precioKm || "";
+            document.getElementById('montoFijo').value = data.montoFijoInfo || "";
+        }
+    } catch (e) { console.error("Error tarifas servidor"); }
+}
+
+async function guardarTarifas() {
+    const body = { 
+        precioBase: parseInt(document.getElementById('precioBase').value), 
+        precioKm: parseInt(document.getElementById('precioKm').value),
+        montoFijoInfo: document.getElementById('montoFijo').value
+    };
+    try {
+        const res = await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if(res.ok) alert("✅ TARIFAS GUARDADAS EN SERVIDOR");
+    } catch(e) { alert("❌ ERROR AL GUARDAR"); }
+}
+
+async function cargarConfiguracion() {
+    try {
+        const res = await fetch('/obtener-config-admin');
+        const config = await res.json();
+        if(config) {
+            document.getElementById('confApp').value = config.app || "";
+            document.getElementById('confTel').value = config.tel || "";
+            document.getElementById('confMail').value = config.mail || "";
+            document.getElementById('confAlias').value = config.alias || "";
+        }
+    } catch(e) {}
+}
+
+async function guardarConfiguracion() {
+    const config = { app: document.getElementById('confApp').value, tel: document.getElementById('confTel').value, mail: document.getElementById('confMail').value, alias: document.getElementById('confAlias').value };
+    try {
+        const res = await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+        if(res.ok) alert("✅ CONFIGURACIÓN GUARDADA");
+    } catch(e) {}
+}
+
+function verPerfilCompleto(tel) {
+    const u = listaUsuariosGlobal.find(user => user.telefono === tel);
+    if(u) {
+        document.getElementById('nomPerfil').innerText = "Perfil: " + (u.nombre || 'S/N');
+        const setImg = (id, src) => {
+            const el = document.getElementById(id);
+            if(src && src.length > 100) { el.src = src; el.style.display = "block"; } else { el.src = ""; el.style.display = "none"; }
+        };
+        setImg('imgPerfil', u.foto || u.fotoPerfil);
+        setImg('imgCarnet', u.fotoCarnet);
+        setImg('imgSeguro', u.fotoSeguro);
+        setImg('imgTarjeta', u.fotoTarjeta);
+        document.getElementById('modalPerfil').style.display = 'block';
+    }
+}
+
+function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
 
 async function cargarViajesReales() {
     try {
         const res = await fetch('/obtener-viajes');
         listaViajesGlobal = await res.json();
         let tV = document.getElementById('tablaViajes');
-        tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Calif.</th><th>Estado</th><th>Acción</th></tr>`;
+        tV.innerHTML = `<tr><th>Fecha</th><th>Hora</th><th>Chofer</th><th>Pasajero</th><th>Estado</th><th>Acción</th></tr>`;
         listaViajesGlobal.forEach(v => {
             let color = v.estado === "finalizado" ? "#4caf50" : (v.estado === "cancelado" ? "#f44336" : "#ff9800");
-            const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-            let estrellasTxt = v.estrellasPasajero > 0 ? v.estrellasPasajero + " ⭐" : "-";
-            let btnFinalizar = (v.estado !== "finalizado" && v.estado !== "cancelado") 
-                ? `<button class="btn-accion" style="background:#2e7d32;" onclick="finalizarViajeAdmin('${v._id}', '${v.precio}')">✅</button>` : '';
-            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || '...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:#ffc107;">${estrellasTxt}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td>${btnFinalizar}<button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">${iconTrash}</button></td></tr>`;
+            tV.innerHTML += `<tr><td>${v.fecha}</td><td>${v.hora}</td><td>${v.chofer || '...'}</td><td>${v.pasajero || 'S/N'}</td><td style="color:${color}; font-weight:bold;">${v.estado.toUpperCase()}</td><td><button class="btn-accion" style="background:#f44336;" onclick="eliminarViajeHistorial('${v._id}')">🗑</button></td></tr>`;
         });
     } catch (e) {}
 }
 
-async function finalizarViajeAdmin(viajeId, precioActual) {
-    const nuevoMonto = prompt("Confirmar monto final:", precioActual);
-    if(nuevoMonto !== null) {
-        await fetch('/finalizar-viaje-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ viajeId, monto: nuevoMonto }) });
-        cargarViajesReales();
-    }
-}
-
 async function eliminarViajeHistorial(id) {
-    if(confirm("¿Eliminar registro?")) { await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); cargarViajesReales(); }
+    if(confirm("¿Eliminar?")) { await fetch('/eliminar-viaje', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); cargarViajesReales(); }
 }
 
 async function actualizarEstadisticasFecha() {
@@ -281,14 +301,6 @@ async function actualizarEstadisticasFecha() {
     } catch (e) {}
 }
 
-async function enviarMensajeMasivo() {
-    const destino = document.getElementById('selectDestino').value;
-    const texto = document.getElementById('msgMasivo').value;
-    if(!texto) return;
-    await fetch('/enviar-mensaje-masivo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ destino, texto }) });
-    alert("Enviado"); document.getElementById('msgMasivo').value = "";
-}
-
 async function toggleDocumentacion(tel, estadoActual) {
     await fetch('/aprobar-chofer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel, aprobado: !estadoActual }) });
     cargarDatosReales();
@@ -303,57 +315,6 @@ async function eliminarUsuario(tel) {
     if(confirm("¿Eliminar?")) { await fetch('/eliminar-usuario', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefono: tel }) }); cargarDatosReales(); }
 }
 
-function verPerfilCompleto(tel) {
-    const u = listaUsuariosGlobal.find(user => user.telefono === tel);
-    if(u) {
-        document.getElementById('nomPerfil').innerText = "Perfil: " + (u.nombre || 'S/N');
-        const setImg = (id, src) => {
-            const el = document.getElementById(id);
-            if(src && src.length > 100) { el.src = src; el.style.display = "block"; } 
-            else { el.src = ""; el.style.display = "none"; }
-        };
-        setImg('imgPerfil', u.foto || u.fotoPerfil);
-        setImg('imgCarnet', u.fotoCarnet);
-        setImg('imgSeguro', u.fotoSeguro);
-        setImg('imgTarjeta', u.fotoTarjeta);
-        document.getElementById('modalPerfil').style.display = 'block';
-    }
-}
-
-function cerrarPerfil() { document.getElementById('modalPerfil').style.display = 'none'; }
-
-async function cargarTarifas() {
-    const res = await fetch('/obtener-tarifas');
-    const data = await res.json();
-    if(data) {
-        document.getElementById('precioBase').value = data.precioBase || "";
-        document.getElementById('precioKm').value = data.precioKm || "";
-        document.getElementById('montoFijo').value = data.montoFijoInfo || "";
-    }
-}
-
-async function guardarTarifas() {
-    const body = { 
-        precioBase: parseInt(document.getElementById('precioBase').value), 
-        precioKm: parseInt(document.getElementById('precioKm').value),
-        montoFijoInfo: document.getElementById('montoFijo').value
-    };
-    await fetch('/actualizar-tarifas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    alert("Tarifas guardadas");
-}
-
-async function guardarConfiguracion() {
-    const config = { 
-        app: document.getElementById('confApp').value, 
-        tel: document.getElementById('confTel').value, 
-        mail: document.getElementById('confMail').value, 
-        alias: document.getElementById('confAlias').value 
-    };
-    await fetch('/actualizar-config-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-    localStorage.setItem('configAdmin', JSON.stringify(config));
-    alert("Configuración guardada");
-}
-
 async function generarNuevoCodigo() {
     const nuevoCod = Math.floor(100000 + Math.random() * 900000).toString();
     const res = await fetch('/crear-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo: nuevoCod }) });
@@ -362,31 +323,30 @@ async function generarNuevoCodigo() {
 
 async function compartirCodigo() {
     const elemento = document.getElementById('contenedorFicha');
-    const btnShare = document.getElementById('botonShareContainer');
     const codigo = document.getElementById('txtFichaCodigo').innerText;
-    btnShare.style.visibility = 'hidden';
     html2canvas(elemento, { backgroundColor: null, useCORS: true, scale: 2 }).then(async canvas => {
-        btnShare.style.visibility = 'visible';
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const file = new File([blob], `voucher-${codigo}.png`, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], title: 'Voucher', text: `Código: *${codigo}*` });
         } else {
-            window.open(`https://wa.me/?text=Código Smart: ${codigo}`, '_blank');
+            window.open(`https://wa.me/?text=Código: ${codigo}`, '_blank');
         }
     });
+}
+
+async function enviarMensajeMasivo() {
+    const destino = document.getElementById('selectDestino').value;
+    const texto = document.getElementById('msgMasivo').value;
+    if(!texto) return;
+    await fetch('/enviar-mensaje-masivo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ destino, texto }) });
+    alert("Enviado"); document.getElementById('msgMasivo').value = "";
 }
 
 window.onload = () => { 
     cargarDatosReales(); 
     cargarTarifas();
-    const config = JSON.parse(localStorage.getItem('configAdmin'));
-    if(config) {
-        document.getElementById('confApp').value = config.app || "";
-        document.getElementById('confTel').value = config.tel || "";
-        document.getElementById('confMail').value = config.mail || "";
-        document.getElementById('confAlias').value = config.alias || "";
-    }
+    cargarConfiguracion();
 };
 </script>
 </body>
