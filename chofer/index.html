@@ -134,7 +134,7 @@ let datosAuto = { modelo: "", patente: "", color: "" };
 let ultimaRutaDestino = ""; let faseViaje = 1; let audioInterval;
 let infoPrecioFinal = ""; let infoDistanciaFinal = ""; let monitorCancelacion = null; let currentRatingChofer = 0;
 let pasajeroTelActual = null;
-let ultimaPosicionMapa = null; // Para control de salto de GPS
+let ultimaPosicionMapa = null;
 
 function activarKeepAlive() {
     const video = document.getElementById('keepAliveVideo');
@@ -364,32 +364,26 @@ function transmitirUbicacion() {
         if(marker) { marker.setPosition(coords); }
         
         if(map) {
-            map.panTo(coords);
-            if (heading !== null && heading !== undefined) {
-                // FORZAMOS LA CÁMARA A ROTAR E INCLINARSE
-                map.setOptions({
-                    heading: heading,
-                    tilt: 45,
-                    center: coords
-                });
-            }
+            // TRUCO DE ROTACIÓN: Forzamos el heading y el tilt en cada ciclo para obligar al mapa a girar
+            map.setOptions({
+                center: coords,
+                heading: heading || 0,
+                tilt: 45
+            });
         }
 
         if(viajeActualId) { 
+            const pActual = new google.maps.LatLng(coords.lat, coords.lng);
             if (ultimaPosicionMapa) {
-                const p1 = new google.maps.LatLng(ultimaPosicionMapa.lat, ultimaPosicionMapa.lng);
-                const p2 = new google.maps.LatLng(coords.lat, coords.lng);
-                const distancia = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                
-                if (distancia > 5) {
-                    if (map.getZoom() < 18) map.setZoom(18);
+                const pVieja = new google.maps.LatLng(ultimaPosicionMapa.lat, ultimaPosicionMapa.lng);
+                if (google.maps.geometry.spherical.computeDistanceBetween(pVieja, pActual) > 5) {
                     ultimaPosicionMapa = coords;
+                    trazarRuta(ultimaRutaDestino); 
                 }
             } else {
-                map.setZoom(18);
                 ultimaPosicionMapa = coords;
+                trazarRuta(ultimaRutaDestino); 
             }
-            trazarRuta(ultimaRutaDestino); 
         }
     }, null, { enableHighAccuracy: true });
 }
