@@ -347,7 +347,6 @@ function transmitirUbicacion() {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; 
         let heading = pos.coords.heading;
 
-        // Calculamos rumbo manualmente si el sensor no lo entrega
         if (ultimaPosicionMapa) {
             const p1 = new google.maps.LatLng(ultimaPosicionMapa.lat, ultimaPosicionMapa.lng);
             const p2 = new google.maps.LatLng(coords.lat, coords.lng);
@@ -367,9 +366,11 @@ function transmitirUbicacion() {
         if(map) {
             map.panTo(coords);
             if (heading !== null && heading !== undefined) {
+                // FORZAMOS LA CÁMARA A ROTAR E INCLINARSE
                 map.setOptions({
                     heading: heading,
-                    tilt: 45
+                    tilt: 45,
+                    center: coords
                 });
             }
         }
